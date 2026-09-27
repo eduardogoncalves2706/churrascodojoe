@@ -6,11 +6,17 @@ import { clientes } from './routes/clientes';
 import { config } from './routes/config';
 import { financeiro } from './routes/financeiro';
 import { pedidos } from './routes/pedidos';
+import { publicRoutes } from './routes/public';
 import { usuarios } from './routes/usuarios';
 
 export const app = new Hono<Env>();
-app.use('*', cors({ origin: (o) => (process.env.CORS_ORIGIN ? (o === process.env.CORS_ORIGIN ? o : '') : o), allowHeaders: ['authorization', 'content-type', 'x-mock-role'] }));
+// CORS_ORIGIN = app interno; CORS_ORIGIN_PUBLIC = site público (origens diferentes).
+const origensPermitidas = [process.env.CORS_ORIGIN, process.env.CORS_ORIGIN_PUBLIC].filter(Boolean);
+app.use('*', cors({ origin: (o) => (origensPermitidas.length === 0 ? o : origensPermitidas.includes(o) ? o : ''), allowHeaders: ['authorization', 'content-type', 'x-mock-role'] }));
 app.get('/health', (c) => c.json({ ok: true }));
+
+// Rotas públicas (site): sem login. Registradas antes de /v1 pra não passar pelo middleware de auth.
+app.route('/v1/public', publicRoutes);
 
 const v1 = new Hono<Env>();
 v1.use('*', auth);

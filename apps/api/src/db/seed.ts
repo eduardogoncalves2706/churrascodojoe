@@ -102,6 +102,12 @@ export async function seed() {
   const cfg: Record<string, unknown> = {
     taxas_maquininha: { pix: 0.49, debito: 1.43, credito: 3.36, dinheiro: 0 }, horario_pico: { inicio: 11, fim: 14 }, dias_operacao: ['sab', 'dom'],
     mensagem_whatsapp_confirmacao: 'Pedido confirmado! Já estamos preparando.', margem_minima_pct: 40, comanda_formato: 'termica80', base_rateio: 'receita',
+    // Landing page pública (docs/SPEC_landing_page.md) — editável depois em Configurações → Site.
+    site_whatsapp: '5551998869170', site_instagram: '@churrascodojoe',
+    site_horario_texto: 'Sábados, domingos e feriados, das 11h às 14h. Encomendas podem ser feitas a qualquer momento durante a semana, para retirada ou entrega no fim de semana.',
+    site_endereco_modo: 'completo', site_endereco_texto: '', // TODO(confirmar): endereço de retirada ainda não informado
+    site_cnpj: '', site_razao_social: '', // ainda não têm CNPJ — rodapé direciona pro WhatsApp
+    site_aceita_pedidos_site: true, site_regiao_entrega_texto: 'Canoas e Região Metropolitana',
   };
   for (const [chave, valor] of Object.entries(cfg)) await db.insert(s.configuracoes).values({ chave, valor }).onConflictDoNothing();
 

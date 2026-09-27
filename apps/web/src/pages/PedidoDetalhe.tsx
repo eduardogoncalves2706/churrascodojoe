@@ -27,6 +27,8 @@ export default function PedidoDetalhe() {
   const status = useMutation({ mutationFn: (para: string) => api(`/pedidos/${id}/status`, { method: 'POST', body: { para } }), onSuccess: refresh });
   const pagar = useMutation({ mutationFn: () => api(`/pedidos/${id}/pagamentos`, { method: 'POST', body: { forma, valor: Number(valor.replace(',', '.')) } }), onSuccess: () => { setValor(''); refresh(); } });
   const cancelar = useMutation({ mutationFn: () => api(`/pedidos/${id}/cancelar`, { method: 'POST', body: { motivo } }), onSuccess: refresh });
+  const confirmarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/confirmar-site`, { method: 'POST' }), onSuccess: refresh });
+  const recusarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/recusar-site`, { method: 'POST', body: { motivo } }), onSuccess: refresh });
   const motoboy = useMutation({ mutationFn: (motoboyId: string) => api(`/pedidos/${id}`, { method: 'PATCH', body: { motoboyId: motoboyId || null } }), onSuccess: refresh });
   const [buscaCliente, setBuscaCliente] = useState('');
   const [sugestoesCliente, setSugestoesCliente] = useState<Row[]>([]);
@@ -134,6 +136,18 @@ export default function PedidoDetalhe() {
           <tr><td className="td font-label font-bold uppercase text-gold">Total</td><td className="td text-right font-display text-3xl text-gold">{brl(p.total)}</td></tr>
           {admin && <tr><td className="td text-cream/60">Custo / margem 🔒</td><td className="td text-right text-cream/60">{p.custoTotal == null ? 'ficha incompleta' : `${brl(p.custoTotal)} / ${brl(Number(p.total) - Number(p.taxaEntrega) - Number(p.custoTotal))}`}</td></tr>}
         </tbody></table></div>
+      )}
+
+      {p.status === 'aguardando_confirmacao' && (
+        <div className="card border-2 border-primary space-y-2">
+          <p className="text-primary-hover font-label font-bold uppercase">🔔 Pedido feito pelo site — confirme ou recuse</p>
+          <div className="flex gap-2 flex-wrap">
+            <button className="btn" disabled={confirmarSite.isPending} onClick={() => confirmarSite.mutate()}>Confirmar pedido</button>
+            <input className="flex-1 min-w-[160px]" placeholder="Motivo se for recusar" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+            <button className="btn-danger" disabled={!motivo.trim() || recusarSite.isPending} onClick={() => recusarSite.mutate()}>Recusar</button>
+          </div>
+          {(confirmarSite.isError || recusarSite.isError) && <Erro e={confirmarSite.error ?? recusarSite.error} />}
+        </div>
       )}
 
       {p.status !== 'cancelado' && <div className="flex gap-2 flex-wrap">

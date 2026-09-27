@@ -40,6 +40,7 @@ export class ApiStack extends cdk.Stack {
       environment: {
         DB_HOST: props.db.dbInstanceEndpointAddress, DB_PORT: props.db.dbInstanceEndpointPort, DB_NAME: props.dbName, DB_USER: props.dbUser, DB_SECRET_ARN: props.secret.secretArn,
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
+        CORS_ORIGIN_PUBLIC: 'https://www.churrascodojoe.com.br',
         NODE_OPTIONS: '--enable-source-maps',
       },
       bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true, target: 'node24', mainFields: ['module', 'main'],
@@ -64,6 +65,8 @@ export class ApiStack extends cdk.Stack {
       jwtAudience: [props.client.userPoolClientId],
     });
     this.httpApi.addRoutes({ path: '/health', methods: [apigw.HttpMethod.GET], integration });
+    // Rotas públicas (site) sem autorizador — precisa vir antes de /v1/{proxy+} pra não cair no genérico.
+    this.httpApi.addRoutes({ path: '/v1/public/{proxy+}', methods: [apigw.HttpMethod.ANY], integration });
     this.httpApi.addRoutes({ path: '/v1/{proxy+}', methods: [apigw.HttpMethod.ANY], integration, authorizer });
 
     new cw.Alarm(this, 'Erros', {

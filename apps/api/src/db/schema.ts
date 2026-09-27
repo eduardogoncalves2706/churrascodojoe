@@ -15,9 +15,9 @@ export const papelEnum = pgEnum('papel', ['admin', 'operador']);
 export const categoriaInsumoEnum = pgEnum('categoria_insumo', ['carne', 'acompanhamento', 'bebida', 'limpeza', 'embalagem', 'combustivel', 'outros']);
 export const categoriaProdutoEnum = pgEnum('categoria_produto', ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia', 'outros']);
 export const colaboradorTipoEnum = pgEnum('colaborador_tipo', ['motoboy', 'ajudante', 'socio']);
-export const canalEnum = pgEnum('canal', ['whatsapp', 'instagram', 'balcao', 'telefone', 'outro']);
+export const canalEnum = pgEnum('canal', ['whatsapp', 'instagram', 'balcao', 'telefone', 'site', 'outro']);
 export const tipoPedidoEnum = pgEnum('tipo_pedido', ['entrega', 'retirada']);
-export const statusPedidoEnum = pgEnum('status_pedido', ['rascunho', 'confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue', 'retirado', 'cancelado']);
+export const statusPedidoEnum = pgEnum('status_pedido', ['aguardando_confirmacao', 'recusado', 'rascunho', 'confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue', 'retirado', 'cancelado']);
 export const statusPagamentoEnum = pgEnum('status_pagamento', ['pendente', 'parcial', 'pago', 'estornado']);
 export const formaPagamentoEnum = pgEnum('forma_pagamento', ['pix', 'dinheiro', 'credito', 'debito', 'outro']);
 export const tipoContaEnum = pgEnum('tipo_conta', ['caixa', 'banco', 'maquininha']);
@@ -68,7 +68,11 @@ export const produtos = pgTable('produtos', {
   // venda avulsa sem insumo cadastrado). Com ficha técnica, o custo vem dela e este campo é ignorado —
   // ver services/custos.ts. Nunca inclui custo indireto (carvão, embalagem, limpeza, gás): isso é rateio.
   custoDireto: money('custo_direto'),
-  disponivelHoje: boolean('disponivel_hoje').notNull().default(true), ordem: integer('ordem').notNull().default(0), ativo: boolean('ativo').notNull().default(true), ...audit,
+  disponivelHoje: boolean('disponivel_hoje').notNull().default(true), ordem: integer('ordem').notNull().default(0), ativo: boolean('ativo').notNull().default(true),
+  // Landing page pública (docs/SPEC_landing_page.md)
+  descricaoCurta: text('descricao_curta'), imagemKey: text('imagem_key'), visivelSite: boolean('visivel_site').notNull().default(true),
+  destaqueSite: boolean('destaque_site').notNull().default(false), ordemSite: integer('ordem_site').notNull().default(0),
+  ...audit,
 });
 
 export const produtoCustoHistorico = pgTable('produto_custo_historico', {
@@ -93,7 +97,9 @@ export const rendimentoInsumo = pgTable('rendimento_insumo', {
 
 export const combos = pgTable('combos', {
   id: id(), nome: text('nome').notNull().unique(), descricao: text('descricao'), pessoas: integer('pessoas').notNull(),
-  ativo: boolean('ativo').notNull().default(true), ordem: integer('ordem').notNull().default(0), ...audit,
+  ativo: boolean('ativo').notNull().default(true), ordem: integer('ordem').notNull().default(0),
+  descricaoCurta: text('descricao_curta'), imagemKey: text('imagem_key'), visivelSite: boolean('visivel_site').notNull().default(true), ordemSite: integer('ordem_site').notNull().default(0),
+  ...audit,
 });
 
 export const comboItens = pgTable('combo_itens', {
@@ -108,7 +114,7 @@ export const comboVariantes = pgTable('combo_variantes', {
 
 export const bairrosEntrega = pgTable('bairros_entrega', {
   id: id(), nome: text('nome').notNull(), cidade: text('cidade').notNull().default('Canoas'), taxaEntrega: money('taxa_entrega').notNull().default('0'),
-  atende: boolean('atende').notNull().default(true), ...audit,
+  atende: boolean('atende').notNull().default(true), visivelSite: boolean('visivel_site').notNull().default(true), ...audit,
 }, (t) => [unique().on(t.nome, t.cidade)]);
 
 export const clientes = pgTable('clientes', {

@@ -1,4 +1,4 @@
-import { toCents, fromCents, STATUS_PEDIDO, dataOperacaoLocal } from '@joe/shared';
+import { toCents, fromCents, STATUS_PEDIDO, dataOperacaoLocal, type Canal, type StatusPedido } from '@joe/shared';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { schema as s } from '../db/client';
@@ -11,7 +11,7 @@ export interface ItemInput {
 }
 export interface PedidoInput {
   clienteId?: string; novoCliente?: { nome: string; telefone?: string }; nomeCliente?: string;
-  canal: 'whatsapp' | 'instagram' | 'balcao' | 'telefone' | 'outro'; tipo: 'entrega' | 'retirada';
+  canal: Canal; tipo: 'entrega' | 'retirada';
   agendadoPara?: string; itens: ItemInput[]; desconto?: number; taxaEntrega?: number; bairroId?: string;
   enderecoTexto?: string; referencia?: string; trocoPara?: number; observacoes?: string;
   pagamentos?: { forma: 'pix' | 'dinheiro' | 'credito' | 'debito' | 'outro'; valor: number }[];
@@ -82,7 +82,7 @@ async function construirLinhas(tx: Tx, custos: Map<string, number | null>, itens
   return { linhas, subtotal, custoTotal, custoCompleto };
 }
 
-export async function criarPedido(db: Db, input: PedidoInput, usuario: string) {
+export async function criarPedido(db: Db, input: PedidoInput, usuario: string, statusInicial: StatusPedido = 'confirmado') {
   if (!input.itens.length) throw new ErroNegocio('sem_itens', 'O pedido precisa de ao menos um item');
   const custos = await custosProdutos(db);
   const agendado = input.agendadoPara ? new Date(input.agendadoPara) : null;
@@ -119,13 +119,13 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string) {
 
     const [pedido] = await tx.insert(s.pedidos).values({
       numeroDia: Number(prox), dataOperacao, clienteId, nomeClienteSnapshot: nome, telefoneSnapshot: telefone, canal: input.canal, tipo: input.tipo,
-      agendadoPara: agendado, status: 'confirmado', enderecoTexto: input.enderecoTexto, bairroId: input.bairroId, referencia: input.referencia,
+      agendadoPara: agendado, status: statusInicial, enderecoTexto: input.enderecoTexto, bairroId: input.bairroId, referencia: input.referencia,
       subtotal: fromCents(subtotal), desconto: fromCents(desconto), taxaEntrega: fromCents(taxa), total: fromCents(total),
       custoTotal: custoCompleto ? fromCents(custoTotal) : null, statusPagamento: statusPagamentoDe(total, pagos),
       trocoPara: input.trocoPara != null ? fromCents(toCents(input.trocoPara)) : null, observacoes: input.observacoes, createdBy: usuario,
     }).returning();
     await tx.insert(s.pedidoItens).values(linhas.map((l) => ({ ...l, pedidoId: pedido.id })));
-    await tx.insert(s.pedidoStatusHistorico).values({ pedidoId: pedido.id, de: null, para: 'confirmado', usuario });
+    await tx.insert(s.pedidoStatusHistorico).values({ pedidoId: pedido.id, de: null, para: statusInicial, usuario });
     for (const p of input.pagamentos ?? []) {
       await tx.insert(s.pagamentos).values({ pedidoId: pedido.id, forma: p.forma, valor: fromCents(toCents(p.valor)) });
     }
@@ -197,6 +197,42 @@ export async function cancelarPedido(db: Db, pedidoId: string, motivo: string, u
     await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: 'cancelado', usuario, nota: motivo });
     // TODO(fase 4): estornar lançamentos financeiros dos pagamentos.
   });
+}
+
+/** Pedido do site aguardando confirmação → vira "confirmado" (equipe já viu e aceitou). */
+export async function confirmarPedidoSite(db: Db, pedidoId: string, usuario: string) {
+  return db.transaction(async (tx: Tx) => {
+    const [p] = await tx.select().from(s.pedidos).where(eq(s.pedidos.id, pedidoId));
+    if (!p) throw new ErroNegocio('nao_encontrado', 'Pedido não encontrado', 404);
+    if (p.status !== 'aguardando_confirmacao') throw new ErroNegocio('status_invalido', 'Pedido não está aguardando confirmação');
+    await tx.update(s.pedidos).set({ status: 'confirmado', updatedAt: new Date() }).where(eq(s.pedidos.id, pedidoId));
+    await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: 'confirmado', usuario });
+  });
+}
+
+/** Pedido do site aguardando confirmação → "recusado" (ex.: fora da área, item esgotado). Motivo obrigatório. */
+export async function recusarPedidoSite(db: Db, pedidoId: string, motivo: string, usuario: string) {
+  if (!motivo.trim()) throw new ErroNegocio('motivo_obrigatorio', 'Motivo da recusa é obrigatório');
+  return db.transaction(async (tx: Tx) => {
+    const [p] = await tx.select().from(s.pedidos).where(eq(s.pedidos.id, pedidoId));
+    if (!p) throw new ErroNegocio('nao_encontrado', 'Pedido não encontrado', 404);
+    if (p.status !== 'aguardando_confirmacao') throw new ErroNegocio('status_invalido', 'Pedido não está aguardando confirmação');
+    await tx.update(s.pedidos).set({ status: 'recusado', motivoCancelamento: motivo, updatedAt: new Date() }).where(eq(s.pedidos.id, pedidoId));
+    await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: 'recusado', usuario, nota: motivo });
+  });
+}
+
+/** Texto pronto pro cliente mandar no WhatsApp da loja, depois de fazer o pré-pedido pelo site. */
+export function resumoWhatsappCliente(p: typeof s.pedidos.$inferSelect, itens: (typeof s.pedidoItens.$inferSelect)[], bairro?: string | null, formaPagamento?: string): string {
+  const brl = (v: string) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+  const linhas = [`Olá! Fiz o pedido #${String(p.numeroDia).padStart(3, '0')} pelo site 🔥`];
+  for (const i of itens) linhas.push(`${Number(i.quantidade)}x ${i.descricaoSnapshot}${i.observacao ? ` (${i.observacao})` : ''}`);
+  linhas.push(p.tipo === 'entrega' ? `Entrega: ${bairro ?? ''} – ${p.enderecoTexto ?? ''}${p.referencia ? ` (ref.: ${p.referencia})` : ''}` : 'Retirada no ponto');
+  linhas.push(`Para: ${p.agendadoPara ? new Date(p.agendadoPara).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'hoje, o quanto antes'}`);
+  if (formaPagamento) linhas.push(`Pagamento: ${formaPagamento}`);
+  linhas.push(`Total: ${brl(p.total)}${Number(p.taxaEntrega) > 0 ? ` (taxa ${brl(p.taxaEntrega)})` : ''}`);
+  linhas.push(`Nome: ${p.nomeClienteSnapshot ?? ''}`);
+  return linhas.join('\n');
 }
 
 export function resumoWhatsapp(p: typeof s.pedidos.$inferSelect, itens: (typeof s.pedidoItens.$inferSelect)[], bairro?: string | null): string {

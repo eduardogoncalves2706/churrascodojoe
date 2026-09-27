@@ -1,6 +1,7 @@
-export const STATUS_PEDIDO = ['rascunho', 'confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue', 'retirado', 'cancelado'] as const;
+export const STATUS_PEDIDO = ['aguardando_confirmacao', 'recusado', 'rascunho', 'confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue', 'retirado', 'cancelado'] as const;
 export type StatusPedido = (typeof STATUS_PEDIDO)[number];
-export const CANAIS = ['whatsapp', 'instagram', 'balcao', 'telefone', 'outro'] as const;
+export const CANAIS = ['whatsapp', 'instagram', 'balcao', 'telefone', 'site', 'outro'] as const;
+export type Canal = (typeof CANAIS)[number];
 export const TIPOS_PEDIDO = ['entrega', 'retirada'] as const;
 export const FORMAS_PAGAMENTO = ['pix', 'dinheiro', 'credito', 'debito', 'outro'] as const;
 export const PAPEIS = ['admin', 'operador'] as const;

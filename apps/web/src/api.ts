@@ -32,6 +32,7 @@ export const hora = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', {
 export const num = (n: number) => String(n).padStart(3, '0');
 
 export const STATUS_LABEL: Record<string, string> = {
+  aguardando_confirmacao: 'Aguardando confirmação', recusado: 'Recusado',
   rascunho: 'Rascunho', confirmado: 'Confirmado', em_preparo: 'Em preparo', pronto: 'Pronto', saiu_entrega: 'Saiu p/ entrega',
   entregue: 'Entregue', retirado: 'Retirado', cancelado: 'Cancelado',
 };

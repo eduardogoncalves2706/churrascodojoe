@@ -5,7 +5,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { isAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
-import { atualizarItens, cancelarPedido, criarPedido, ErroNegocio, mudarStatus, registrarPagamento, resumoWhatsapp, STATUS_EDICAO_BLOQUEADA } from '../services/pedidos';
+import { atualizarItens, cancelarPedido, confirmarPedidoSite, criarPedido, ErroNegocio, mudarStatus, recusarPedidoSite, registrarPagamento, resumoWhatsapp, STATUS_EDICAO_BLOQUEADA } from '../services/pedidos';
 
 export const pedidos = new Hono<Env>();
 const db = () => getDb();
@@ -47,6 +47,14 @@ pedidos.get('/pedidos', async (c) => {
 pedidos.post('/pedidos', zValidator('json', pedidoSchema), async (c) => {
   const p = await criarPedido(db(), c.req.valid('json'), c.get('user').nome);
   return c.json(p, 201);
+});
+
+/** Pedidos do site aguardando confirmação, em qualquer data (podem ser agendados pra outro dia). */
+pedidos.get('/pedidos/pendentes-site', async (c) => {
+  const rows = await db().select({ p: s.pedidos, bairro: s.bairrosEntrega.nome }).from(s.pedidos)
+    .leftJoin(s.bairrosEntrega, eq(s.bairrosEntrega.id, s.pedidos.bairroId)).where(eq(s.pedidos.status, 'aguardando_confirmacao')).orderBy(asc(s.pedidos.createdAt));
+  const out = rows.map((r) => ({ ...r.p, bairro: r.bairro }));
+  return c.json(isAdmin(c) ? out : stripCustos(out));
 });
 
 async function carregar(id: string) {
@@ -111,6 +119,16 @@ pedidos.post('/pedidos/:id/status', zValidator('json', z.object({ para: z.enum(S
 
 pedidos.post('/pedidos/:id/cancelar', zValidator('json', z.object({ motivo: z.string().min(1) })), async (c) => {
   await cancelarPedido(db(), c.req.param('id'), c.req.valid('json').motivo, c.get('user').nome);
+  return c.json({ ok: true });
+});
+
+pedidos.post('/pedidos/:id/confirmar-site', async (c) => {
+  await confirmarPedidoSite(db(), c.req.param('id'), c.get('user').nome);
+  return c.json({ ok: true });
+});
+
+pedidos.post('/pedidos/:id/recusar-site', zValidator('json', z.object({ motivo: z.string().min(1) })), async (c) => {
+  await recusarPedidoSite(db(), c.req.param('id'), c.req.valid('json').motivo, c.get('user').nome);
   return c.json({ ok: true });
 });
 
