@@ -149,3 +149,27 @@ describe('clientes', () => {
     expect(c2.id).toBe(c1.id);
   });
 });
+
+describe('financeiro', () => {
+  it('DRE não quebra em mês com 31 dias', async () => {
+    // regressão: "${mes}-31" é inválido em meses de 30 (ou 28/29) dias e o Postgres rejeitava a query
+    for (const mes of ['2026-09', '2026-02', '2026-01']) {
+      const r = await call(`/dre?mes=${mes}`);
+      expect(r.status).toBe(200);
+      const dre = await json(r);
+      expect(dre.mes).toBe(mes);
+      expect(typeof dre.receita).toBe('number');
+    }
+  });
+
+  it('rateio calcula custo indireto por pedido', async () => {
+    const r = await json(await call('/rateio?dias=30'));
+    expect(r.qtdPedidos).toBeGreaterThanOrEqual(0);
+    expect(r.custoIndiretoPorPedidoCents).toBe(r.qtdPedidos > 0 ? Math.round(r.totalIndiretoCents / r.qtdPedidos) : 0);
+  });
+
+  it('operador não acessa financeiro', async () => {
+    expect((await call('/dre', { role: 'operador' })).status).toBe(403);
+    expect((await call('/lancamentos', { role: 'operador' })).status).toBe(403);
+  });
+});

@@ -10,7 +10,7 @@ export interface ItemInput {
   refrigeranteId?: string; precoUnitario?: number;
 }
 export interface PedidoInput {
-  clienteId?: string; novoCliente?: { nome: string; telefone: string }; nomeCliente?: string;
+  clienteId?: string; novoCliente?: { nome: string; telefone?: string }; nomeCliente?: string;
   canal: 'whatsapp' | 'instagram' | 'balcao' | 'telefone' | 'outro'; tipo: 'entrega' | 'retirada';
   agendadoPara?: string; itens: ItemInput[]; desconto?: number; taxaEntrega?: number; bairroId?: string;
   enderecoTexto?: string; referencia?: string; trocoPara?: number; observacoes?: string;

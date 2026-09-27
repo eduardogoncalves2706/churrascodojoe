@@ -20,6 +20,14 @@ export const tipoPedidoEnum = pgEnum('tipo_pedido', ['entrega', 'retirada']);
 export const statusPedidoEnum = pgEnum('status_pedido', ['rascunho', 'confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue', 'retirado', 'cancelado']);
 export const statusPagamentoEnum = pgEnum('status_pagamento', ['pendente', 'parcial', 'pago', 'estornado']);
 export const formaPagamentoEnum = pgEnum('forma_pagamento', ['pix', 'dinheiro', 'credito', 'debito', 'outro']);
+export const tipoContaEnum = pgEnum('tipo_conta', ['caixa', 'banco', 'maquininha']);
+export const tipoCategoriaEnum = pgEnum('tipo_categoria', ['entrada', 'saida']);
+export const grupoDreEnum = pgEnum('grupo_dre', [
+  'receita_vendas', 'outras_receitas', 'cmv', 'custo_indireto', 'pessoal', 'entrega', 'ocupacao', 'utilidades', 'marketing', 'taxas',
+  'impostos', 'investimento', 'aporte_socio', 'retirada_socio', 'reserva', 'transferencia',
+]);
+export const tipoLancamentoEnum = pgEnum('tipo_lancamento', ['entrada', 'saida', 'transferencia']);
+export const statusLancamentoEnum = pgEnum('status_lancamento', ['previsto', 'realizado', 'cancelado']);
 
 export const usuarios = pgTable('usuarios', {
   id: id(), cognitoSub: text('cognito_sub').unique(), nome: text('nome').notNull(), email: text('email').notNull(),
@@ -56,7 +64,16 @@ export const produtos = pgTable('produtos', {
   id: id(), nome: text('nome').notNull().unique(), categoria: categoriaProdutoEnum('categoria').notNull(), unidadeVenda: text('unidade_venda').notNull().default('unidade'),
   precoVenda: money('preco_venda').notNull().default('0'), permiteFracionado: boolean('permite_fracionado').notNull().default(false),
   parceiro: text('parceiro'), vendidoAPrecoDeCusto: boolean('vendido_a_preco_de_custo').notNull().default(false),
+  // Custo direto "manual": só usado quando o produto não tem ficha técnica (bebida, doce de parceiro,
+  // venda avulsa sem insumo cadastrado). Com ficha técnica, o custo vem dela e este campo é ignorado —
+  // ver services/custos.ts. Nunca inclui custo indireto (carvão, embalagem, limpeza, gás): isso é rateio.
+  custoDireto: money('custo_direto'),
   disponivelHoje: boolean('disponivel_hoje').notNull().default(true), ordem: integer('ordem').notNull().default(0), ativo: boolean('ativo').notNull().default(true), ...audit,
+});
+
+export const produtoCustoHistorico = pgTable('produto_custo_historico', {
+  id: id(), produtoId: uuid('produto_id').notNull().references(() => produtos.id), custo: money('custo').notNull(),
+  vigenteDesde: date('vigente_desde').notNull().defaultNow(), motivo: text('motivo'), ...audit,
 });
 
 export const produtoPrecosHistorico = pgTable('produto_precos_historico', {
@@ -136,8 +153,30 @@ export const pedidoStatusHistorico = pgTable('pedido_status_historico', {
   usuario: text('usuario'), nota: text('nota'), em: timestamp('em', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const contasFinanceiras = pgTable('contas_financeiras', {
+  id: id(), nome: text('nome').notNull().unique(), tipo: tipoContaEnum('tipo').notNull(), saldoInicial: money('saldo_inicial').notNull().default('0'),
+  ativo: boolean('ativo').notNull().default(true), ...audit,
+});
+
+export const categoriasFinanceiras = pgTable('categorias_financeiras', {
+  id: id(), nome: text('nome').notNull().unique(), tipo: tipoCategoriaEnum('tipo').notNull(), grupoDre: grupoDreEnum('grupo_dre').notNull(),
+  // Categoria de custo indireto (carvão/lenha, embalagens, limpeza, gás) que entra no rateio por pedido —
+  // ver SPEC_adendo_rateio_custos.md. Nunca true para receita/CMV/pessoal etc.
+  rateavel: boolean('rateavel').notNull().default(false), ativo: boolean('ativo').notNull().default(true), ...audit,
+});
+
+export const lancamentos = pgTable('lancamentos', {
+  id: id(), tipo: tipoLancamentoEnum('tipo').notNull(), categoriaId: uuid('categoria_id').notNull().references(() => categoriasFinanceiras.id),
+  contaId: uuid('conta_id').notNull().references(() => contasFinanceiras.id), contaDestinoId: uuid('conta_destino_id').references(() => contasFinanceiras.id),
+  descricao: text('descricao').notNull(), valor: money('valor').notNull(), dataCompetencia: date('data_competencia').notNull(),
+  dataVencimento: date('data_vencimento').notNull(), dataPagamento: date('data_pagamento'), status: statusLancamentoEnum('status').notNull().default('previsto'),
+  pedidoId: uuid('pedido_id').references(() => pedidos.id), fornecedorId: uuid('fornecedor_id').references(() => fornecedores.id),
+  colaboradorId: uuid('colaborador_id').references(() => colaboradores.id), socioId: uuid('socio_id').references(() => socios.id),
+  anexoKey: text('anexo_key'), recorrenciaId: uuid('recorrencia_id'), observacao: text('observacao'), createdBy: text('created_by'), ...audit,
+});
+
 export const pagamentos = pgTable('pagamentos', {
   id: id(), pedidoId: uuid('pedido_id').notNull().references(() => pedidos.id), forma: formaPagamentoEnum('forma').notNull(), valor: money('valor').notNull(),
   taxa: money('taxa').notNull().default('0'), recebidoEm: timestamp('recebido_em', { withTimezone: true }).notNull().defaultNow(),
-  contaId: uuid('conta_id'), lancamentoId: uuid('lancamento_id'), ...audit,
+  contaId: uuid('conta_id').references(() => contasFinanceiras.id), lancamentoId: uuid('lancamento_id').references(() => lancamentos.id), ...audit,
 });

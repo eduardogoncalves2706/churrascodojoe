@@ -15,6 +15,13 @@
       "when": 1790508255988,
       "tag": "0001_ancient_typhoid_mary",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790544632435,
+      "tag": "0002_lowly_champions",
+      "breakpoints": true
     }
   ]
 }

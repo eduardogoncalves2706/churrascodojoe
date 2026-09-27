@@ -15,7 +15,7 @@ const itemSchema = z.object({
   observacao: z.string().optional(), refrigeranteId: z.uuid().optional(), precoUnitario: z.number().min(0).optional(),
 });
 const pedidoSchema = z.object({
-  clienteId: z.uuid().optional(), novoCliente: z.object({ nome: z.string().min(1), telefone: z.string().min(8) }).optional(), nomeCliente: z.string().optional(),
+  clienteId: z.uuid().optional(), novoCliente: z.object({ nome: z.string().min(1), telefone: z.string().min(8).optional() }).optional(), nomeCliente: z.string().optional(),
   canal: z.enum(CANAIS).default('whatsapp'), tipo: z.enum(TIPOS_PEDIDO).default('retirada'), agendadoPara: z.iso.datetime({ offset: true }).optional(),
   itens: z.array(itemSchema).min(1), desconto: z.number().min(0).optional(), taxaEntrega: z.number().min(0).optional(), bairroId: z.uuid().optional(),
   enderecoTexto: z.string().optional(), referencia: z.string().optional(), trocoPara: z.number().min(0).optional(), observacoes: z.string().optional(),
@@ -66,18 +66,26 @@ pedidos.get('/pedidos/:id', async (c) => {
   return c.json(isAdmin(c) ? p : stripCustos(p));
 });
 
+const CAMPOS_LIVRES_MESMO_BLOQUEADO = ['motoboyId', 'clienteId'];
 pedidos.patch('/pedidos/:id', zValidator('json', z.object({
   observacoes: z.string().nullish(), enderecoTexto: z.string().nullish(), referencia: z.string().nullish(), bairroId: z.uuid().nullish(), motoboyId: z.uuid().nullish(),
-  taxaEntrega: z.number().min(0).optional(), desconto: z.number().min(0).optional(),
+  clienteId: z.uuid().nullish(), taxaEntrega: z.number().min(0).optional(), desconto: z.number().min(0).optional(),
 })), async (c) => {
   const id = c.req.param('id');
   const atual = await carregar(id);
   const b = c.req.valid('json');
+  if (b.clienteId !== undefined && !isAdmin(c)) throw new ErroNegocio('forbidden', 'Apenas administradores religam o cliente do pedido', 403);
   const { taxaEntrega, desconto, ...resto } = b;
   const edicaoBloqueada = (STATUS_EDICAO_BLOQUEADA as readonly string[]).includes(atual.status);
-  const soMotoboy = Object.keys(resto).length === 1 && 'motoboyId' in resto && taxaEntrega === undefined && desconto === undefined;
-  if (edicaoBloqueada && !soMotoboy) throw new ErroNegocio('edicao_bloqueada', 'Pedido não pode mais ser editado');
+  const soCampoLivre = Object.keys(resto).every((k) => CAMPOS_LIVRES_MESMO_BLOQUEADO.includes(k)) && Object.keys(resto).length > 0 && taxaEntrega === undefined && desconto === undefined;
+  if (edicaoBloqueada && !soCampoLivre) throw new ErroNegocio('edicao_bloqueada', 'Pedido não pode mais ser editado');
   const set: Record<string, unknown> = { ...resto, updatedAt: new Date() };
+  if (b.clienteId) {
+    const [cliente] = await db().select().from(s.clientes).where(eq(s.clientes.id, b.clienteId));
+    if (!cliente) throw new ErroNegocio('cliente_nao_encontrado', 'Cliente não encontrado', 404);
+    set.nomeClienteSnapshot = cliente.nome; set.telefoneSnapshot = cliente.telefone;
+    await db().insert(s.pedidoStatusHistorico).values({ pedidoId: id, de: atual.status, para: atual.status, usuario: c.get('user').nome, nota: `Religado ao cliente ${cliente.nome}` });
+  }
   const nTaxa = taxaEntrega !== undefined ? taxaEntrega : Number(atual.taxaEntrega);
   const nDesc = desconto !== undefined ? desconto : Number(atual.desconto);
   if (taxaEntrega !== undefined) set.taxaEntrega = taxaEntrega.toFixed(2);

@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getDb, schema as s } from './client';
 
 type Cat = (typeof s.categoriaInsumoEnum.enumValues)[number];
@@ -101,9 +101,28 @@ export async function seed() {
 
   const cfg: Record<string, unknown> = {
     taxas_maquininha: { pix: 0.49, debito: 1.43, credito: 3.36, dinheiro: 0 }, horario_pico: { inicio: 11, fim: 14 }, dias_operacao: ['sab', 'dom'],
-    mensagem_whatsapp_confirmacao: 'Pedido confirmado! Já estamos preparando.', margem_minima_pct: 40, comanda_formato: 'termica80',
+    mensagem_whatsapp_confirmacao: 'Pedido confirmado! Já estamos preparando.', margem_minima_pct: 40, comanda_formato: 'termica80', base_rateio: 'receita',
   };
   for (const [chave, valor] of Object.entries(cfg)) await db.insert(s.configuracoes).values({ chave, valor }).onConflictDoNothing();
-  void and;
+
+  await db.insert(s.contasFinanceiras).values([
+    { nome: 'Caixa físico', tipo: 'caixa' }, { nome: 'Conta PJ', tipo: 'banco' }, { nome: 'Maquininha', tipo: 'maquininha' },
+  ]).onConflictDoNothing();
+
+  type GrupoDre = (typeof s.grupoDreEnum.enumValues)[number];
+  const CATEGORIAS: [string, 'entrada' | 'saida', GrupoDre, boolean?][] = [
+    ['Vendas', 'entrada', 'receita_vendas'], ['Outras receitas', 'entrada', 'outras_receitas'],
+    ['Insumos/Carnes (Nutri)', 'saida', 'cmv'],
+    // Rateáveis: custo indireto dividido pelos pedidos do período (SPEC_adendo_rateio_custos.md) — nunca no custo do produto.
+    ['Carvão/Lenha', 'saida', 'custo_indireto', true], ['Embalagens', 'saida', 'custo_indireto', true],
+    ['Limpeza', 'saida', 'custo_indireto', true], ['Gás', 'saida', 'custo_indireto', true],
+    ['Motoboy', 'saida', 'entrega'], ['Ajudantes', 'saida', 'pessoal'],
+    ['Água', 'saida', 'utilidades'], ['Luz', 'saida', 'utilidades'], ['Internet', 'saida', 'utilidades'], ['Aluguel', 'saida', 'ocupacao'],
+    ['Impostos', 'saida', 'impostos'], ['Taxa de cartão', 'saida', 'taxas'], ['Meta Ads/Marketing', 'saida', 'marketing'],
+    ['Investimento em equipamento', 'saida', 'investimento'], ['Aporte de sócio', 'entrada', 'aporte_socio'],
+    ['Distribuição de lucro', 'saida', 'retirada_socio'], ['Reserva administrativa', 'saida', 'reserva'], ['Reserva de investimento', 'saida', 'reserva'],
+  ];
+  await db.insert(s.categoriasFinanceiras).values(CATEGORIAS.map(([nome, tipo, grupoDre, rateavel]) => ({ nome, tipo, grupoDre, rateavel: !!rateavel }))).onConflictDoNothing();
+
   console.log('seed ok');
 }

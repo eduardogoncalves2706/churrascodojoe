@@ -1,0 +1,29 @@
+produto,custo_unitario,origem
+Picanha,55.56,planilha: 50.00/kg ÷ 0.9 espeto/kg
+Maminha,44.44,planilha: 40.00/kg ÷ 0.9 espeto/kg
+Alcatra,44.44,planilha: 40.00/kg ÷ 0.9 espeto/kg
+Vazio,44.44,planilha: 40.00/kg ÷ 0.9 espeto/kg
+Costela,22.22,planilha: 20.00/kg ÷ 0.9 espeto/kg
+Salsichão,30.00,planilha: 30.00/peça
+Pão de alho (bandeja),10.00,planilha: 10.00/bandeja
+Pão de alho (unidade),5.00,planilha: 10.00/bandeja ÷ 2
+Coração,13.33,planilha: 20.00/pacote ÷ 1.5 espeto/pacote
+Arroz 500 g,1.85,planilha: 3.70/kg × 0.5
+Maionese 300 g,3.00,planilha: 5.00/500 g × 0.6
+Coca zero,10.00,planilha: coca 10.00/garrafa
+Guaraná,8.00,planilha: 8.00/garrafa
+Pepsi,8.00,planilha: 8.00/garrafa
+Geleia defumada,16.90,compra King of Geleia
+Sobrecoxa,7.27,mantido valor atual do sistema
+Quindim,7.00,parceria Doces by Nick: vendido a preço de custo (CONFIRMAR)
+Cone especial,12.00,parceria Doces by Nick: vendido a preço de custo (CONFIRMAR)
+Cone tradicional,10.00,parceria Doces by Nick: vendido a preço de custo (CONFIRMAR)
+Pudim P,10.00,parceria Doces by Nick: vendido a preço de custo (CONFIRMAR)
+Pudim G,35.00,parceria Doces by Nick: vendido a preço de custo (CONFIRMAR)
+Tortinha de Limão,10.00,parceria Doces by Nick: vendido a preço de custo (CONFIRMAR)
+Fanta laranja,8.00,informado pelo Eduardo
+Sprit,8.00,informado pelo Eduardo
+Salsichão (unidade),3.12,informado pelo Eduardo
+Cerveja Heineken,7.00,informado pelo Eduardo
+Cerveja Corona,7.00,informado pelo Eduardo
+Sobrecoxa (unidade),2.18,informado pelo Eduardo

@@ -97,7 +97,8 @@ export default function NovoPedido() {
 
   const criar = useMutation({
     mutationFn: () => api<Row>('/pedidos', { method: 'POST', body: {
-      ...(d.clienteId ? { clienteId: d.clienteId } : !d.semCadastro && digitos.length >= 8 && d.nome ? { novoCliente: { nome: d.nome, telefone: d.telefone } } : { nomeCliente: d.nome || 'Balcão' }),
+      // Telefone não é obrigatório: com o nome já dá pra cadastrar o cliente (edita e completa o telefone depois).
+      ...(d.clienteId ? { clienteId: d.clienteId } : !d.semCadastro && d.nome.trim() ? { novoCliente: { nome: d.nome, telefone: digitos.length >= 8 ? d.telefone : undefined } } : { nomeCliente: d.nome || 'Balcão' }),
       canal: d.canal, tipo: d.tipo, ...(d.agendar && d.quando ? { agendadoPara: new Date(d.quando).toISOString() } : {}),
       itens: d.itens.map((i) => ({ ...(i.varianteId ? { comboVarianteId: i.varianteId, refrigeranteId: i.refrigeranteId } : { produtoId: i.produtoId }), quantidade: i.qtd, observacao: i.obs || undefined, ...(i.livre ? { precoUnitario: i.precoCents / 100 } : {}) })),
       desconto: desconto / 100, ...(d.tipo === 'entrega' ? { taxaEntrega: taxa / 100, bairroId: d.bairroId || undefined, enderecoTexto: d.enderecoTexto, referencia: d.referencia } : {}),

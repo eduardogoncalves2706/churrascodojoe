@@ -28,6 +28,10 @@ export default function PedidoDetalhe() {
   const pagar = useMutation({ mutationFn: () => api(`/pedidos/${id}/pagamentos`, { method: 'POST', body: { forma, valor: Number(valor.replace(',', '.')) } }), onSuccess: () => { setValor(''); refresh(); } });
   const cancelar = useMutation({ mutationFn: () => api(`/pedidos/${id}/cancelar`, { method: 'POST', body: { motivo } }), onSuccess: refresh });
   const motoboy = useMutation({ mutationFn: (motoboyId: string) => api(`/pedidos/${id}`, { method: 'PATCH', body: { motoboyId: motoboyId || null } }), onSuccess: refresh });
+  const [buscaCliente, setBuscaCliente] = useState('');
+  const [sugestoesCliente, setSugestoesCliente] = useState<Row[]>([]);
+  const buscarClienteParaLigar = async (nome: string) => { setBuscaCliente(nome); setSugestoesCliente(nome.trim().length >= 2 ? (await api<Row[]>(`/clientes?busca=${encodeURIComponent(nome.trim())}`)).slice(0, 5) : []); };
+  const religar = useMutation({ mutationFn: (clienteId: string) => api(`/pedidos/${id}`, { method: 'PATCH', body: { clienteId } }), onSuccess: () => { setBuscaCliente(''); setSugestoesCliente([]); refresh(); } });
   const salvarItens = useMutation({
     mutationFn: () => api(`/pedidos/${id}/itens`, { method: 'PUT', body: itensEdit.map((i) => ({
       ...(i.comboVarianteId ? { comboVarianteId: i.comboVarianteId, refrigeranteId: i.refrigeranteId || undefined } : { produtoId: i.produtoId }),
@@ -78,6 +82,16 @@ export default function PedidoDetalhe() {
         <span className={`chip ${p.status === 'cancelado' ? 'bg-brasa border-brasa' : 'chip-on'}`}>{STATUS_LABEL[p.status]}</span><Link to="/pedidos" className="ml-auto text-gold underline">voltar</Link></div>
       <div className="card space-y-1">
         <p className="text-lg">{p.nomeClienteSnapshot ?? 'Balcão'} <span className="text-cream/60">{p.telefoneSnapshot}</span></p>
+        {admin && !p.clienteId && (
+          <div className="relative">
+            <p className="text-xs text-brasa">Sem cadastro de cliente vinculado — busque e religue:</p>
+            <input value={buscaCliente} onChange={(e) => buscarClienteParaLigar(e.target.value)} placeholder="Nome do cliente" className="!w-64" />
+            {sugestoesCliente.length > 0 && <ul className="absolute z-10 left-0 right-0 mt-1 card p-1 space-y-1 !w-64">{sugestoesCliente.map((s) => (
+              <li key={s.id}><button type="button" className="w-full text-left px-2 py-1 rounded hover:bg-primary/20" onClick={() => religar.mutate(s.id)}>
+                <span className="font-label font-bold">{s.nome}</span>{s.telefone && <span className="text-cream/60 text-sm"> · {s.telefone}</span>}</button></li>
+            ))}</ul>}
+          </div>
+        )}
         <p>{p.tipo === 'entrega' ? `🛵 ${p.enderecoTexto ?? ''} — ${p.bairro ?? ''}${p.referencia ? ` (${p.referencia})` : ''}` : '🏪 Retirada'} · {p.canal}</p>
         {p.agendadoPara && <p>📅 Agendado para {new Date(p.agendadoPara).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>}
         {p.observacoes && <p className="text-gold">Obs.: {p.observacoes}</p>}
