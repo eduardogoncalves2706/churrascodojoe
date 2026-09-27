@@ -4,11 +4,10 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireAdmin, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
+import { encontrarOuCriarCliente, normTel } from '../services/clientes';
 
 export const clientes = new Hono<Env>();
 const db = () => getDb();
-
-const normTel = (t: string) => { const d = t.replace(/\D/g, ''); return d.startsWith('55') ? `+${d}` : `+55${d}`; };
 
 async function comEnderecos<T extends { id: string }>(rows: T[]) {
   const ends = await db().select().from(s.enderecosCliente);
@@ -30,6 +29,12 @@ clientes.get('/clientes', async (c) => {
   return c.json(lim ? out.filter((r) => !r.ultimoPedido || new Date(r.ultimoPedido).getTime() < lim) : out);
 });
 
+clientes.get('/clientes/:id', async (c) => {
+  const [cl] = await db().select().from(s.clientes).where(eq(s.clientes.id, c.req.param('id')));
+  if (!cl) return c.json({ error: { code: 'nao_encontrado', message: 'Cliente não encontrado' } }, 404);
+  return c.json((await comEnderecos([cl]))[0]);
+});
+
 clientes.get('/clientes/por-telefone/:tel', async (c) => {
   const [cl] = await db().select().from(s.clientes).where(eq(s.clientes.telefone, normTel(c.req.param('tel'))));
   if (!cl) return c.json({ error: { code: 'nao_encontrado', message: 'Cliente não encontrado' } }, 404);
@@ -37,18 +42,22 @@ clientes.get('/clientes/por-telefone/:tel', async (c) => {
 });
 
 const endBody = z.object({ logradouro: z.string().min(1), numero: z.string().nullish(), complemento: z.string().nullish(), bairroId: z.uuid().nullish(), referencia: z.string().nullish(), principal: z.boolean().default(true) });
-const cliBody = z.object({ nome: z.string().min(1), telefone: z.string().min(8), instagram: z.string().nullish(), observacoes: z.string().nullish(), endereco: endBody.optional() });
+// Telefone é opcional: cliente importado sem telefone é diferenciado pelo nome (ver services/clientes.ts).
+const cliBody = z.object({ nome: z.string().min(1), telefone: z.string().min(8).optional(), instagram: z.string().nullish(), observacoes: z.string().nullish(), endereco: endBody.optional() });
 
 clientes.post('/clientes', zValidator('json', cliBody), async (c) => {
   const { endereco, ...b } = c.req.valid('json');
-  const [cl] = await db().insert(s.clientes).values({ ...b, telefone: normTel(b.telefone) }).returning();
-  if (endereco) await db().insert(s.enderecosCliente).values({ ...endereco, clienteId: cl.id });
-  return c.json((await comEnderecos([cl]))[0], 201);
+  const { cliente, novo } = await encontrarOuCriarCliente(db(), b);
+  if (endereco) await db().insert(s.enderecosCliente).values({ ...endereco, clienteId: cliente.id });
+  return c.json({ ...(await comEnderecos([cliente]))[0], jaExistia: !novo }, novo ? 201 : 200);
 });
 
-clientes.patch('/clientes/:id', zValidator('json', cliBody.omit({ endereco: true }).partial().extend({ ativo: z.boolean().optional() })), async (c) => {
+const cliPatchBody = cliBody.omit({ endereco: true, telefone: true }).partial().extend({ telefone: z.string().optional(), ativo: z.boolean().optional() });
+clientes.patch('/clientes/:id', zValidator('json', cliPatchBody), async (c) => {
   const b = c.req.valid('json');
-  const [cl] = await db().update(s.clientes).set({ ...b, ...(b.telefone ? { telefone: normTel(b.telefone) } : {}), updatedAt: new Date() }).where(eq(s.clientes.id, c.req.param('id'))).returning();
+  // string vazia = "limpar telefone" (volta a ficar opcional); omitido = mantém o atual
+  const telefone = b.telefone === '' ? null : b.telefone ? normTel(b.telefone) : undefined;
+  const [cl] = await db().update(s.clientes).set({ ...b, ...(telefone !== undefined ? { telefone } : {}), updatedAt: new Date() }).where(eq(s.clientes.id, c.req.param('id'))).returning();
   return c.json(cl);
 });
 

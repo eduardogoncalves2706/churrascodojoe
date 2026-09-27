@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
-  boolean, date, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, unique, uuid,
+  boolean, date, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, unique, uniqueIndex, uuid,
 } from 'drizzle-orm/pg-core';
 
 const id = () => uuid('id').primaryKey().default(sql`gen_random_uuid()`);
@@ -95,9 +95,11 @@ export const bairrosEntrega = pgTable('bairros_entrega', {
 }, (t) => [unique().on(t.nome, t.cidade)]);
 
 export const clientes = pgTable('clientes', {
-  id: id(), nome: text('nome').notNull(), telefone: text('telefone').notNull().unique(), instagram: text('instagram'), observacoes: text('observacoes'),
+  // Telefone é opcional (import de clientes antigos sem telefone); quando presente, é único.
+  // Sem telefone, o nome é o critério de dedupe (ver services/clientes.ts).
+  id: id(), nome: text('nome').notNull(), telefone: text('telefone'), instagram: text('instagram'), observacoes: text('observacoes'),
   ativo: boolean('ativo').notNull().default(true), ...audit,
-});
+}, (t) => [uniqueIndex('clientes_telefone_uniq').on(t.telefone).where(sql`telefone is not null`)]);
 
 export const enderecosCliente = pgTable('enderecos_cliente', {
   id: id(), clienteId: uuid('cliente_id').notNull().references(() => clientes.id), logradouro: text('logradouro').notNull(), numero: text('numero'),

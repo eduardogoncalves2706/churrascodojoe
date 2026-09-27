@@ -2,6 +2,7 @@ import { toCents, fromCents, STATUS_PEDIDO, dataOperacaoLocal } from '@joe/share
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { schema as s } from '../db/client';
+import { encontrarOuCriarCliente } from './clientes';
 import { custoVariante, custosProdutos } from './custos';
 
 export interface ItemInput {
@@ -27,6 +28,60 @@ export function statusPagamentoDe(totalCents: number, pagoCents: number) {
 
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
+/** Pedido não pode mais ter itens/endereço/taxa alterados depois que sai para entrega (ou equivalente). */
+export const STATUS_EDICAO_BLOQUEADA = ['saiu_entrega', 'entregue', 'retirado', 'cancelado'] as const;
+
+type LinhaPedido = typeof s.pedidoItens.$inferInsert;
+
+/** Monta as linhas do pedido (preço, custo, snapshot e composição do combo) a partir dos itens do formulário. */
+async function construirLinhas(tx: Tx, custos: Map<string, number | null>, itens: ItemInput[]) {
+  let subtotal = 0; let custoTotal = 0; let custoCompleto = true;
+  const linhas: LinhaPedido[] = [];
+  for (const it of itens) {
+    if (!(it.quantidade > 0)) throw new ErroNegocio('quantidade_invalida', 'Quantidade inválida');
+    let preco = 0; let custo: number | null = null; let descricao = ''; let escolhas: unknown = null;
+    if (it.comboVarianteId) {
+      const [v] = await tx.select().from(s.comboVariantes).where(eq(s.comboVariantes.id, it.comboVarianteId));
+      if (!v || !v.ativo) throw new ErroNegocio('combo_invalido', 'Variante de combo inválida');
+      const [combo] = await tx.select().from(s.combos).where(eq(s.combos.id, v.comboId));
+      const [carne] = await tx.select().from(s.produtos).where(eq(s.produtos.id, v.carneProdutoId));
+      const itensCombo = await tx.select().from(s.comboItens).where(eq(s.comboItens.comboId, v.comboId));
+      preco = toCents(v.preco);
+      custo = custoVariante(itensCombo, v.carneProdutoId, custos, it.refrigeranteId);
+      descricao = `${combo.nome} – ${carne.nome}`;
+      let refri: (typeof s.produtos.$inferSelect) | undefined;
+      if (it.refrigeranteId) {
+        [refri] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.refrigeranteId));
+        if (refri) descricao += ` · Refri: ${refri.nome}`;
+      }
+      // Composição snapshot (para a comanda mostrar o detalhe do combo): resolve carne e refrigerante escolhidos.
+      const nomesInsumo = await tx.select().from(s.produtos);
+      const nome = (id: string) => nomesInsumo.find((p) => p.id === id)?.nome ?? '';
+      const composicao = itensCombo.map((ci) => ({
+        nome: ci.ehCarneEscolhida ? carne.nome : ci.grupoEscolha === 'refrigerante' && refri ? refri.nome : nome(ci.produtoId!),
+        quantidade: Number(ci.quantidade),
+      }));
+      escolhas = { refrigeranteId: it.refrigeranteId, composicao };
+    } else if (it.produtoId) {
+      const [p] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.produtoId));
+      if (!p || !p.ativo) throw new ErroNegocio('produto_invalido', 'Produto inválido');
+      if (!p.permiteFracionado && !Number.isInteger(it.quantidade)) throw new ErroNegocio('fracionado', `${p.nome} não permite quantidade fracionada`);
+      preco = p.vendidoAPrecoDeCusto && it.precoUnitario != null ? toCents(it.precoUnitario) : toCents(p.precoVenda);
+      custo = p.vendidoAPrecoDeCusto ? preco : custos.get(p.id) ?? null;
+      descricao = p.nome;
+    } else throw new ErroNegocio('item_invalido', 'Informe produto ou combo');
+    const sub = Math.round(preco * it.quantidade);
+    subtotal += sub;
+    if (custo == null) custoCompleto = false; else custoTotal += Math.round(custo * it.quantidade);
+    linhas.push({
+      pedidoId: '', produtoId: it.produtoId ?? null, comboVarianteId: it.comboVarianteId ?? null, descricaoSnapshot: descricao,
+      quantidade: String(it.quantidade), precoUnitarioSnapshot: fromCents(preco), custoUnitarioSnapshot: custo == null ? null : fromCents(custo),
+      subtotal: fromCents(sub), escolhas, observacao: it.observacao ?? null,
+    });
+  }
+  return { linhas, subtotal, custoTotal, custoCompleto };
+}
+
 export async function criarPedido(db: Db, input: PedidoInput, usuario: string) {
   if (!input.itens.length) throw new ErroNegocio('sem_itens', 'O pedido precisa de ao menos um item');
   const custos = await custosProdutos(db);
@@ -38,8 +93,8 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string) {
     let nome = input.nomeCliente ?? null;
     let telefone: string | null = null;
     if (!clienteId && input.novoCliente) {
-      const [c] = await tx.insert(s.clientes).values(input.novoCliente).onConflictDoUpdate({ target: s.clientes.telefone, set: { nome: input.novoCliente.nome } }).returning();
-      clienteId = c.id;
+      const { cliente } = await encontrarOuCriarCliente(tx, input.novoCliente);
+      clienteId = cliente.id;
     }
     if (clienteId) {
       const [c] = await tx.select().from(s.clientes).where(eq(s.clientes.id, clienteId));
@@ -54,50 +109,7 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string) {
     }
     if (input.tipo === 'retirada') taxa = 0;
 
-    let subtotal = 0; let custoTotal = 0; let custoCompleto = true;
-    const linhas: (typeof s.pedidoItens.$inferInsert)[] = [];
-    for (const it of input.itens) {
-      if (!(it.quantidade > 0)) throw new ErroNegocio('quantidade_invalida', 'Quantidade inválida');
-      let preco = 0; let custo: number | null = null; let descricao = ''; let escolhas: unknown = null;
-      if (it.comboVarianteId) {
-        const [v] = await tx.select().from(s.comboVariantes).where(eq(s.comboVariantes.id, it.comboVarianteId));
-        if (!v || !v.ativo) throw new ErroNegocio('combo_invalido', 'Variante de combo inválida');
-        const [combo] = await tx.select().from(s.combos).where(eq(s.combos.id, v.comboId));
-        const [carne] = await tx.select().from(s.produtos).where(eq(s.produtos.id, v.carneProdutoId));
-        const itensCombo = await tx.select().from(s.comboItens).where(eq(s.comboItens.comboId, v.comboId));
-        preco = toCents(v.preco);
-        custo = custoVariante(itensCombo, v.carneProdutoId, custos, it.refrigeranteId);
-        descricao = `${combo.nome} – ${carne.nome}`;
-        let refri: (typeof s.produtos.$inferSelect) | undefined;
-        if (it.refrigeranteId) {
-          [refri] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.refrigeranteId));
-          if (refri) descricao += ` · Refri: ${refri.nome}`;
-        }
-        // Composição snapshot (para a comanda mostrar o detalhe do combo): resolve carne e refrigerante escolhidos.
-        const nomesInsumo = await tx.select().from(s.produtos);
-        const nome = (id: string) => nomesInsumo.find((p) => p.id === id)?.nome ?? '';
-        const composicao = itensCombo.map((ci) => ({
-          nome: ci.ehCarneEscolhida ? carne.nome : ci.grupoEscolha === 'refrigerante' && refri ? refri.nome : nome(ci.produtoId!),
-          quantidade: Number(ci.quantidade),
-        }));
-        escolhas = { refrigeranteId: it.refrigeranteId, composicao };
-      } else if (it.produtoId) {
-        const [p] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.produtoId));
-        if (!p || !p.ativo) throw new ErroNegocio('produto_invalido', 'Produto inválido');
-        if (!p.permiteFracionado && !Number.isInteger(it.quantidade)) throw new ErroNegocio('fracionado', `${p.nome} não permite quantidade fracionada`);
-        preco = p.vendidoAPrecoDeCusto && it.precoUnitario != null ? toCents(it.precoUnitario) : toCents(p.precoVenda);
-        custo = p.vendidoAPrecoDeCusto ? preco : custos.get(p.id) ?? null;
-        descricao = p.nome;
-      } else throw new ErroNegocio('item_invalido', 'Informe produto ou combo');
-      const sub = Math.round(preco * it.quantidade);
-      subtotal += sub;
-      if (custo == null) custoCompleto = false; else custoTotal += Math.round(custo * it.quantidade);
-      linhas.push({
-        pedidoId: '', produtoId: it.produtoId ?? null, comboVarianteId: it.comboVarianteId ?? null, descricaoSnapshot: descricao,
-        quantidade: String(it.quantidade), precoUnitarioSnapshot: fromCents(preco), custoUnitarioSnapshot: custo == null ? null : fromCents(custo),
-        subtotal: fromCents(sub), escolhas, observacao: it.observacao ?? null,
-      });
-    }
+    const { linhas, subtotal, custoTotal, custoCompleto } = await construirLinhas(tx, custos, input.itens);
     const desconto = toCents(input.desconto ?? 0);
     const total = Math.max(0, subtotal - desconto + taxa);
     const pagos = (input.pagamentos ?? []).reduce((a, p) => a + toCents(p.valor), 0);
@@ -118,6 +130,31 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string) {
       await tx.insert(s.pagamentos).values({ pedidoId: pedido.id, forma: p.forma, valor: fromCents(toCents(p.valor)) });
     }
     return pedido;
+  });
+}
+
+/** Substitui os itens de um pedido já confirmado (adicionar, remover, mudar quantidade) e recalcula os totais. */
+export async function atualizarItens(db: Db, pedidoId: string, itens: ItemInput[], usuario: string) {
+  if (!itens.length) throw new ErroNegocio('sem_itens', 'O pedido precisa de ao menos um item');
+  // Calculado fora da transação (como em criarPedido): dentro dela, tx é uma única conexão e não
+  // suporta as queries concorrentes que custosProdutos dispara em paralelo.
+  const custos = await custosProdutos(db);
+  return db.transaction(async (tx: Tx) => {
+    const [p] = await tx.select().from(s.pedidos).where(eq(s.pedidos.id, pedidoId));
+    if (!p) throw new ErroNegocio('nao_encontrado', 'Pedido não encontrado', 404);
+    if ((STATUS_EDICAO_BLOQUEADA as readonly string[]).includes(p.status)) throw new ErroNegocio('edicao_bloqueada', 'Pedido não pode mais ser editado');
+
+    const { linhas, subtotal, custoTotal, custoCompleto } = await construirLinhas(tx, custos, itens);
+    const total = Math.max(0, subtotal - toCents(p.desconto) + toCents(p.taxaEntrega));
+    const pagos = await tx.select({ v: sql<string>`coalesce(sum(valor),0)` }).from(s.pagamentos).where(eq(s.pagamentos.pedidoId, pedidoId));
+
+    await tx.delete(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
+    await tx.insert(s.pedidoItens).values(linhas.map((l) => ({ ...l, pedidoId })));
+    await tx.update(s.pedidos).set({
+      subtotal: fromCents(subtotal), total: fromCents(total), custoTotal: custoCompleto ? fromCents(custoTotal) : null,
+      statusPagamento: statusPagamentoDe(total, toCents(pagos[0].v)), updatedAt: new Date(),
+    }).where(eq(s.pedidos.id, pedidoId));
+    await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: p.status, usuario, nota: 'Itens do pedido alterados' });
   });
 }
 

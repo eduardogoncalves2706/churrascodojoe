@@ -92,7 +92,12 @@ export async function seed() {
     await db.insert(s.socios).values([{ nome: 'Sócio 1', percentual: '50' }, { nome: 'Sócio 2', percentual: '50' }]);
   }
   // Entrega grátis dentro de Canoas; fora de Canoas o valor é combinado à parte (taxa editável no pedido).
-  await db.insert(s.bairrosEntrega).values({ nome: 'Mathias Velho', cidade: 'Canoas', taxaEntrega: '0.00' }).onConflictDoNothing();
+  const BAIRROS_CANOAS = [
+    'Brigadeira', 'Centro', 'Estância Velha', 'Fátima', 'Guajuviras', 'Harmonia', 'Igara', 'Industrial',
+    'Marechal Rondon', 'Mathias Velho', 'Mato Grande', 'Niterói', 'Nossa Senhora das Graças', 'Olaria',
+    'Rio Branco', 'São José', 'São Luiz',
+  ];
+  await db.insert(s.bairrosEntrega).values(BAIRROS_CANOAS.map((nome) => ({ nome, cidade: 'Canoas', taxaEntrega: '0.00' }))).onConflictDoNothing();
 
   const cfg: Record<string, unknown> = {
     taxas_maquininha: { pix: 0.49, debito: 1.43, credito: 3.36, dinheiro: 0 }, horario_pico: { inicio: 11, fim: 14 }, dias_operacao: ['sab', 'dom'],

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toCents } from '@joe/shared';
+import { formatQtd, toCents } from '@joe/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, brl, brlC, num, type Row } from '../api';
@@ -8,9 +8,9 @@ import { Campo, Carregando, Erro } from '../components/ui';
 interface Item { key: string; produtoId?: string; varianteId?: string; refrigeranteId?: string; nome: string; precoCents: number; qtd: number; obs: string; fracionado: boolean; livre: boolean }
 interface Draft {
   telefone: string; nome: string; clienteId?: string; semCadastro: boolean; canal: string; tipo: string; agendar: boolean; quando: string;
-  itens: Item[]; enderecoTexto: string; bairroId: string; referencia: string; desconto: string; taxaManual: string; forma: string; trocoPara: string; pagarDepois: boolean; obs: string;
+  itens: Item[]; semEndereco: boolean; enderecoTexto: string; bairroId: string; referencia: string; desconto: string; taxaManual: string; forma: string; trocoPara: string; pagarDepois: boolean; obs: string;
 }
-const VAZIO: Draft = { telefone: '', nome: '', semCadastro: false, canal: 'whatsapp', tipo: 'entrega', agendar: false, quando: '', itens: [], enderecoTexto: '', bairroId: '', referencia: '', desconto: '', taxaManual: '', forma: 'pix', trocoPara: '', pagarDepois: false, obs: '' };
+const VAZIO: Draft = { telefone: '', nome: '', semCadastro: false, canal: 'whatsapp', tipo: 'entrega', agendar: false, quando: '', itens: [], semEndereco: false, enderecoTexto: '', bairroId: '', referencia: '', desconto: '', taxaManual: '', forma: 'pix', trocoPara: '', pagarDepois: false, obs: '' };
 const KEY = 'joe.rascunho';
 const carregarDraft = (): Draft => { try { return { ...VAZIO, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') }; } catch { return VAZIO; } };
 
@@ -99,7 +99,7 @@ export default function NovoPedido() {
   if (produtos.isError) return <Erro e={produtos.error} />;
 
   const lista = (produtos.data ?? []).filter((p) => p.ativo && p.disponivelHoje && abaDe(p.categoria) === aba);
-  const pronto = d.itens.length > 0 && (d.tipo === 'retirada' || (d.enderecoTexto && d.bairroId)) && (!d.agendar || d.quando);
+  const pronto = d.itens.length > 0 && (d.tipo === 'retirada' || d.semEndereco || (d.enderecoTexto && d.bairroId)) && (!d.agendar || d.quando);
 
   return (
     <div className="space-y-5 pb-44">
@@ -149,17 +149,22 @@ export default function NovoPedido() {
           <li key={i.key} className="py-2 space-y-1">
             <div className="flex items-center gap-2"><p className="flex-1 leading-tight">{i.nome}</p>
               {i.livre && <input aria-label="Preço" className="!w-24" inputMode="decimal" value={i.precoCents ? i.precoCents / 100 : ''} placeholder="R$" onChange={(e) => setItem(i.key, { precoCents: toCents(e.target.value || 0) })} />}
-              <button className="btn-ghost !px-3" aria-label="menos" onClick={() => passo(i, -1)}>−</button><span className="w-8 text-center font-display text-2xl">{i.qtd}</span><button className="btn-ghost !px-3" aria-label="mais" onClick={() => passo(i, 1)}>+</button></div>
+              <button className="btn-ghost !px-3" aria-label="menos" onClick={() => passo(i, -1)}>−</button><span className="w-10 text-center font-display text-2xl">{formatQtd(i.qtd)}</span><button className="btn-ghost !px-3" aria-label="mais" onClick={() => passo(i, 1)}>+</button></div>
             <input placeholder="Observação (ex.: ao ponto)" value={i.obs} onChange={(e) => setItem(i.key, { obs: e.target.value })} />
           </li>))}</ul>}
       </section>
 
       {d.tipo === 'entrega' && <section className="card space-y-3">
-        <h3 className="font-label font-bold uppercase text-gold">4 · Entrega</h3>
-        <Campo label="Endereço"><input value={d.enderecoTexto} onChange={(e) => up({ enderecoTexto: e.target.value })} placeholder="Rua, número" /></Campo>
-        <Campo label="Bairro"><select value={d.bairroId} onChange={(e) => up({ bairroId: e.target.value })}><option value="">Selecione…</option>{bairros.data?.filter((b) => b.atende).map((b) => <option key={b.id} value={b.id}>{b.nome} — {b.cidade} ({brl(b.taxaEntrega)})</option>)}</select></Campo>
-        <Campo label="Referência"><input value={d.referencia} onChange={(e) => up({ referencia: e.target.value })} /></Campo>
-        <Campo label="Taxa de entrega (editar se precisar)"><input inputMode="decimal" placeholder={bairro ? String(bairro.taxaEntrega) : '0'} value={d.taxaManual} onChange={(e) => up({ taxaManual: e.target.value })} /></Campo>
+        <div className="flex items-center justify-between"><h3 className="font-label font-bold uppercase text-gold">4 · Entrega</h3>
+          <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={d.semEndereco} onChange={(e) => up({ semEndereco: e.target.checked })} />Endereço depois</label></div>
+        {d.semEndereco
+          ? <p className="text-sm text-cream/60">Combina o endereço com o cliente e completa depois, no detalhe do pedido.</p>
+          : <>
+            <Campo label="Endereço"><input value={d.enderecoTexto} onChange={(e) => up({ enderecoTexto: e.target.value })} placeholder="Rua, número" /></Campo>
+            <Campo label="Bairro"><select value={d.bairroId} onChange={(e) => up({ bairroId: e.target.value })}><option value="">Selecione…</option>{bairros.data?.filter((b) => b.atende).map((b) => <option key={b.id} value={b.id}>{b.nome} — {b.cidade} ({brl(b.taxaEntrega)})</option>)}</select></Campo>
+            <Campo label="Referência"><input value={d.referencia} onChange={(e) => up({ referencia: e.target.value })} /></Campo>
+            <Campo label="Taxa de entrega (editar se precisar)"><input inputMode="decimal" placeholder={bairro ? String(bairro.taxaEntrega) : '0'} value={d.taxaManual} onChange={(e) => up({ taxaManual: e.target.value })} /></Campo>
+          </>}
       </section>}
 
       <section className="card space-y-3">

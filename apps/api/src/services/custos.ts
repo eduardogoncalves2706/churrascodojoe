@@ -2,8 +2,8 @@ import { toCents, custoProdutoCents, custoComboCents, margem } from '@joe/shared
 import type { Db } from '../db/client';
 import { schema as s } from '../db/client';
 
-/** custo (centavos) por produto, via ficha técnica. null = sem ficha. */
-export async function custosProdutos(db: Db): Promise<Map<string, number | null>> {
+/** custo (centavos) por produto, via ficha técnica. null = sem ficha. Aceita Db ou uma transação. */
+export async function custosProdutos(db: Pick<Db, 'select'>): Promise<Map<string, number | null>> {
   const [ins, ficha, prods] = await Promise.all([
     db.select({ id: s.insumos.id, custo: s.insumos.custoAtual }).from(s.insumos),
     db.select().from(s.fichaTecnica),

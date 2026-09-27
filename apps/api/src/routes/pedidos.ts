@@ -5,7 +5,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { isAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
-import { cancelarPedido, criarPedido, ErroNegocio, mudarStatus, registrarPagamento, resumoWhatsapp } from '../services/pedidos';
+import { atualizarItens, cancelarPedido, criarPedido, ErroNegocio, mudarStatus, registrarPagamento, resumoWhatsapp, STATUS_EDICAO_BLOQUEADA } from '../services/pedidos';
 
 export const pedidos = new Hono<Env>();
 const db = () => getDb();
@@ -74,7 +74,7 @@ pedidos.patch('/pedidos/:id', zValidator('json', z.object({
   const atual = await carregar(id);
   const b = c.req.valid('json');
   const { taxaEntrega, desconto, ...resto } = b;
-  const edicaoBloqueada = ['saiu_entrega', 'entregue', 'retirado', 'cancelado'].includes(atual.status);
+  const edicaoBloqueada = (STATUS_EDICAO_BLOQUEADA as readonly string[]).includes(atual.status);
   const soMotoboy = Object.keys(resto).length === 1 && 'motoboyId' in resto && taxaEntrega === undefined && desconto === undefined;
   if (edicaoBloqueada && !soMotoboy) throw new ErroNegocio('edicao_bloqueada', 'Pedido não pode mais ser editado');
   const set: Record<string, unknown> = { ...resto, updatedAt: new Date() };
@@ -88,6 +88,12 @@ pedidos.patch('/pedidos/:id', zValidator('json', z.object({
   }
   await db().update(s.pedidos).set(set).where(eq(s.pedidos.id, id));
   return c.json(await carregar(id));
+});
+
+pedidos.put('/pedidos/:id/itens', zValidator('json', z.array(itemSchema).min(1)), async (c) => {
+  await atualizarItens(db(), c.req.param('id'), c.req.valid('json'), c.get('user').nome);
+  const p = await carregar(c.req.param('id'));
+  return c.json(isAdmin(c) ? p : stripCustos(p));
 });
 
 pedidos.post('/pedidos/:id/status', zValidator('json', z.object({ para: z.enum(STATUS_PEDIDO) })), async (c) => {

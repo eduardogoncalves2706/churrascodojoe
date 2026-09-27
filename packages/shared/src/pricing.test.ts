@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { custoProdutoCents, margem, custoComboCents, arredondarPreco, aplicarPercentual } from './index';
+import { custoProdutoCents, margem, custoComboCents, arredondarPreco, aplicarPercentual, formatQtd } from './index';
 
 describe('custo e margem (números da planilha)', () => {
   it('espeto de picanha: R$50/kg, 0,9 espeto/kg', () => {
@@ -36,5 +36,14 @@ describe('reajuste', () => {
   });
   it('aplica percentual em centavos', () => {
     expect(aplicarPercentual(8990, 10)).toBe(9889);
+  });
+});
+
+describe('formatQtd', () => {
+  it('mostra meio como fração', () => {
+    expect(formatQtd(0.5)).toBe('1/2');
+    expect(formatQtd(1.5)).toBe('1 1/2');
+    expect(formatQtd(1)).toBe('1');
+    expect(formatQtd(2)).toBe('2');
   });
 });

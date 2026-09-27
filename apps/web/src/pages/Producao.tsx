@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { formatQtd } from '@joe/shared';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, hoje, type Row } from '../api';
@@ -22,7 +23,7 @@ export default function Producao() {
       {q.isLoading && <Carregando />}{q.data && !q.data.pedidos && <Vazio>Sem pedidos para esta data.</Vazio>}
       {q.data && q.data.pedidos > 0 && <>
         <section className="card"><h3 className="font-label font-bold uppercase text-gold mb-2">A preparar ({q.data.pedidos} pedidos)</h3>
-          <table className="w-full"><tbody>{q.data.produtos.map((p: Row) => <tr key={p.produtoId}><td className="td">{p.nome}</td><td className="td text-right font-display text-3xl text-gold">{p.quantidade}</td><td className="td text-cream/60 w-20">{p.unidade}</td></tr>)}</tbody></table></section>
+          <table className="w-full"><tbody>{q.data.produtos.map((p: Row) => <tr key={p.produtoId}><td className="td">{p.nome}</td><td className="td text-right font-display text-3xl text-gold">{formatQtd(p.quantidade)}</td><td className="td text-cream/60 w-20">{p.unidade}</td></tr>)}</tbody></table></section>
         <section className="card"><h3 className="font-label font-bold uppercase text-gold mb-2">Insumos necessários</h3>
           <table className="w-full"><thead><tr><th className="th">Insumo</th><th className="th text-right">Precisa</th><th className="th">Em estoque</th></tr></thead><tbody>
             {q.data.insumos.map((i: Row) => <tr key={i.insumoId}><td className="td">{i.nome}</td><td className="td text-right">{i.quantidade} {i.unidade}</td>

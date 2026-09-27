@@ -93,4 +93,43 @@ describe('fluxo de novo pedido', () => {
     const r = await call('/pedidos', { method: 'POST', body: JSON.stringify({ itens: [{ produtoId: prods.find((p: any) => p.nome === 'Picanha').id, quantidade: 0.5 }], canal: 'balcao', tipo: 'retirada' }) });
     expect(r.status).toBe(400);
   });
+
+  it('permite editar os itens até o pedido ser retirado/entregue', async () => {
+    const prods = await json(await call('/produtos'));
+    const coca = prods.find((p: any) => p.nome === 'Coca');
+    const guarana = prods.find((p: any) => p.nome === 'Guaraná');
+    const r = await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'Edição', canal: 'balcao', tipo: 'retirada', itens: [{ produtoId: coca.id, quantidade: 1 }] }) });
+    const p = await json(r);
+    expect(Number(p.total)).toBe(15);
+
+    const editado = await json(await call(`/pedidos/${p.id}/itens`, { method: 'PUT', body: JSON.stringify([{ produtoId: coca.id, quantidade: 2 }, { produtoId: guarana.id, quantidade: 1 }]) }));
+    expect(Number(editado.total)).toBe(42);
+    expect(editado.itens).toHaveLength(2);
+
+    await call(`/pedidos/${p.id}/status`, { method: 'POST', body: JSON.stringify({ para: 'em_preparo' }) });
+    await call(`/pedidos/${p.id}/status`, { method: 'POST', body: JSON.stringify({ para: 'pronto' }) });
+    await call(`/pedidos/${p.id}/status`, { method: 'POST', body: JSON.stringify({ para: 'retirado' }) });
+
+    const bloqueado = await call(`/pedidos/${p.id}/itens`, { method: 'PUT', body: JSON.stringify([{ produtoId: coca.id, quantidade: 1 }]) });
+    expect(bloqueado.status).toBe(400);
+  });
+});
+
+describe('clientes', () => {
+  it('reaproveita cliente pelo telefone em vez de duplicar', async () => {
+    const tel = `5551${Math.floor(10000000 + Math.random() * 89999999)}`;
+    const c1 = await json(await call('/clientes', { method: 'POST', body: JSON.stringify({ nome: 'Fulano', telefone: tel }) }));
+    const c2 = await json(await call('/clientes', { method: 'POST', body: JSON.stringify({ nome: 'Fulano da Silva', telefone: tel }) }));
+    expect(c2.id).toBe(c1.id);
+    expect(c2.nome).toBe('Fulano da Silva');
+    expect(c2.jaExistia).toBe(true);
+  });
+
+  it('sem telefone, usa o nome (sem diferenciar maiúsculas) para não duplicar', async () => {
+    const nome = `Cliente Sem Fone ${Date.now()}`;
+    const c1 = await json(await call('/clientes', { method: 'POST', body: JSON.stringify({ nome }) }));
+    expect(c1.telefone).toBeNull();
+    const c2 = await json(await call('/clientes', { method: 'POST', body: JSON.stringify({ nome: nome.toUpperCase() }) }));
+    expect(c2.id).toBe(c1.id);
+  });
 });
