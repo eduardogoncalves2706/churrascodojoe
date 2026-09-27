@@ -14,7 +14,7 @@ test('novo pedido em tela de 360px: combo + carne, retirada, pix, comanda', asyn
   await page.getByRole('button', { name: /Picanha/ }).click();
   await page.getByRole('listitem').filter({ hasText: 'Picanha' }).getByRole('button', { name: 'mais' }).click();
 
-  await expect(page.getByText('R$ 359,79').last()).toBeVisible(); // 139,99 + 2 × 109,90
+  await expect(page.getByText('R$ 367,99').last()).toBeVisible(); // 149,99 + 2 × 109,00
   await page.getByRole('button', { name: 'Confirmar pedido' }).click();
 
   await expect(page.getByRole('heading', { name: /confirmado/ })).toBeVisible();

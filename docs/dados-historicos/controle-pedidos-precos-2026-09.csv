@@ -1,0 +1,38 @@
+🔥 CHURRASCO DO JOE - TABELA DE PREÇOS,,
+Cadastro de itens e preços — usado pelos cálculos automáticos da aba Pedidos,,
+Categoria,Item,Preço Unitário (R$)
+Combo 1 (2 pessoas),Combo 1 - Com Costela,"R$ 149,99"
+Combo 1 (2 pessoas),Combo 1 - Com Vazio,"R$ 164,99"
+Combo 1 (2 pessoas),Combo 1 - Com Picanha,"R$ 184,99"
+Combo 2 (4 pessoas),Combo 2 - Com Costela,"R$ 259,99"
+Combo 2 (4 pessoas),Combo 2 - Com Vazio,"R$ 274,99"
+Combo 2 (4 pessoas),Combo 2 - Com Picanha,"R$ 299,99"
+Carnes,1 Espeto de Maminha/Vazio/Alcatra,"R$ 89,90"
+Carnes,1/2 Espeto de Maminha/Vazio/Alcatra,"R$ 44,90"
+Carnes,1 Espeto de Costela Bovina,"R$ 64,90"
+Carnes,1/2 Espeto de Costela Bovina,"R$ 32,45"
+Carnes,1 Espeto de Picanha,"R$ 109,00"
+Carnes,1/2 Espeto de Picanha,"R$ 54,50"
+Carnes,1 Espeto de Sobrecoxa,"R$ 49,90"
+Carnes,1/2 Espeto de Sobrecoxa,"R$ 24,95"
+Carnes,1 Espeto de Salsichão,"R$ 59,90"
+Carnes,1/2 Espeto de Salsichão,"R$ 29,95"
+Carnes,1 Espeto de Coraçãozinho,"R$ 49,90"
+Carnes,1/2 Espeto de Coraçãozinho,"R$ 24,95"
+Carnes,1 Espeto de Pão de Alho,"R$ 29,90"
+Carnes,1/2 Espeto de Pão de Alho,"R$ 14,95"
+Complementos,Porção de Arroz Branco (500g),"R$ 9,99"
+Complementos,Porção Maionese de Batata (300g),"R$ 13,99"
+Complementos,Geleia defumada,"R$ 29,90"
+Complementos,Quindim,"R$ 7,00"
+Complementos,Conne especial,"R$ 12,00"
+Complementos,Pudim P,"R$ 10,00"
+Complementos,Pudim G,"R$ 35,00"
+Complementos,Tortinha de Limão,"R$ 10,00"
+Complementos,Conne tradicional,"R$ 10,00"
+Complementos,Cerveja Heineken,"R$ 9,99"
+Complementos,Cerveja Corona,"R$ 9,99"
+Complementos,Refrigerante 2L,"R$ 15,00"
+,,
+⚠️ Edite os preços acima quando reajustar o cardápio — a aba Pedidos recalcula sozinha.,,
+Refrigerante 2L: sabor (Pepsi/Coca-Cola/Guaraná) — anotar na coluna Observações do pedido.,,

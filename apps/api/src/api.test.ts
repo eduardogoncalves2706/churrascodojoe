@@ -10,7 +10,7 @@ describe('tabela de preços e combos (seed da planilha)', () => {
     const admin = await json(await call('/produtos'));
     const picanha = admin.find((p: any) => p.nome === 'Picanha');
     expect(picanha.custoCents).toBe(5556);
-    expect(picanha.margemPct).toBeCloseTo(49.4, 1);
+    expect(picanha.margemPct).toBeCloseTo(49.0, 1);
     const op = await json(await call('/produtos', { role: 'operador' }));
     expect(op[0]).not.toHaveProperty('custoCents');
     expect(op[0]).not.toHaveProperty('margemPct');
@@ -19,7 +19,7 @@ describe('tabela de preços e combos (seed da planilha)', () => {
   it('combo 1 costela: custo ~R$63,74', async () => {
     const combos = await json(await call('/combos'));
     const v = combos.find((c: any) => c.nome.startsWith('Combo 1')).variantes.find((x: any) => x.carne === 'Costela');
-    expect(v.precoCents).toBe(13999);
+    expect(v.precoCents).toBe(14999);
     expect(v.custoCents).toBeGreaterThan(6370);
     expect(v.custoCents).toBeLessThan(6380);
   });
@@ -44,7 +44,9 @@ describe('fluxo de novo pedido', () => {
     const combos = await json(await call('/combos'));
     const coca = prods.find((p: any) => p.nome === 'Coca');
     const picanha = prods.find((p: any) => p.nome === 'Picanha');
+    const precoPicanha = Number(picanha.precoVenda);
     const variante = combos.find((c: any) => c.nome.startsWith('Combo 2')).variantes.find((x: any) => x.carne === 'Picanha');
+    const precoVariante = variante.precoCents / 100;
 
     const tel = `55519${Math.floor(10000000 + Math.random() * 89999999)}`;
     const r = await call('/pedidos', { method: 'POST', body: JSON.stringify({
@@ -54,7 +56,7 @@ describe('fluxo de novo pedido', () => {
     }) });
     expect(r.status).toBe(201);
     const p = await json(r);
-    expect(Number(p.total)).toBeCloseTo(299.99 + 2 * 109.9, 2);
+    expect(Number(p.total)).toBeCloseTo(precoVariante + 2 * precoPicanha, 2);
     expect(p.statusPagamento).toBe('parcial');
 
     const det = await json(await call(`/pedidos/${p.id}`));
@@ -66,14 +68,14 @@ describe('fluxo de novo pedido', () => {
     const detOp = await json(await call(`/pedidos/${p.id}`, { role: 'operador' }));
     expect(detOp).not.toHaveProperty('custoTotal');
 
-    const pg = await json(await call(`/pedidos/${p.id}/pagamentos`, { method: 'POST', body: JSON.stringify({ forma: 'dinheiro', valor: 419.79 }) }));
+    const pg = await json(await call(`/pedidos/${p.id}/pagamentos`, { method: 'POST', body: JSON.stringify({ forma: 'dinheiro', valor: Number(p.total) - 100 }) }));
     expect(pg.statusPagamento).toBe('pago');
 
     // snapshot: mudar preço não altera pedido antigo
-    await call(`/produtos/${picanha.id}`, { method: 'PATCH', body: JSON.stringify({ precoVenda: 120 }) });
+    await call(`/produtos/${picanha.id}`, { method: 'PATCH', body: JSON.stringify({ precoVenda: precoPicanha + 10 }) });
     const depois = await json(await call(`/pedidos/${p.id}`));
-    expect(Number(depois.itens[1].precoUnitarioSnapshot)).toBe(109.9);
-    await call(`/produtos/${picanha.id}`, { method: 'PATCH', body: JSON.stringify({ precoVenda: 109.9, motivo: 'restaura teste' }) });
+    expect(Number(depois.itens[1].precoUnitarioSnapshot)).toBe(precoPicanha);
+    await call(`/produtos/${picanha.id}`, { method: 'PATCH', body: JSON.stringify({ precoVenda: precoPicanha, motivo: 'restaura teste' }) });
 
     expect((await call(`/pedidos/${p.id}/status`, { method: 'POST', body: JSON.stringify({ para: 'saiu_entrega' }) })).status).toBe(400);
     expect((await call(`/pedidos/${p.id}/status`, { method: 'POST', body: JSON.stringify({ para: 'em_preparo' }) })).status).toBe(200);
