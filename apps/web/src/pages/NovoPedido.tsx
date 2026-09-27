@@ -26,47 +26,54 @@ function preencherCliente(c: Row, setD: (fn: (x: Draft) => Draft) => void) {
   }));
 }
 
-/** Rascunho do pedido + busca automática de cliente já cadastrado, por telefone ou por nome. */
+/** Rascunho do pedido + busca de cliente já cadastrado, disparada pelo botão "Buscar cliente". */
 function useNovoPedidoState() {
   const [d, setD] = useState<Draft>(carregarDraft);
   const [sugestoes, setSugestoes] = useState<Row[]>([]);
   const [erroBusca, setErroBusca] = useState<string | null>(null);
+  const [mensagemBusca, setMensagemBusca] = useState<string | null>(null);
+  const [buscando, setBuscando] = useState(false);
   const up = (p: Partial<Draft>) => setD((x) => ({ ...x, ...p }));
 
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* noop */ } }, [d]);
 
   const digitos = d.telefone.replace(/\D/g, '');
-  useEffect(() => {
-    if (digitos.length < 10 || d.semCadastro) return;
-    const t = setTimeout(async () => {
-      try { preencherCliente(await api<Row>(`/clientes/por-telefone/${digitos}`), setD); setSugestoes([]); setErroBusca(null); }
-      catch (e) {
-        setD((x) => ({ ...x, clienteId: undefined }));
-        // 404 = telefone não cadastrado ainda, normal. Outros erros (ex.: sessão expirada) ficam visíveis.
-        setErroBusca(e instanceof ApiError && e.status === 404 ? null : e instanceof Error ? e.message : 'Erro ao buscar cliente');
-      }
-    }, 350);
-    return () => clearTimeout(t);
-  }, [digitos, d.semCadastro]);
 
-  // busca instantânea por nome: sugere clientes já cadastrados enquanto digita
-  useEffect(() => {
-    if (d.semCadastro || d.clienteId || d.nome.trim().length < 2) { setSugestoes([]); return; }
-    const t = setTimeout(async () => {
-      try { setSugestoes((await api<Row[]>(`/clientes?busca=${encodeURIComponent(d.nome.trim())}`)).slice(0, 5)); setErroBusca(null); }
-      catch (e) { setSugestoes([]); setErroBusca(e instanceof Error ? e.message : 'Erro ao buscar clientes'); }
-    }, 350);
-    return () => clearTimeout(t);
-  }, [d.nome, d.semCadastro, d.clienteId]);
+  /** Busca por telefone (se preenchido) senão por nome; só roda quando o usuário pede. */
+  const buscarCliente = async () => {
+    setSugestoes([]); setErroBusca(null); setMensagemBusca(null); setBuscando(true);
+    try {
+      if (digitos.length >= 10) {
+        try { preencherCliente(await api<Row>(`/clientes/por-telefone/${digitos}`), setD); return; }
+        catch (e) {
+          if (!(e instanceof ApiError && e.status === 404)) throw e;
+          setMensagemBusca('Telefone não cadastrado — será criado um cliente novo.');
+          return;
+        }
+      }
+      if (d.nome.trim().length >= 2) {
+        const achados = (await api<Row[]>(`/clientes?busca=${encodeURIComponent(d.nome.trim())}`)).slice(0, 5);
+        if (achados.length === 1) preencherCliente(achados[0], setD);
+        else if (achados.length > 1) setSugestoes(achados);
+        else setMensagemBusca('Nenhum cliente encontrado com esse nome — será criado um novo.');
+        return;
+      }
+      setMensagemBusca('Preencha o telefone ou o nome para buscar.');
+    } catch (e) {
+      setErroBusca(e instanceof Error ? e.message : 'Erro ao buscar cliente');
+    } finally {
+      setBuscando(false);
+    }
+  };
 
   const selecionarSugestao = (c: Row) => { preencherCliente(c, setD); setSugestoes([]); };
 
-  return { d, setD, up, digitos, sugestoes, erroBusca, selecionarSugestao };
+  return { d, setD, up, digitos, sugestoes, erroBusca, mensagemBusca, buscando, buscarCliente, selecionarSugestao };
 }
 
 export default function NovoPedido() {
   const qc = useQueryClient();
-  const { d, setD, up, digitos, sugestoes, erroBusca, selecionarSugestao } = useNovoPedidoState();
+  const { d, setD, up, digitos, sugestoes, erroBusca, mensagemBusca, buscando, buscarCliente, selecionarSugestao } = useNovoPedidoState();
   const [aba, setAba] = useState<(typeof ABAS)[number]>('Combos');
   const [combo, setCombo] = useState<{ combo: Row; variante?: Row } | null>(null);
   const [feito, setFeito] = useState<Row | null>(null);
@@ -141,7 +148,6 @@ export default function NovoPedido() {
       <section className="card space-y-3">
         <div className="flex items-center justify-between"><h3 className="font-label font-bold uppercase text-gold">1 · Cliente</h3>
           <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={d.semCadastro} onChange={(e) => up({ semCadastro: e.target.checked, clienteId: undefined })} />Sem cadastro (balcão)</label></div>
-        {!d.semCadastro && <Campo label="Telefone (WhatsApp)"><input inputMode="tel" placeholder="(51) 99999-9999" value={d.telefone} onChange={(e) => up({ telefone: e.target.value, clienteId: undefined })} /></Campo>}
         <div className="relative">
           <Campo label={d.clienteId ? 'Cliente encontrado' : 'Nome'}><input value={d.nome} onChange={(e) => up({ nome: e.target.value, clienteId: undefined })} placeholder="Nome do cliente" autoComplete="off" /></Campo>
           {sugestoes.length > 0 && <ul className="absolute z-10 left-0 right-0 mt-1 card p-1 space-y-1">{sugestoes.map((s) => (
@@ -149,6 +155,9 @@ export default function NovoPedido() {
               <span className="font-label font-bold">{s.nome}</span>{s.telefone && <span className="text-cream/60 text-sm"> · {s.telefone}</span>}</button></li>
           ))}</ul>}
         </div>
+        {!d.semCadastro && <Campo label="Telefone (WhatsApp)"><input inputMode="tel" placeholder="(51) 99999-9999" value={d.telefone} onChange={(e) => up({ telefone: e.target.value, clienteId: undefined })} /></Campo>}
+        {!d.semCadastro && <button type="button" className="btn-ghost w-full" disabled={buscando} onClick={buscarCliente}>{buscando ? 'Buscando…' : 'Buscar cliente'}</button>}
+        {mensagemBusca && <p className="text-gold text-sm">{mensagemBusca}</p>}
         {erroBusca && <p className="text-primary-hover text-sm">Não consegui buscar clientes: {erroBusca}. Tente recarregar a página.</p>}
         {d.clienteId && historico.data && (
           <div className="border-t border-white/10 pt-2 text-sm">
