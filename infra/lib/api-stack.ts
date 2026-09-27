@@ -39,6 +39,7 @@ export class ApiStack extends cdk.Stack {
       logRetention: logs.RetentionDays.ONE_MONTH,
       environment: {
         DB_HOST: props.db.dbInstanceEndpointAddress, DB_PORT: props.db.dbInstanceEndpointPort, DB_NAME: props.dbName, DB_USER: props.dbUser, DB_SECRET_ARN: props.secret.secretArn,
+        COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         NODE_OPTIONS: '--enable-source-maps',
       },
       bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true, target: 'node24', mainFields: ['module', 'main'],
@@ -47,6 +48,15 @@ export class ApiStack extends cdk.Stack {
     });
     // permissões mínimas: ler só o segredo do banco; rede: só a porta do Postgres
     props.secret.grantRead(fn);
+    // Tela de Usuários: convidar, listar, ativar/desativar, trocar grupo — restrito a este user pool
+    fn.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      actions: [
+        'cognito-idp:AdminCreateUser', 'cognito-idp:AdminAddUserToGroup', 'cognito-idp:AdminRemoveUserFromGroup',
+        'cognito-idp:AdminDisableUser', 'cognito-idp:AdminEnableUser', 'cognito-idp:AdminListGroupsForUser',
+        'cognito-idp:ListUsers', 'cognito-idp:ListUsersInGroup',
+      ],
+      resources: [props.userPool.userPoolArn],
+    }));
 
     this.httpApi = new apigw.HttpApi(this, 'Http', { apiName: `${props.prefix}-api`, description: 'Churrasco do Joe — API' });
     const integration = new HttpLambdaIntegration('LambdaInt', fn);

@@ -14,6 +14,7 @@ import PedidoDetalhe from './pages/PedidoDetalhe';
 import Pedidos from './pages/Pedidos';
 import Producao from './pages/Producao';
 import Bairros from './pages/Bairros';
+import Usuarios from './pages/Usuarios';
 
 const main = [
   { to: '/novo', label: 'Novo pedido', admin: false }, { to: '/pedidos', label: 'Pedidos', admin: false },
@@ -22,6 +23,7 @@ const main = [
 const mais = [
   { to: '/cardapio', label: 'Cardápio', admin: false }, { to: '/combos', label: 'Combos', admin: false }, { to: '/clientes', label: 'Clientes', admin: false },
   { to: '/insumos', label: 'Insumos e ficha', admin: true }, { to: '/bairros', label: 'Bairros e taxas', admin: true },
+  { to: '/usuarios', label: 'Usuários', admin: true },
 ];
 
 function Link({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
@@ -62,6 +64,7 @@ export default function App() {
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/insumos" element={admin ? <Insumos /> : <Navigate to="/" />} />
               <Route path="/bairros" element={admin ? <Bairros /> : <Navigate to="/" />} />
+              <Route path="/usuarios" element={admin ? <Usuarios /> : <Navigate to="/" />} />
             </Routes>
           </main>
           <nav className="no-print md:hidden fixed bottom-0 inset-x-0 bg-surface border-t border-white/10 grid grid-cols-4 z-20 pb-[env(safe-area-inset-bottom)]">

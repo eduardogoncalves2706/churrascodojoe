@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatQtd, toCents } from '@joe/shared';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, brl, brlC, num, type Row } from '../api';
 import { Campo, Carregando, Erro } from '../components/ui';
@@ -17,34 +17,60 @@ const carregarDraft = (): Draft => { try { return { ...VAZIO, ...JSON.parse(loca
 const ABAS = ['Combos', 'Carnes', 'Acompanhamentos', 'Bebidas', 'Doces & Geleias'] as const;
 const abaDe = (cat: string) => (cat === 'carne' ? 'Carnes' : cat === 'acompanhamento' ? 'Acompanhamentos' : cat === 'bebida' ? 'Bebidas' : 'Doces & Geleias');
 
-export default function NovoPedido() {
-  const qc = useQueryClient();
+/** Aplica os dados de um cliente encontrado (por telefone ou por nome) ao rascunho do pedido. */
+function preencherCliente(c: Row, setD: (fn: (x: Draft) => Draft) => void) {
+  const e = c.enderecos?.find((x: Row) => x.principal) ?? c.enderecos?.[0];
+  setD((x) => ({
+    ...x, clienteId: c.id, nome: c.nome, telefone: c.telefone ?? x.telefone,
+    ...(e ? { enderecoTexto: `${e.logradouro}${e.numero ? `, ${e.numero}` : ''}`, bairroId: e.bairroId ?? '', referencia: e.referencia ?? '' } : {}),
+  }));
+}
+
+/** Rascunho do pedido + busca automática de cliente já cadastrado, por telefone ou por nome. */
+function useNovoPedidoState() {
   const [d, setD] = useState<Draft>(carregarDraft);
-  const [aba, setAba] = useState<(typeof ABAS)[number]>('Combos');
-  const [combo, setCombo] = useState<{ combo: Row; variante?: Row } | null>(null);
-  const [feito, setFeito] = useState<Row | null>(null);
-  const [copiado, setCopiado] = useState(false);
+  const [sugestoes, setSugestoes] = useState<Row[]>([]);
   const up = (p: Partial<Draft>) => setD((x) => ({ ...x, ...p }));
 
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* noop */ } }, [d]);
 
-  const produtos = useQuery({ queryKey: ['produtos'], queryFn: () => api<Row[]>('/produtos') });
-  const combos = useQuery({ queryKey: ['combos'], queryFn: () => api<Row[]>('/combos') });
-  const bairros = useQuery({ queryKey: ['bairros'], queryFn: () => api<Row[]>('/bairros') });
-
-  // busca instantânea por telefone
   const digitos = d.telefone.replace(/\D/g, '');
   useEffect(() => {
     if (digitos.length < 10 || d.semCadastro) return;
     const t = setTimeout(async () => {
-      try {
-        const c = await api<Row>(`/clientes/por-telefone/${digitos}`);
-        const e = c.enderecos?.find((x: Row) => x.principal) ?? c.enderecos?.[0];
-        setD((x) => ({ ...x, clienteId: c.id, nome: c.nome, ...(e ? { enderecoTexto: `${e.logradouro}${e.numero ? `, ${e.numero}` : ''}`, bairroId: e.bairroId ?? '', referencia: e.referencia ?? '' } : {}) }));
-      } catch { setD((x) => ({ ...x, clienteId: undefined })); }
+      try { preencherCliente(await api<Row>(`/clientes/por-telefone/${digitos}`), setD); setSugestoes([]); }
+      catch { setD((x) => ({ ...x, clienteId: undefined })); }
     }, 350);
     return () => clearTimeout(t);
   }, [digitos, d.semCadastro]);
+
+  // busca instantânea por nome: sugere clientes já cadastrados enquanto digita
+  useEffect(() => {
+    if (d.semCadastro || d.clienteId || d.nome.trim().length < 2) { setSugestoes([]); return; }
+    const t = setTimeout(async () => {
+      try { setSugestoes((await api<Row[]>(`/clientes?busca=${encodeURIComponent(d.nome.trim())}`)).slice(0, 5)); }
+      catch { setSugestoes([]); }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [d.nome, d.semCadastro, d.clienteId]);
+
+  const selecionarSugestao = (c: Row) => { preencherCliente(c, setD); setSugestoes([]); };
+
+  return { d, setD, up, digitos, sugestoes, selecionarSugestao };
+}
+
+export default function NovoPedido() {
+  const qc = useQueryClient();
+  const { d, setD, up, digitos, sugestoes, selecionarSugestao } = useNovoPedidoState();
+  const [aba, setAba] = useState<(typeof ABAS)[number]>('Combos');
+  const [combo, setCombo] = useState<{ combo: Row; variante?: Row } | null>(null);
+  const [feito, setFeito] = useState<Row | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
+  const produtos = useQuery({ queryKey: ['produtos'], queryFn: () => api<Row[]>('/produtos') });
+  const combos = useQuery({ queryKey: ['combos'], queryFn: () => api<Row[]>('/combos') });
+  const bairros = useQuery({ queryKey: ['bairros'], queryFn: () => api<Row[]>('/bairros') });
+  const historico = useQuery({ queryKey: ['cliente-pedidos', d.clienteId], queryFn: () => api<Row[]>(`/clientes/${d.clienteId}/pedidos`), enabled: !!d.clienteId });
 
   const bairro = bairros.data?.find((b) => b.id === d.bairroId);
   const subtotal = d.itens.reduce((a, i) => a + Math.round(i.precoCents * i.qtd), 0);
@@ -100,6 +126,8 @@ export default function NovoPedido() {
 
   const lista = (produtos.data ?? []).filter((p) => p.ativo && p.disponivelHoje && abaDe(p.categoria) === aba);
   const pronto = d.itens.length > 0 && (d.tipo === 'retirada' || d.semEndereco || (d.enderecoTexto && d.bairroId)) && (!d.agendar || d.quando);
+  const pedidosValidos = (historico.data ?? []).filter((p) => p.status !== 'cancelado');
+  const totalGasto = pedidosValidos.reduce((a, p) => a + Number(p.total), 0);
 
   return (
     <div className="space-y-5 pb-44">
@@ -109,7 +137,21 @@ export default function NovoPedido() {
         <div className="flex items-center justify-between"><h3 className="font-label font-bold uppercase text-gold">1 · Cliente</h3>
           <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={d.semCadastro} onChange={(e) => up({ semCadastro: e.target.checked, clienteId: undefined })} />Sem cadastro (balcão)</label></div>
         {!d.semCadastro && <Campo label="Telefone (WhatsApp)"><input inputMode="tel" placeholder="(51) 99999-9999" value={d.telefone} onChange={(e) => up({ telefone: e.target.value, clienteId: undefined })} /></Campo>}
-        <Campo label={d.clienteId ? 'Cliente encontrado' : 'Nome'}><input value={d.nome} onChange={(e) => up({ nome: e.target.value })} placeholder="Nome do cliente" /></Campo>
+        <div className="relative">
+          <Campo label={d.clienteId ? 'Cliente encontrado' : 'Nome'}><input value={d.nome} onChange={(e) => up({ nome: e.target.value, clienteId: undefined })} placeholder="Nome do cliente" autoComplete="off" /></Campo>
+          {sugestoes.length > 0 && <ul className="absolute z-10 left-0 right-0 mt-1 card p-1 space-y-1">{sugestoes.map((s) => (
+            <li key={s.id}><button type="button" className="w-full text-left px-2 py-1 rounded hover:bg-primary/20" onClick={() => selecionarSugestao(s)}>
+              <span className="font-label font-bold">{s.nome}</span>{s.telefone && <span className="text-cream/60 text-sm"> · {s.telefone}</span>}</button></li>
+          ))}</ul>}
+        </div>
+        {d.clienteId && historico.data && (
+          <div className="border-t border-white/10 pt-2 text-sm">
+            {pedidosValidos.length === 0 ? <p className="text-cream/60">Primeiro pedido desse cliente.</p> : <>
+              <p className="text-gold font-label font-bold uppercase">{pedidosValidos.length} pedido{pedidosValidos.length > 1 ? 's' : ''} anterior{pedidosValidos.length > 1 ? 'es' : ''} · {brl(totalGasto)} no total</p>
+              <ul className="mt-1 space-y-0.5 text-cream/70">{pedidosValidos.slice(0, 5).map((p) => <li key={p.id}>{p.dataOperacao} · #{num(p.numeroDia)} · {brl(p.total)} · {p.status}</li>)}</ul>
+            </>}
+          </div>
+        )}
       </section>
 
       <section className="card space-y-3">

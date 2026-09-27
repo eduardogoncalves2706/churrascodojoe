@@ -30,6 +30,11 @@ export class DataStack extends cdk.Stack {
       service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
       subnets: { subnets: [this.vpc.isolatedSubnets[0]] },
     });
+    // Tela de Usuários (Cognito AdminCreateUser etc.) — sem isso a Lambda não alcança o Cognito e trava até o timeout.
+    this.vpc.addInterfaceEndpoint('CognitoEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.COGNITO_IDP,
+      subnets: { subnets: [this.vpc.isolatedSubnets[0]] },
+    });
 
     this.db = new rds.DatabaseInstance(this, 'Db', {
       instanceIdentifier: `${props.prefix}-db`,

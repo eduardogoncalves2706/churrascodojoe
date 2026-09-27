@@ -36,6 +36,12 @@ describe('tabela de preços e combos (seed da planilha)', () => {
   it('operador não acessa insumos', async () => {
     expect((await call('/insumos', { role: 'operador' })).status).toBe(403);
   });
+
+  it('operador não acessa usuários; sem Cognito configurado, admin recebe 501 claro', async () => {
+    expect((await call('/usuarios', { role: 'operador' })).status).toBe(403);
+    const r = await call('/usuarios');
+    expect(r.status).toBe(501);
+  });
 });
 
 describe('fluxo de novo pedido', () => {

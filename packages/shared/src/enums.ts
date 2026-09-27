@@ -4,6 +4,7 @@ export const CANAIS = ['whatsapp', 'instagram', 'balcao', 'telefone', 'outro'] a
 export const TIPOS_PEDIDO = ['entrega', 'retirada'] as const;
 export const FORMAS_PAGAMENTO = ['pix', 'dinheiro', 'credito', 'debito', 'outro'] as const;
 export const PAPEIS = ['admin', 'operador'] as const;
+export type Papel = (typeof PAPEIS)[number];
 
 /** Próximo status no fluxo, conforme o tipo do pedido. */
 export function proximoStatus(atual: StatusPedido, tipo: 'entrega' | 'retirada'): StatusPedido | null {
