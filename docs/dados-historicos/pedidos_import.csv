@@ -1,0 +1,363 @@
+pedido_ref,data_pedido,data_entrega,numero_dia,nome_cliente,telefone_cliente,tipo,status_pedido,forma_pagamento,status_pagamento,total_pedido,valor_pago,valor_motoboy,observacoes,item_seq,produto,quantidade,valor_item,preco_unitario,origem_item,alerta,planilha_origem
+P1-001,2026-07-03,2026-07-04,1,Fernando Tavares,+5551994285211,retirada,retirado,debito,pago,184.99,184.99,0.00,Irá retirar as 13h,1,Combo 1 - Picanha,1,184.99,184.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-002,2026-07-04,2026-07-04,2,Estevan,+5551999260617,retirada,retirado,credito,pago,144.75,144.75,0.00,2 espetos de frango + 1/2 vazio,1,Sobrecoxa,2,99.80,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-002,2026-07-04,2026-07-04,2,Estevan,+5551999260617,retirada,retirado,credito,pago,144.75,144.75,0.00,2 espetos de frango + 1/2 vazio,2,Vazio,0.5,44.90,89.80,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-002,2026-07-04,2026-07-04,2,Estevan,+5551999260617,retirada,retirado,credito,pago,144.75,144.75,0.00,2 espetos de frango + 1/2 vazio,3,Ajuste manual,1,0.05,0.05,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-003,2026-07-04,2026-07-04,3,Uylson,+5551992905437,retirada,retirado,credito,pago,149.99,149.99,0.00,Maionese temperada,1,Combo 1 - Costela,1,149.99,149.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-004,2026-07-04,2026-07-04,4,Claudio,+5551981876316,retirada,retirado,debito,pago,69.00,69.00,0.00,Maionese temperada,1,Picanha,0.5,54.50,109.00,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-004,2026-07-04,2026-07-04,4,Claudio,+5551981876316,retirada,retirado,debito,pago,69.00,69.00,0.00,Maionese temperada,2,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-004,2026-07-04,2026-07-04,4,Claudio,+5551981876316,retirada,retirado,debito,pago,69.00,69.00,0.00,Maionese temperada,3,Ajuste manual,1,0.51,0.51,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-005,2026-07-04,2026-07-04,5,Marli,+5551993800354,retirada,retirado,dinheiro,pago,55.00,55.00,0.00,,1,Costela,1,64.90,64.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-005,2026-07-04,2026-07-04,5,Marli,+5551993800354,retirada,retirado,dinheiro,pago,55.00,55.00,0.00,,2,Desconto,1,-9.90,-9.90,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-006,2026-07-04,2026-07-04,6,Felipe,+5551985452023,retirada,retirado,debito,pago,182.82,182.82,0.00,Maionese temperada,1,Vazio,1,89.90,89.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-006,2026-07-04,2026-07-04,6,Felipe,+5551985452023,retirada,retirado,debito,pago,182.82,182.82,0.00,Maionese temperada,2,Picanha,0.5,54.50,109.00,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-006,2026-07-04,2026-07-04,6,Felipe,+5551985452023,retirada,retirado,debito,pago,182.82,182.82,0.00,Maionese temperada,3,Sobrecoxa (unidade),2,23.80,11.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-006,2026-07-04,2026-07-04,6,Felipe,+5551985452023,retirada,retirado,debito,pago,182.82,182.82,0.00,Maionese temperada,4,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-006,2026-07-04,2026-07-04,6,Felipe,+5551985452023,retirada,retirado,debito,pago,182.82,182.82,0.00,Maionese temperada,5,Ajuste manual,1,0.63,0.63,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-008,2026-07-04,2026-07-04,7,Andrieli,,retirada,retirado,pix,pago,80.00,80.00,0.00,Preço de custo,1,Ajuste manual,1,80.00,80.00,planilha,"venda a preço de custo, itens não detalhados",Controle_Pedidos 04.07 a 12.07
+P1-009,2026-07-04,2026-07-04,8,Paula,,retirada,retirado,pix,pago,80.00,80.00,0.00,Preço de custo,1,Ajuste manual,1,80.00,80.00,planilha,"venda a preço de custo, itens não detalhados",Controle_Pedidos 04.07 a 12.07
+P1-009B,2026-07-04,2026-07-05,1,Kalila,+5551984312150,retirada,retirado,debito,pago,164.99,164.99,0.00,Retirada 12h + Maionese temperada,1,Combo 1 - Vazio,1,164.99,164.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-010,2026-07-05,2026-07-05,2,Gustavo,+5551995919930,retirada,retirado,credito,pago,133.79,133.79,0.00,Maionese temperada,1,Vazio,1,89.90,89.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-010,2026-07-05,2026-07-05,2,Gustavo,+5551995919930,retirada,retirado,credito,pago,133.79,133.79,0.00,Maionese temperada,2,Pão de alho (bandeja),1,29.90,29.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-010,2026-07-05,2026-07-05,2,Gustavo,+5551995919930,retirada,retirado,credito,pago,133.79,133.79,0.00,Maionese temperada,3,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-011,2026-07-05,2026-07-05,3,Janine,+5551984960632,retirada,retirado,debito,pago,44.95,44.95,0.00,,1,Maminha,0.5,44.90,89.80,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-011,2026-07-05,2026-07-05,3,Janine,+5551984960632,retirada,retirado,debito,pago,44.95,44.95,0.00,,2,Ajuste manual,1,0.05,0.05,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-012,2026-07-05,2026-07-05,4,Rodrigo,+5551995496088,entrega,entregue,dinheiro,pago,184.99,184.99,0.00,Jonata fez a tele,1,Combo 1 - Picanha,1,184.99,184.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-013,2026-07-05,2026-07-05,5,Fabiane,,entrega,entregue,pix,pago,30.97,30.97,0.00,Jonata fez a tele,1,Pão de alho (unidade),1,14.90,14.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-013,2026-07-05,2026-07-05,5,Fabiane,,entrega,entregue,pix,pago,30.97,30.97,0.00,Jonata fez a tele,2,Sobrecoxa (unidade),1,11.90,11.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-013,2026-07-05,2026-07-05,5,Fabiane,,entrega,entregue,pix,pago,30.97,30.97,0.00,Jonata fez a tele,3,Salsichão (unidade),1,8.50,8.50,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-013,2026-07-05,2026-07-05,5,Fabiane,,entrega,entregue,pix,pago,30.97,30.97,0.00,Jonata fez a tele,4,Desconto,1,-4.33,-4.33,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-014,2026-07-05,2026-07-05,6,Juliana,+5551984332951,retirada,retirado,debito,pago,139.80,139.80,0.00,,1,Costela,1,64.90,64.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-014,2026-07-05,2026-07-05,6,Juliana,+5551984332951,retirada,retirado,debito,pago,139.80,139.80,0.00,,2,Salsichão,1,59.90,59.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-014,2026-07-05,2026-07-05,6,Juliana,+5551984332951,retirada,retirado,debito,pago,139.80,139.80,0.00,,3,Refrigerante 2L,1,15.00,15.00,descrição da planilha,sabor não informado,Controle_Pedidos 04.07 a 12.07
+P1-015,2026-07-05,2026-07-05,7,Marlene,+5551984915215,retirada,retirado,dinheiro,pago,100.00,100.00,0.00,,1,Costela,1,64.90,64.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-015,2026-07-05,2026-07-05,7,Marlene,+5551984915215,retirada,retirado,dinheiro,pago,100.00,100.00,0.00,,2,Sobrecoxa (unidade),2,23.80,11.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-015,2026-07-05,2026-07-05,7,Marlene,+5551984915215,retirada,retirado,dinheiro,pago,100.00,100.00,0.00,,3,Ajuste manual,1,11.30,11.30,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-016,2026-07-05,2026-07-05,8,Dereck,+5551982729387,entrega,entregue,pix,pago,227.66,227.66,0.00,"600g maionese, 1kg arroz. Jonata fez a tele",1,Picanha,1,109.00,109.00,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-016,2026-07-05,2026-07-05,8,Dereck,+5551982729387,entrega,entregue,pix,pago,227.66,227.66,0.00,"600g maionese, 1kg arroz. Jonata fez a tele",2,Maionese 300 g,2,27.98,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-016,2026-07-05,2026-07-05,8,Dereck,+5551982729387,entrega,entregue,pix,pago,227.66,227.66,0.00,"600g maionese, 1kg arroz. Jonata fez a tele",3,Arroz 500 g,2,19.98,9.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-016,2026-07-05,2026-07-05,8,Dereck,+5551982729387,entrega,entregue,pix,pago,227.66,227.66,0.00,"600g maionese, 1kg arroz. Jonata fez a tele",4,Coração,0.5,24.95,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-016,2026-07-05,2026-07-05,8,Dereck,+5551982729387,entrega,entregue,pix,pago,227.66,227.66,0.00,"600g maionese, 1kg arroz. Jonata fez a tele",5,Pão de alho (bandeja),1,29.90,29.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-016,2026-07-05,2026-07-05,8,Dereck,+5551982729387,entrega,entregue,pix,pago,227.66,227.66,0.00,"600g maionese, 1kg arroz. Jonata fez a tele",6,Coca zero,1,15.00,15.00,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-016,2026-07-05,2026-07-05,8,Dereck,+5551982729387,entrega,entregue,pix,pago,227.66,227.66,0.00,"600g maionese, 1kg arroz. Jonata fez a tele",7,Ajuste manual,1,0.85,0.85,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-017,2026-07-05,2026-07-05,9,Patrick,,entrega,entregue,pix,pago,190.00,190.00,0.00,Maionese temperada. Jonata fez a tele,1,Combo 1 - Vazio,1,164.99,164.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-017,2026-07-05,2026-07-05,9,Patrick,,entrega,entregue,pix,pago,190.00,190.00,0.00,Maionese temperada. Jonata fez a tele,2,Sobrecoxa (unidade),2,23.80,11.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-017,2026-07-05,2026-07-05,9,Patrick,,entrega,entregue,pix,pago,190.00,190.00,0.00,Maionese temperada. Jonata fez a tele,3,Ajuste manual,1,1.21,1.21,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-018,2026-07-05,2026-07-05,10,Rafael,+5551984036408,retirada,retirado,pix,pago,168.79,168.79,0.00,Maionese temperada,1,Coração,1,49.90,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-018,2026-07-05,2026-07-05,10,Rafael,+5551984036408,retirada,retirado,pix,pago,168.79,168.79,0.00,Maionese temperada,2,Vazio,1,89.90,89.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-018,2026-07-05,2026-07-05,10,Rafael,+5551984036408,retirada,retirado,pix,pago,168.79,168.79,0.00,Maionese temperada,3,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-018,2026-07-05,2026-07-05,10,Rafael,+5551984036408,retirada,retirado,pix,pago,168.79,168.79,0.00,Maionese temperada,4,Guaraná,1,15.00,15.00,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-019,2026-07-11,2026-07-11,1,Guilherme,+5551989472616,entrega,entregue,pix,pago,184.99,184.99,0.00,Jonata fez a tele,1,Combo 1 - Picanha,1,184.99,184.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-020,2026-07-11,2026-07-11,2,Leonardo,+5551986404192,retirada,retirado,pix,pago,155.00,155.00,0.00,,1,Salsichão,1,59.90,59.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-020,2026-07-11,2026-07-11,2,Leonardo,+5551986404192,retirada,retirado,pix,pago,155.00,155.00,0.00,,2,Coração,1,49.90,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-020,2026-07-11,2026-07-11,2,Leonardo,+5551986404192,retirada,retirado,pix,pago,155.00,155.00,0.00,,3,Vazio,1,89.90,89.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-020,2026-07-11,2026-07-11,2,Leonardo,+5551986404192,retirada,retirado,pix,pago,155.00,155.00,0.00,,4,Costela,1,64.90,64.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-020,2026-07-11,2026-07-11,2,Leonardo,+5551986404192,retirada,retirado,pix,pago,155.00,155.00,0.00,,5,Desconto,1,-109.60,-109.60,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-021,2026-07-11,2026-07-11,3,Amanda,+5551992667888,entrega,entregue,credito,pago,63.99,63.99,0.00,Maionese sem tempero. Jonata fez a tele,1,Vazio,1,89.90,89.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-021,2026-07-11,2026-07-11,3,Amanda,+5551992667888,entrega,entregue,credito,pago,63.99,63.99,0.00,Maionese sem tempero. Jonata fez a tele,2,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-021,2026-07-11,2026-07-11,3,Amanda,+5551992667888,entrega,entregue,credito,pago,63.99,63.99,0.00,Maionese sem tempero. Jonata fez a tele,3,Desconto,1,-39.90,-39.90,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-022,2026-07-11,2026-07-11,4,Douglas,+5551997861996,entrega,entregue,pix,pago,38.99,38.99,0.00,Maionese sem tempero. Eduardo levou,1,Sobrecoxa,1,49.90,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-022,2026-07-11,2026-07-11,4,Douglas,+5551997861996,entrega,entregue,pix,pago,38.99,38.99,0.00,Maionese sem tempero. Eduardo levou,2,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-022,2026-07-11,2026-07-11,4,Douglas,+5551997861996,entrega,entregue,pix,pago,38.99,38.99,0.00,Maionese sem tempero. Eduardo levou,3,Desconto,1,-24.90,-24.90,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-023,2026-07-11,2026-07-11,5,Cristina,+5551986030772,entrega,entregue,pix,pago,25.00,25.00,0.00,Eduardo levou,1,Sobrecoxa,1,49.90,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-023,2026-07-11,2026-07-11,5,Cristina,+5551986030772,entrega,entregue,pix,pago,25.00,25.00,0.00,Eduardo levou,2,Desconto,1,-24.90,-24.90,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-024,2026-07-12,2026-07-12,1,Leonardo,+5551985258563,entrega,entregue,pix,pago,99.80,99.80,10.00,Motoboy,1,Coração,1,49.90,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-024,2026-07-12,2026-07-12,1,Leonardo,+5551985258563,entrega,entregue,pix,pago,99.80,99.80,10.00,Motoboy,2,Sobrecoxa,1,49.90,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-025,2026-07-12,2026-07-12,2,Edson,+5551981898659,retirada,retirado,pix,pago,135.97,135.97,0.00,Maionese temperada,1,Picanha,0.5,54.50,109.00,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-025,2026-07-12,2026-07-12,2,Edson,+5551981898659,retirada,retirado,pix,pago,135.97,135.97,0.00,Maionese temperada,2,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-025,2026-07-12,2026-07-12,2,Edson,+5551981898659,retirada,retirado,pix,pago,135.97,135.97,0.00,Maionese temperada,3,Pão de alho (bandeja),1,29.90,29.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-025,2026-07-12,2026-07-12,2,Edson,+5551981898659,retirada,retirado,pix,pago,135.97,135.97,0.00,Maionese temperada,4,Ajuste manual,1,37.58,37.58,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-026,2026-07-12,2026-07-12,3,João,+5551996772410,retirada,retirado,pix,pago,89.90,89.90,0.00,,1,Maminha,1,89.90,89.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-027,2026-07-12,2026-07-12,4,Simone,+5551999774765,retirada,retirado,debito,pago,118.60,118.60,0.00,,1,Costela,1,64.90,64.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-027,2026-07-12,2026-07-12,4,Simone,+5551999774765,retirada,retirado,debito,pago,118.60,118.60,0.00,,2,Sobrecoxa (unidade),2,23.80,11.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-027,2026-07-12,2026-07-12,4,Simone,+5551999774765,retirada,retirado,debito,pago,118.60,118.60,0.00,,3,Pão de alho (bandeja),1,29.90,29.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-028,2026-07-12,2026-07-12,5,Gislaine,+5551991760043,entrega,entregue,debito,pago,113.88,113.88,10.00,Motoboy,1,Arroz 500 g,1,9.99,9.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-028,2026-07-12,2026-07-12,5,Gislaine,+5551991760043,entrega,entregue,debito,pago,113.88,113.88,10.00,Motoboy,2,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-028,2026-07-12,2026-07-12,5,Gislaine,+5551991760043,entrega,entregue,debito,pago,113.88,113.88,10.00,Motoboy,3,Vazio,1,89.90,89.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-029,2026-07-12,2026-07-12,6,Michele,+5551985082623,retirada,retirado,pix,pago,94.80,94.80,0.00,,1,Pão de alho (bandeja),1,29.90,29.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-029,2026-07-12,2026-07-12,6,Michele,+5551985082623,retirada,retirado,pix,pago,94.80,94.80,0.00,,2,Coração,1,49.90,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-029,2026-07-12,2026-07-12,6,Michele,+5551985082623,retirada,retirado,pix,pago,94.80,94.80,0.00,,3,Refrigerante 2L,1,15.00,15.00,descrição da planilha,sabor não informado,Controle_Pedidos 04.07 a 12.07
+P1-030,2026-07-12,2026-07-12,7,Cleber,+5551991240681,entrega,entregue,credito,pago,150.00,150.00,10.00,Motoboy,1,Maminha,1,89.90,89.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-030,2026-07-12,2026-07-12,7,Cleber,+5551991240681,entrega,entregue,credito,pago,150.00,150.00,10.00,Motoboy,2,Coração,0.5,24.95,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-030,2026-07-12,2026-07-12,7,Cleber,+5551991240681,entrega,entregue,credito,pago,150.00,150.00,10.00,Motoboy,3,Sobrecoxa,0.5,24.95,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-030,2026-07-12,2026-07-12,7,Cleber,+5551991240681,entrega,entregue,credito,pago,150.00,150.00,10.00,Motoboy,4,Arroz 500 g,1,9.99,9.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-030,2026-07-12,2026-07-12,7,Cleber,+5551991240681,entrega,entregue,credito,pago,150.00,150.00,10.00,Motoboy,5,Ajuste manual,1,0.21,0.21,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-031,2026-07-12,2026-07-12,8,Andreia,+5551993811143,retirada,retirado,debito,pago,118.88,118.88,0.00,,1,Vazio,0.5,44.90,89.80,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-031,2026-07-12,2026-07-12,8,Andreia,+5551993811143,retirada,retirado,debito,pago,118.88,118.88,0.00,,2,Sobrecoxa,1,49.90,49.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-031,2026-07-12,2026-07-12,8,Andreia,+5551993811143,retirada,retirado,debito,pago,118.88,118.88,0.00,,3,Pão de alho (bandeja),1,29.90,29.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-031,2026-07-12,2026-07-12,8,Andreia,+5551993811143,retirada,retirado,debito,pago,118.88,118.88,0.00,,4,Arroz 500 g,1,9.99,9.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-031,2026-07-12,2026-07-12,8,Andreia,+5551993811143,retirada,retirado,debito,pago,118.88,118.88,0.00,,5,Maionese 300 g,1,13.99,13.99,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-031,2026-07-12,2026-07-12,8,Andreia,+5551993811143,retirada,retirado,debito,pago,118.88,118.88,0.00,,6,Desconto,1,-29.80,-29.80,planilha,diferença entre o total cobrado e a tabela de preços,Controle_Pedidos 04.07 a 12.07
+P1-032,2026-07-12,2026-07-12,9,Felipe,+5551991502294,retirada,retirado,pix,pago,96.30,96.30,0.00,,1,Picanha,0.5,54.50,109.00,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-032,2026-07-12,2026-07-12,9,Felipe,+5551991502294,retirada,retirado,pix,pago,96.30,96.30,0.00,,2,Sobrecoxa (unidade),1,11.90,11.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P1-032,2026-07-12,2026-07-12,9,Felipe,+5551991502294,retirada,retirado,pix,pago,96.30,96.30,0.00,,3,Pão de alho (bandeja),1,29.90,29.90,descrição da planilha,,Controle_Pedidos 04.07 a 12.07
+P2-001,2026-07-19,2026-07-19,1,Juliano,,entrega,entregue,pix,pago,164.99,164.99,10.00,"Rua Dom João Becker 1852, apartamento 338J, Fátima 12:30:00 Coca normal Maionese só batata",1,Combo 1 - Vazio,1,164.99,164.99,planilha,refri do combo: Coca,Controle_Pedidos_Churrasco
+P2-002,2026-07-19,2026-07-19,2,Cristina,+5551986030772,entrega,entregue,pix,pago,138.74,138.74,10.00,Rua Monte Castelo 741 nossa senhora das Graças 12:30 Maionese temperada,1,Sobrecoxa,2,99.80,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-002,2026-07-19,2026-07-19,2,Cristina,+5551986030772,entrega,entregue,pix,pago,138.74,138.74,10.00,Rua Monte Castelo 741 nossa senhora das Graças 12:30 Maionese temperada,2,Coração,0.5,24.95,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-002,2026-07-19,2026-07-19,2,Cristina,+5551986030772,entrega,entregue,pix,pago,138.74,138.74,10.00,Rua Monte Castelo 741 nossa senhora das Graças 12:30 Maionese temperada,3,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-003,2026-07-19,2026-07-19,3,Felipe,,retirada,retirado,pix,pago,166.60,166.60,0.00,12h,1,Vazio,1,89.90,89.90,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-003,2026-07-19,2026-07-19,3,Felipe,,retirada,retirado,pix,pago,166.60,166.60,0.00,12h,2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-003,2026-07-19,2026-07-19,3,Felipe,,retirada,retirado,pix,pago,166.60,166.60,0.00,12h,3,Ajuste manual,1,26.80,26.80,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-004,2026-07-19,2026-07-19,4,Daniel,,retirada,retirado,debito,pago,46.44,46.44,0.00,OK,1,Costela,0.5,32.45,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-004,2026-07-19,2026-07-19,4,Daniel,,retirada,retirado,debito,pago,46.44,46.44,0.00,OK,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-005,2026-07-19,2026-07-19,5,Vinicius,,retirada,retirado,pix,pago,115.40,115.40,0.00,Ok,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-005,2026-07-19,2026-07-19,5,Vinicius,,retirada,retirado,pix,pago,115.40,115.40,0.00,Ok,2,Ajuste manual,1,25.50,25.50,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-006,2026-07-19,2026-07-19,6,Andrieli,,entrega,entregue,pix,pago,89.85,89.85,10.00,Ok,1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-006,2026-07-19,2026-07-19,6,Andrieli,,entrega,entregue,pix,pago,89.85,89.85,10.00,Ok,2,Coração,0.5,24.95,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-007,2026-07-19,2026-07-19,7,Dereck,+5551982729387,entrega,entregue,pix,pago,187.73,187.73,10.00,Maionese temperada Coca zero,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-007,2026-07-19,2026-07-19,7,Dereck,+5551982729387,entrega,entregue,pix,pago,187.73,187.73,10.00,Maionese temperada Coca zero,2,Maionese 300 g,2,27.98,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-007,2026-07-19,2026-07-19,7,Dereck,+5551982729387,entrega,entregue,pix,pago,187.73,187.73,10.00,Maionese temperada Coca zero,3,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-007,2026-07-19,2026-07-19,7,Dereck,+5551982729387,entrega,entregue,pix,pago,187.73,187.73,10.00,Maionese temperada Coca zero,4,Coração,0.5,24.95,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-007,2026-07-19,2026-07-19,7,Dereck,+5551982729387,entrega,entregue,pix,pago,187.73,187.73,10.00,Maionese temperada Coca zero,5,Coca zero,1,15.00,15.00,planilha,,Controle_Pedidos_Churrasco
+P2-008,2026-07-19,2026-07-19,8,Jander,,retirada,retirado,debito,pago,178.68,178.68,0.00,Maionese temperada Coca normal,1,Salsichão,1,59.90,59.90,planilha,,Controle_Pedidos_Churrasco
+P2-008,2026-07-19,2026-07-19,8,Jander,,retirada,retirado,debito,pago,178.68,178.68,0.00,Maionese temperada Coca normal,2,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-008,2026-07-19,2026-07-19,8,Jander,,retirada,retirado,debito,pago,178.68,178.68,0.00,Maionese temperada Coca normal,3,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-008,2026-07-19,2026-07-19,8,Jander,,retirada,retirado,debito,pago,178.68,178.68,0.00,Maionese temperada Coca normal,4,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-008,2026-07-19,2026-07-19,8,Jander,,retirada,retirado,debito,pago,178.68,178.68,0.00,Maionese temperada Coca normal,5,Coca,1,15.00,15.00,planilha,Coca normal não existe no cardápio (só Coca zero),Controle_Pedidos_Churrasco
+P2-008,2026-07-19,2026-07-19,8,Jander,,retirada,retirado,debito,pago,178.68,178.68,0.00,Maionese temperada Coca normal,6,Ajuste manual,1,29.90,29.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-009,2026-07-25,2026-07-25,1,Wilson,,retirada,retirado,credito,pago,118.89,118.89,0.00,Maionese Só batata Coca-zero,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-009,2026-07-25,2026-07-25,1,Wilson,,retirada,retirado,credito,pago,118.89,118.89,0.00,Maionese Só batata Coca-zero,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-009,2026-07-25,2026-07-25,1,Wilson,,retirada,retirado,credito,pago,118.89,118.89,0.00,Maionese Só batata Coca-zero,3,Coca zero,1,15.00,15.00,planilha,,Controle_Pedidos_Churrasco
+P2-010,2026-07-25,2026-07-25,2,Douglas,+5551997861996,retirada,retirado,debito,pago,103.78,103.78,0.00,Maionese temperada,1,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-010,2026-07-25,2026-07-25,2,Douglas,+5551997861996,retirada,retirado,debito,pago,103.78,103.78,0.00,Maionese temperada,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-010,2026-07-25,2026-07-25,2,Douglas,+5551997861996,retirada,retirado,debito,pago,103.78,103.78,0.00,Maionese temperada,3,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-010,2026-07-25,2026-07-25,2,Douglas,+5551997861996,retirada,retirado,debito,pago,103.78,103.78,0.00,Maionese temperada,4,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-011,2026-07-25,2026-07-25,3,Felipe,,retirada,retirado,pix,pago,84.20,84.20,0.00,ok,1,Costela,0.5,32.45,64.90,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-011,2026-07-25,2026-07-25,3,Felipe,,retirada,retirado,pix,pago,84.20,84.20,0.00,ok,2,Coração,0.5,24.95,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-011,2026-07-25,2026-07-25,3,Felipe,,retirada,retirado,pix,pago,84.20,84.20,0.00,ok,3,Ajuste manual,1,26.80,26.80,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-012,2026-07-25,2026-07-25,4,Michele,+5551985082623,retirada,retirado,pix,pago,37.79,37.79,0.00,Ok,1,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-012,2026-07-25,2026-07-25,4,Michele,+5551985082623,retirada,retirado,pix,pago,37.79,37.79,0.00,Ok,2,Ajuste manual,1,23.80,23.80,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-013,2026-07-26,2026-07-26,1,Mirella,,entrega,entregue,pix,pago,61.44,61.44,10.00,"Pedido para as 12h Coca cola zero Maionese temperada Animale - R. Açucena, 1413 - Moinhos de Vento, Canoas - RS, 92025-840",1,Costela,0.5,32.45,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-013,2026-07-26,2026-07-26,1,Mirella,,entrega,entregue,pix,pago,61.44,61.44,10.00,"Pedido para as 12h Coca cola zero Maionese temperada Animale - R. Açucena, 1413 - Moinhos de Vento, Canoas - RS, 92025-840",2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-013,2026-07-26,2026-07-26,1,Mirella,,entrega,entregue,pix,pago,61.44,61.44,10.00,"Pedido para as 12h Coca cola zero Maionese temperada Animale - R. Açucena, 1413 - Moinhos de Vento, Canoas - RS, 92025-840",3,Coca zero,1,15.00,15.00,planilha,,Controle_Pedidos_Churrasco
+P2-014,2026-07-26,2026-07-26,2,Peter,,retirada,retirado,dinheiro,pago,143.60,143.60,0.00,2 Unidades de frango Vem buscar 12:30,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-014,2026-07-26,2026-07-26,2,Peter,,retirada,retirado,dinheiro,pago,143.60,143.60,0.00,2 Unidades de frango Vem buscar 12:30,2,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-014,2026-07-26,2026-07-26,2,Peter,,retirada,retirado,dinheiro,pago,143.60,143.60,0.00,2 Unidades de frango Vem buscar 12:30,3,Sobrecoxa (unidade),2,23.80,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-015,2026-07-26,2026-07-26,3,Dereck,+5551982729387,entrega,entregue,pix,pago,103.89,103.89,10.00,Maionese temperada Rua Guilherme Schell 5236 Ap 304 bloco B Centro - canoas Entrega 13h,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-015,2026-07-26,2026-07-26,3,Dereck,+5551982729387,entrega,entregue,pix,pago,103.89,103.89,10.00,Maionese temperada Rua Guilherme Schell 5236 Ap 304 bloco B Centro - canoas Entrega 13h,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-016,2026-07-26,2026-07-26,4,Michele,+5551985082623,entrega,entregue,pix,pago,165.68,165.68,10.00,Maionese temperada,1,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-016,2026-07-26,2026-07-26,4,Michele,+5551985082623,entrega,entregue,pix,pago,165.68,165.68,10.00,Maionese temperada,2,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-016,2026-07-26,2026-07-26,4,Michele,+5551985082623,entrega,entregue,pix,pago,165.68,165.68,10.00,Maionese temperada,3,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-016,2026-07-26,2026-07-26,4,Michele,+5551985082623,entrega,entregue,pix,pago,165.68,165.68,10.00,Maionese temperada,4,Ajuste manual,1,71.89,71.89,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-017,2026-07-26,2026-07-26,5,Patrick,,entrega,entregue,pix,pago,118.70,118.70,10.00,Maionese temperada Coca cola,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-017,2026-07-26,2026-07-26,5,Patrick,,entrega,entregue,pix,pago,118.70,118.70,10.00,Maionese temperada Coca cola,2,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-017,2026-07-26,2026-07-26,5,Patrick,,entrega,entregue,pix,pago,118.70,118.70,10.00,Maionese temperada Coca cola,3,Coca,1,15.00,15.00,planilha,Coca normal não existe no cardápio (só Coca zero),Controle_Pedidos_Churrasco
+P2-017,2026-07-26,2026-07-26,5,Patrick,,entrega,entregue,pix,pago,118.70,118.70,10.00,Maionese temperada Coca cola,4,Ajuste manual,1,28.90,28.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-018,2026-07-26,2026-07-26,6,Felipe,,retirada,retirado,pix,pago,90.25,90.25,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-018,2026-07-26,2026-07-26,6,Felipe,,retirada,retirado,pix,pago,90.25,90.25,0.00,Ok,2,Coração,0.5,24.95,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-018,2026-07-26,2026-07-26,6,Felipe,,retirada,retirado,pix,pago,90.25,90.25,0.00,Ok,3,Ajuste manual,1,20.40,20.40,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-019,2026-08-01,2026-08-01,1,Vera,,retirada,retirado,debito,pago,64.90,64.90,0.00,Ok,1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-020,2026-08-01,2026-08-01,2,Célio,,retirada,retirado,credito,pago,89.90,89.90,0.00,Ok,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-021,2026-08-01,2026-08-01,3,Jonatan,,retirada,retirado,pix,pago,48.99,48.99,0.00,Ok,1,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-021,2026-08-01,2026-08-01,3,Jonatan,,retirada,retirado,pix,pago,48.99,48.99,0.00,Ok,2,Ajuste manual,1,35.00,35.00,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-022,2026-08-01,2026-08-01,4,Gabriel,,retirada,retirado,pix,pago,154.86,154.86,0.00,Ok,1,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-022,2026-08-01,2026-08-01,4,Gabriel,,retirada,retirado,pix,pago,154.86,154.86,0.00,Ok,2,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-022,2026-08-01,2026-08-01,4,Gabriel,,retirada,retirado,pix,pago,154.86,154.86,0.00,Ok,3,Refrigerante 2L,1,15.00,15.00,planilha,sabor não informado,Controle_Pedidos_Churrasco
+P2-022,2026-08-01,2026-08-01,4,Gabriel,,retirada,retirado,pix,pago,154.86,154.86,0.00,Ok,4,Ajuste manual,1,115.88,115.88,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-023,2026-08-02,2026-08-02,1,Cristiano,,entrega,entregue,pix,pago,69.85,69.85,10.00,13h Residencial Poema - Bloco E - AP 508,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-023,2026-08-02,2026-08-02,1,Cristiano,,entrega,entregue,pix,pago,69.85,69.85,10.00,13h Residencial Poema - Bloco E - AP 508,2,Coração,0.5,24.95,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-024,2026-08-02,2026-08-02,2,Larissa,,entrega,entregue,pix,pago,184.99,184.99,10.00,"Maionese somente batata Coca normal Rua Dom João Becker, 1781 - Bloco F Apto 703",1,Combo 1 - Picanha,1,184.99,184.99,planilha,refri do combo: Coca,Controle_Pedidos_Churrasco
+P2-025,2026-08-02,2026-08-02,3,Fernando,,retirada,retirado,debito,pago,144.70,144.70,0.00,Ok,1,Costela,1,64.90,64.90,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-025,2026-08-02,2026-08-02,3,Fernando,,retirada,retirado,debito,pago,144.70,144.70,0.00,Ok,2,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-025,2026-08-02,2026-08-02,3,Fernando,,retirada,retirado,debito,pago,144.70,144.70,0.00,Ok,3,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-026,2026-08-02,2026-08-02,4,Brando,,retirada,retirado,pix,pago,94.59,94.59,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-026,2026-08-02,2026-08-02,4,Brando,,retirada,retirado,pix,pago,94.59,94.59,0.00,Ok,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-026,2026-08-02,2026-08-02,4,Brando,,retirada,retirado,pix,pago,94.59,94.59,0.00,Ok,3,Ajuste manual,1,35.70,35.70,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-027,2026-08-02,2026-08-02,5,Eduarda,,retirada,retirado,credito,pago,71.70,71.70,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-027,2026-08-02,2026-08-02,5,Eduarda,,retirada,retirado,credito,pago,71.70,71.70,0.00,Ok,2,Ajuste manual,1,26.80,26.80,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-028,2026-08-02,2026-08-02,6,Nicolas,,entrega,entregue,pix,pago,149.99,149.99,10.00,"Rua, Allan Kardec Lot Prata, 1032 - Fatima Maionese temperada Coca normal",1,Combo 1 - Costela,1,149.99,149.99,planilha,refri do combo: Coca,Controle_Pedidos_Churrasco
+P2-029,2026-08-09,2026-08-09,1,Simone,+5551999774765,entrega,entregue,dinheiro,pago,100.60,100.60,10.00,"Rua Oscar Pedro Kulzer, 1146 - Estância velha 12h Pagar em dinheiro na entrega",1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-029,2026-08-09,2026-08-09,1,Simone,+5551999774765,entrega,entregue,dinheiro,pago,100.60,100.60,10.00,"Rua Oscar Pedro Kulzer, 1146 - Estância velha 12h Pagar em dinheiro na entrega",2,Ajuste manual,1,35.70,35.70,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-030,2026-08-09,2026-08-09,2,Itamar,,retirada,retirado,credito,pago,138.09,138.09,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-030,2026-08-09,2026-08-09,2,Itamar,,retirada,retirado,credito,pago,138.09,138.09,0.00,Ok,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-030,2026-08-09,2026-08-09,2,Itamar,,retirada,retirado,credito,pago,138.09,138.09,0.00,Ok,3,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-030,2026-08-09,2026-08-09,2,Itamar,,retirada,retirado,credito,pago,138.09,138.09,0.00,Ok,4,Ajuste manual,1,49.30,49.30,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-031,2026-08-09,2026-08-09,3,Magali,,retirada,retirado,credito,pago,101.33,101.33,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-031,2026-08-09,2026-08-09,3,Magali,,retirada,retirado,credito,pago,101.33,101.33,0.00,Ok,2,Costela,0.5,32.45,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-031,2026-08-09,2026-08-09,3,Magali,,retirada,retirado,credito,pago,101.33,101.33,0.00,Ok,3,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-031,2026-08-09,2026-08-09,3,Magali,,retirada,retirado,credito,pago,101.33,101.33,0.00,Ok,4,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-032,2026-08-09,2026-08-09,4,Paula,,entrega,entregue,pix,pago,35.00,35.00,10.00,Ok,1,Ajuste manual,1,35.00,35.00,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-033,2026-08-09,2026-08-09,5,Leonardo,,retirada,pronto,pix,pago,140.00,140.00,0.00,Ok,1,Ajuste manual,1,140.00,140.00,planilha,itens avulsos não detalhados na planilha; nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-034,2026-08-15,2026-08-15,1,Fernando,,retirada,retirado,debito,pago,164.99,164.99,0.00,12h a 12:30 Maionese Temperada,1,Combo 1 - Vazio,1,164.99,164.99,planilha,refri do combo: Refrigerante 2L; nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-035,2026-08-15,2026-08-15,2,Brando,,retirada,retirado,credito,pago,71.58,71.58,0.00,12:30,1,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-035,2026-08-15,2026-08-15,2,Brando,,retirada,retirado,credito,pago,71.58,71.58,0.00,12:30,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-035,2026-08-15,2026-08-15,2,Brando,,retirada,retirado,credito,pago,71.58,71.58,0.00,12:30,3,Ajuste manual,1,47.60,47.60,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-036,2026-08-15,2026-08-15,3,Fabiano,,retirada,retirado,debito,pago,164.99,164.99,0.00,Maionese Temperada,1,Combo 1 - Vazio,1,164.99,164.99,planilha,refri do combo: Refrigerante 2L,Controle_Pedidos_Churrasco
+P2-037,2026-08-15,2026-08-15,4,João,+5551996772410,retirada,retirado,debito,pago,56.80,56.80,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-037,2026-08-15,2026-08-15,4,João,+5551996772410,retirada,retirado,debito,pago,56.80,56.80,0.00,Ok,2,Ajuste manual,1,11.90,11.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-038,2026-08-15,2026-08-15,5,Entregador,,retirada,retirado,pix,pago,23.80,23.80,0.00,Ok,1,Ajuste manual,1,23.80,23.80,planilha,itens avulsos não detalhados na planilha; venda interna/sem cliente cadastrado,Controle_Pedidos_Churrasco
+P2-039,2026-08-15,2026-08-15,6,Felipe,,retirada,retirado,pix,pago,121.60,121.60,0.00,oK,1,Vazio,0.5,44.90,89.80,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-039,2026-08-15,2026-08-15,6,Felipe,,retirada,retirado,pix,pago,121.60,121.60,0.00,oK,2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-039,2026-08-15,2026-08-15,6,Felipe,,retirada,retirado,pix,pago,121.60,121.60,0.00,oK,3,Ajuste manual,1,26.80,26.80,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-040,2026-08-16,2026-08-16,1,Paulo,+5551991011444,retirada,retirado,debito,pago,99.75,99.75,0.00,1/2 de sobrecoxa 1/2 de Vazio 1 de pão de alho Para as 13h,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-040,2026-08-16,2026-08-16,1,Paulo,+5551991011444,retirada,retirado,debito,pago,99.75,99.75,0.00,1/2 de sobrecoxa 1/2 de Vazio 1 de pão de alho Para as 13h,2,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-040,2026-08-16,2026-08-16,1,Paulo,+5551991011444,retirada,retirado,debito,pago,99.75,99.75,0.00,1/2 de sobrecoxa 1/2 de Vazio 1 de pão de alho Para as 13h,3,Sobrecoxa,0.5,24.95,49.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-041,2026-08-16,2026-08-16,2,Estevan,+5551999260617,retirada,retirado,debito,pago,189.70,189.70,0.00,Para 12:30,1,Sobrecoxa,2,99.80,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-041,2026-08-16,2026-08-16,2,Estevan,+5551999260617,retirada,retirado,debito,pago,189.70,189.70,0.00,Para 12:30,2,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-042,2026-08-16,2026-08-16,3,Wagner,,retirada,retirado,credito,pago,169.70,169.70,0.00,ok,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-042,2026-08-16,2026-08-16,3,Wagner,,retirada,retirado,credito,pago,169.70,169.70,0.00,ok,2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-042,2026-08-16,2026-08-16,3,Wagner,,retirada,retirado,credito,pago,169.70,169.70,0.00,ok,3,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-043,2026-08-16,2026-08-16,4,Patrick,,entrega,entregue,pix,pago,149.99,149.99,0.00,"Rua Gaivotas, 132 - Igara 12:30 Coca cola Maionese temperada",1,Combo 1 - Costela,1,149.99,149.99,planilha,refri do combo: Coca,Controle_Pedidos_Churrasco
+P2-044,2026-08-16,2026-08-16,5,Felipe,,retirada,retirado,pix,pago,115.20,115.20,0.00,1 Salsichão 1 Frango,1,Vazio,0.5,44.90,89.80,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-044,2026-08-16,2026-08-16,5,Felipe,,retirada,retirado,pix,pago,115.20,115.20,0.00,1 Salsichão 1 Frango,2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-044,2026-08-16,2026-08-16,5,Felipe,,retirada,retirado,pix,pago,115.20,115.20,0.00,1 Salsichão 1 Frango,3,Salsichão (unidade),1,8.50,8.50,extraído das observações,,Controle_Pedidos_Churrasco
+P2-044,2026-08-16,2026-08-16,5,Felipe,,retirada,retirado,pix,pago,115.20,115.20,0.00,1 Salsichão 1 Frango,4,Sobrecoxa (unidade),1,11.90,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-045,2026-08-22,2026-08-22,1,Nunes,,retirada,retirado,debito,pago,255.49,255.49,0.00,Maionese batata,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-045,2026-08-22,2026-08-22,1,Nunes,,retirada,retirado,debito,pago,255.49,255.49,0.00,Maionese batata,2,Salsichão,1,59.90,59.90,planilha,,Controle_Pedidos_Churrasco
+P2-045,2026-08-22,2026-08-22,1,Nunes,,retirada,retirado,debito,pago,255.49,255.49,0.00,Maionese batata,3,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-045,2026-08-22,2026-08-22,1,Nunes,,retirada,retirado,debito,pago,255.49,255.49,0.00,Maionese batata,4,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-045,2026-08-22,2026-08-22,1,Nunes,,retirada,retirado,debito,pago,255.49,255.49,0.00,Maionese batata,5,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-045,2026-08-22,2026-08-22,1,Nunes,,retirada,retirado,debito,pago,255.49,255.49,0.00,Maionese batata,6,Ajuste manual,1,11.90,11.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-046,2026-08-22,2026-08-22,2,Janine,+5551984960632,retirada,retirado,credito,pago,98.50,98.50,0.00,2 Frangos + 2 Pão de alho,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-046,2026-08-22,2026-08-22,2,Janine,+5551984960632,retirada,retirado,credito,pago,98.50,98.50,0.00,2 Frangos + 2 Pão de alho,2,Sobrecoxa (unidade),2,23.80,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-046,2026-08-22,2026-08-22,2,Janine,+5551984960632,retirada,retirado,credito,pago,98.50,98.50,0.00,2 Frangos + 2 Pão de alho,3,Pão de alho (unidade),2,29.80,14.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-047,2026-08-22,2026-08-22,3,Brando,,retirada,retirado,credito,pago,38.70,38.70,0.00,2 Frangos + 1 pão de alho,1,Sobrecoxa (unidade),2,23.80,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-047,2026-08-22,2026-08-22,3,Brando,,retirada,retirado,credito,pago,38.70,38.70,0.00,2 Frangos + 1 pão de alho,2,Pão de alho (unidade),1,14.90,14.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-048,2026-08-22,2026-08-22,4,Nilson,,retirada,retirado,pix,pago,113.70,113.70,0.00,2 Frangos,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-048,2026-08-22,2026-08-22,4,Nilson,,retirada,retirado,pix,pago,113.70,113.70,0.00,2 Frangos,2,Sobrecoxa (unidade),2,23.80,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-049,2026-08-22,2026-08-22,5,Uylson,+5551992905437,retirada,retirado,dinheiro,pago,168.79,170.00,0.00,Coca zero Maionese temperada,1,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-049,2026-08-22,2026-08-22,5,Uylson,+5551992905437,retirada,retirado,dinheiro,pago,168.79,170.00,0.00,Coca zero Maionese temperada,2,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-049,2026-08-22,2026-08-22,5,Uylson,+5551992905437,retirada,retirado,dinheiro,pago,168.79,170.00,0.00,Coca zero Maionese temperada,3,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-049,2026-08-22,2026-08-22,5,Uylson,+5551992905437,retirada,retirado,dinheiro,pago,168.79,170.00,0.00,Coca zero Maionese temperada,4,Coca zero,1,15.00,15.00,planilha,,Controle_Pedidos_Churrasco
+P2-050,2026-08-22,2026-08-22,6,Douglas,+5551997861996,retirada,retirado,debito,pago,93.79,93.79,0.00,Ok,1,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-050,2026-08-22,2026-08-22,6,Douglas,+5551997861996,retirada,retirado,debito,pago,93.79,93.79,0.00,Ok,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-050,2026-08-22,2026-08-22,6,Douglas,+5551997861996,retirada,retirado,debito,pago,93.79,93.79,0.00,Ok,3,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-051,2026-08-22,2026-08-22,7,Felipe,,retirada,retirado,pix,pago,123.79,123.79,0.00,Maionese temperada,1,Vazio,1,89.90,89.90,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-051,2026-08-22,2026-08-22,7,Felipe,,retirada,retirado,pix,pago,123.79,123.79,0.00,Maionese temperada,2,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-051,2026-08-22,2026-08-22,7,Felipe,,retirada,retirado,pix,pago,123.79,123.79,0.00,Maionese temperada,3,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-051,2026-08-22,2026-08-22,7,Felipe,,retirada,retirado,pix,pago,123.79,123.79,0.00,Maionese temperada,4,Desconto,1,-10.00,-10.00,planilha,desconto / diferença de preço,Controle_Pedidos_Churrasco
+P2-052,2026-08-22,2026-08-22,8,Daianne,,entrega,entregue,credito,pago,127.23,127.23,0.00,Maionese Batata 2 Frangos Rua Osvaldo Optiz 626,1,Picanha,0.5,54.50,109.00,planilha,,Controle_Pedidos_Churrasco
+P2-052,2026-08-22,2026-08-22,8,Daianne,,entrega,entregue,credito,pago,127.23,127.23,0.00,Maionese Batata 2 Frangos Rua Osvaldo Optiz 626,2,Coração,0.5,24.95,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-052,2026-08-22,2026-08-22,8,Daianne,,entrega,entregue,credito,pago,127.23,127.23,0.00,Maionese Batata 2 Frangos Rua Osvaldo Optiz 626,3,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-052,2026-08-22,2026-08-22,8,Daianne,,entrega,entregue,credito,pago,127.23,127.23,0.00,Maionese Batata 2 Frangos Rua Osvaldo Optiz 626,4,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-052,2026-08-22,2026-08-22,8,Daianne,,entrega,entregue,credito,pago,127.23,127.23,0.00,Maionese Batata 2 Frangos Rua Osvaldo Optiz 626,5,Sobrecoxa (unidade),2,23.80,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-053,2026-08-23,2026-08-23,1,William,,retirada,retirado,pix,pago,61.90,61.90,0.00,12h 2 Salsichões 1/2 Maminha,1,Maminha,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-053,2026-08-23,2026-08-23,1,William,,retirada,retirado,pix,pago,61.90,61.90,0.00,12h 2 Salsichões 1/2 Maminha,2,Salsichão (unidade),2,17.00,8.50,extraído das observações,,Controle_Pedidos_Churrasco
+P2-054,2026-08-23,2026-08-23,2,Felipe,,retirada,retirado,pix,pago,165.80,165.80,0.00,13h 4 Frangos + 1 Pão de Alho + 1 Salsichão 1/2 Vazio (Magra),1,Vazio,0.5,44.90,89.80,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-054,2026-08-23,2026-08-23,2,Felipe,,retirada,retirado,pix,pago,165.80,165.80,0.00,13h 4 Frangos + 1 Pão de Alho + 1 Salsichão 1/2 Vazio (Magra),2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-054,2026-08-23,2026-08-23,2,Felipe,,retirada,retirado,pix,pago,165.80,165.80,0.00,13h 4 Frangos + 1 Pão de Alho + 1 Salsichão 1/2 Vazio (Magra),3,Sobrecoxa (unidade),4,47.60,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-054,2026-08-23,2026-08-23,2,Felipe,,retirada,retirado,pix,pago,165.80,165.80,0.00,13h 4 Frangos + 1 Pão de Alho + 1 Salsichão 1/2 Vazio (Magra),4,Pão de alho (unidade),1,14.90,14.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-054,2026-08-23,2026-08-23,2,Felipe,,retirada,retirado,pix,pago,165.80,165.80,0.00,13h 4 Frangos + 1 Pão de Alho + 1 Salsichão 1/2 Vazio (Magra),5,Salsichão (unidade),1,8.50,8.50,extraído das observações,,Controle_Pedidos_Churrasco
+P2-055,2026-08-23,2026-08-23,3,Dienifer,,retirada,retirado,pix,pago,184.99,184.99,0.00,Maionese temperada Coca zera,1,Combo 1 - Picanha,1,184.99,184.99,planilha,refri do combo: Coca zero,Controle_Pedidos_Churrasco
+P2-056,2026-08-23,2026-08-23,4,Guilherme,+5551989472616,retirada,retirado,debito,pago,102.69,102.69,0.00,Maionese Temperada 2 Frangos,1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-056,2026-08-23,2026-08-23,4,Guilherme,+5551989472616,retirada,retirado,debito,pago,102.69,102.69,0.00,Maionese Temperada 2 Frangos,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-056,2026-08-23,2026-08-23,4,Guilherme,+5551989472616,retirada,retirado,debito,pago,102.69,102.69,0.00,Maionese Temperada 2 Frangos,3,Sobrecoxa (unidade),2,23.80,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-057,2026-08-23,2026-08-23,5,João,+5551996772410,retirada,retirado,credito,pago,89.90,89.90,0.00,Ok,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-058,2026-08-23,2026-08-23,6,Vanderlei,,retirada,retirado,credito,pago,208.68,208.68,0.00,Maionese temperada,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-058,2026-08-23,2026-08-23,6,Vanderlei,,retirada,retirado,credito,pago,208.68,208.68,0.00,Maionese temperada,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-058,2026-08-23,2026-08-23,6,Vanderlei,,retirada,retirado,credito,pago,208.68,208.68,0.00,Maionese temperada,3,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-058,2026-08-23,2026-08-23,6,Vanderlei,,retirada,retirado,credito,pago,208.68,208.68,0.00,Maionese temperada,4,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-058,2026-08-23,2026-08-23,6,Vanderlei,,retirada,retirado,credito,pago,208.68,208.68,0.00,Maionese temperada,5,Refrigerante 2L,1,15.00,15.00,planilha,sabor não informado,Controle_Pedidos_Churrasco
+P2-058,2026-08-23,2026-08-23,6,Vanderlei,,retirada,retirado,credito,pago,208.68,208.68,0.00,Maionese temperada,6,Ajuste manual,1,49.90,49.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-059,2026-08-23,2026-08-23,7,Itamar,,retirada,retirado,credito,pago,88.70,88.70,0.00,2 Frango,1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-059,2026-08-23,2026-08-23,7,Itamar,,retirada,retirado,credito,pago,88.70,88.70,0.00,2 Frango,2,Sobrecoxa (unidade),2,23.80,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-060,2026-08-23,2026-08-23,8,Brando,,retirada,retirado,credito,pago,104.80,104.80,0.00,maminha 1 Unidade de pão de alho,1,Maminha,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-060,2026-08-23,2026-08-23,8,Brando,,retirada,retirado,credito,pago,104.80,104.80,0.00,maminha 1 Unidade de pão de alho,2,Pão de alho (unidade),1,14.90,14.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-061,2026-08-23,2026-08-23,9,André,,retirada,retirado,pix,pago,99.89,99.89,0.00,Ok,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-061,2026-08-23,2026-08-23,9,André,,retirada,retirado,pix,pago,99.89,99.89,0.00,Ok,2,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-062,2026-08-30,2026-08-30,1,Michelle,,retirada,retirado,pix,pago,139.80,139.80,0.00,Vizinha do 37 12:30,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-062,2026-08-30,2026-08-30,1,Michelle,,retirada,retirado,pix,pago,139.80,139.80,0.00,Vizinha do 37 12:30,2,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-063,2026-08-30,2026-08-30,2,Felipe,,retirada,retirado,debito,pago,129.70,129.70,0.00,Motoboy,1,Coração,2,99.80,49.90,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-063,2026-08-30,2026-08-30,2,Felipe,,retirada,retirado,debito,pago,129.70,129.70,0.00,Motoboy,2,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-064,2026-08-30,2026-08-30,3,Wagner,,retirada,retirado,credito,pago,229.70,229.70,0.00,Ok,1,Vazio,2,179.80,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-064,2026-08-30,2026-08-30,3,Wagner,,retirada,retirado,credito,pago,229.70,229.70,0.00,Ok,2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-065,2026-08-30,2026-08-30,4,Luzeni,,retirada,retirado,debito,pago,78.89,78.89,0.00,Ok,1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-065,2026-08-30,2026-08-30,4,Luzeni,,retirada,retirado,debito,pago,78.89,78.89,0.00,Ok,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-066,2026-08-30,2026-08-30,5,China,,retirada,retirado,credito,pago,199.70,199.70,0.00,Ok,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-066,2026-08-30,2026-08-30,5,China,,retirada,retirado,credito,pago,199.70,199.70,0.00,Ok,2,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-066,2026-08-30,2026-08-30,5,China,,retirada,retirado,credito,pago,199.70,199.70,0.00,Ok,3,Salsichão,1,59.90,59.90,planilha,,Controle_Pedidos_Churrasco
+P2-067,2026-09-05,2026-09-05,1,Valdori,,retirada,retirado,pix,pago,29.90,29.90,0.00,Ok,1,Geleia defumada,1,29.90,29.90,planilha,"""Pimenta"" na planilha, importado como Geleia defumada",Controle_Pedidos_Churrasco
+P2-068,2026-09-05,2026-09-05,2,Cléo,,retirada,retirado,pix,pago,29.90,29.90,0.00,Ok,1,Geleia defumada,1,29.90,29.90,planilha,"""Pimenta"" na planilha, importado como Geleia defumada",Controle_Pedidos_Churrasco
+P2-069,2026-09-05,2026-09-05,3,Jonatan,,retirada,retirado,pix,pago,16.90,16.90,0.00,Ok,1,Geleia defumada,1,29.90,29.90,planilha,"""Pimenta"" na planilha, importado como Geleia defumada",Controle_Pedidos_Churrasco
+P2-069,2026-09-05,2026-09-05,3,Jonatan,,retirada,retirado,pix,pago,16.90,16.90,0.00,Ok,2,Desconto,1,-13.00,-13.00,planilha,desconto / diferença de preço,Controle_Pedidos_Churrasco
+P2-070,2026-09-05,2026-09-05,4,Raphael,,retirada,retirado,credito,pago,134.79,134.79,0.00,Retirada as 13h Meia picanha e não costela,1,Picanha,0.5,64.90,129.80,planilha,obs: meia picanha no lugar da costela,Controle_Pedidos_Churrasco
+P2-070,2026-09-05,2026-09-05,4,Raphael,,retirada,retirado,credito,pago,134.79,134.79,0.00,Retirada as 13h Meia picanha e não costela,2,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-070,2026-09-05,2026-09-05,4,Raphael,,retirada,retirado,credito,pago,134.79,134.79,0.00,Retirada as 13h Meia picanha e não costela,3,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-070,2026-09-05,2026-09-05,4,Raphael,,retirada,retirado,credito,pago,134.79,134.79,0.00,Retirada as 13h Meia picanha e não costela,4,Pudim P,1,10.00,10.00,planilha,,Controle_Pedidos_Churrasco
+P2-071,2026-09-05,2026-09-05,5,Janine,+5551984960632,retirada,retirado,pix,pago,121.70,121.70,0.00,Ok,1,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-071,2026-09-05,2026-09-05,5,Janine,+5551984960632,retirada,retirado,pix,pago,121.70,121.70,0.00,Ok,2,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-071,2026-09-05,2026-09-05,5,Janine,+5551984960632,retirada,retirado,pix,pago,121.70,121.70,0.00,Ok,3,Quindim,1,7.00,7.00,planilha,,Controle_Pedidos_Churrasco
+P2-071,2026-09-05,2026-09-05,5,Janine,+5551984960632,retirada,retirado,pix,pago,121.70,121.70,0.00,Ok,4,Ajuste manual,1,14.90,14.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-072,2026-09-05,2026-09-05,6,Raphael,,retirada,retirado,pix,pago,19.98,20.00,0.00,Ok,1,Cerveja Heineken,2,19.98,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-073,2026-09-06,2026-09-06,1,Leticia,,entrega,entregue,pix,pago,164.99,164.99,10.00,12:30 Maionese só batata coca-cola zero Rua Nazário 1200 casa 20 condomínio reserva do bosque - Bairro olaria Canoas,1,Combo 1 - Vazio,1,164.99,164.99,planilha,refri do combo: Coca zero,Controle_Pedidos_Churrasco
+P2-074,2026-09-06,2026-09-06,2,Cristina,+5551986030772,entrega,entregue,pix,pago,85.70,85.70,10.00,13h 2 Frangos e 2 Salsichão Guajuviras mãe da Ana,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-074,2026-09-06,2026-09-06,2,Cristina,+5551986030772,entrega,entregue,pix,pago,85.70,85.70,10.00,13h 2 Frangos e 2 Salsichão Guajuviras mãe da Ana,2,Sobrecoxa (unidade),2,23.80,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-074,2026-09-06,2026-09-06,2,Cristina,+5551986030772,entrega,entregue,pix,pago,85.70,85.70,10.00,13h 2 Frangos e 2 Salsichão Guajuviras mãe da Ana,3,Salsichão (unidade),2,17.00,8.50,extraído das observações,,Controle_Pedidos_Churrasco
+P2-075,2026-09-06,2026-09-06,3,Beta,,retirada,retirado,pix,pago,164.70,164.70,0.00,Ok,1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-075,2026-09-06,2026-09-06,3,Beta,,retirada,retirado,pix,pago,164.70,164.70,0.00,Ok,2,Pudim G,1,35.00,35.00,planilha,,Controle_Pedidos_Churrasco
+P2-075,2026-09-06,2026-09-06,3,Beta,,retirada,retirado,pix,pago,164.70,164.70,0.00,Ok,3,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-075,2026-09-06,2026-09-06,3,Beta,,retirada,retirado,pix,pago,164.70,164.70,0.00,Ok,4,Ajuste manual,1,14.90,14.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-076,2026-09-06,2026-09-06,4,Wagner,,retirada,retirado,nao_informado,pago,139.80,139.80,0.00,13h Vem buscar,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-076,2026-09-06,2026-09-06,4,Wagner,,retirada,retirado,nao_informado,pago,139.80,139.80,0.00,13h Vem buscar,2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-077,2026-09-06,2026-09-06,5,Felipe,,retirada,retirado,nao_informado,pago,253.67,253.67,0.00,Ok,1,Vazio,1,89.90,89.90,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-077,2026-09-06,2026-09-06,5,Felipe,,retirada,retirado,nao_informado,pago,253.67,253.67,0.00,Ok,2,Pudim P,1,10.00,10.00,planilha,,Controle_Pedidos_Churrasco
+P2-077,2026-09-06,2026-09-06,5,Felipe,,retirada,retirado,nao_informado,pago,253.67,253.67,0.00,Ok,3,Quindim,3,21.00,7.00,planilha,,Controle_Pedidos_Churrasco
+P2-077,2026-09-06,2026-09-06,5,Felipe,,retirada,retirado,nao_informado,pago,253.67,253.67,0.00,Ok,4,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-077,2026-09-06,2026-09-06,5,Felipe,,retirada,retirado,nao_informado,pago,253.67,253.67,0.00,Ok,5,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-077,2026-09-06,2026-09-06,5,Felipe,,retirada,retirado,nao_informado,pago,253.67,253.67,0.00,Ok,6,Ajuste manual,1,108.79,108.79,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-078,2026-09-06,2026-09-06,6,Felipe,,retirada,retirado,nao_informado,pago,29.90,29.90,0.00,Ok,1,Geleia defumada,1,29.90,29.90,planilha,"""Pimenta"" na planilha, importado como Geleia defumada; nome com mais de um cliente cadastrado — vincular manualmente",Controle_Pedidos_Churrasco
+P2-079,2026-09-07,2026-09-07,1,Marcos,,retirada,retirado,pix,pago,61.20,61.20,0.00,3 Salsichão e 3 Frango,1,Salsichão (unidade),3,25.50,8.50,extraído das observações,,Controle_Pedidos_Churrasco
+P2-079,2026-09-07,2026-09-07,1,Marcos,,retirada,retirado,pix,pago,61.20,61.20,0.00,3 Salsichão e 3 Frango,2,Sobrecoxa (unidade),3,35.70,11.90,extraído das observações,,Controle_Pedidos_Churrasco
+P2-080,2026-09-12,2026-09-12,1,Neverton,,entrega,entregue,nao_informado,pago,164.99,164.99,0.00,Coca zero Maionese só batata,1,Combo 1 - Vazio,1,164.99,164.99,planilha,refri do combo: Coca zero,Controle_Pedidos_Churrasco
+P2-081,2026-09-12,2026-09-12,2,Brando,,retirada,retirado,nao_informado,pago,109.70,109.70,0.00,Ok,1,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-081,2026-09-12,2026-09-12,2,Brando,,retirada,retirado,nao_informado,pago,109.70,109.70,0.00,Ok,2,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-081,2026-09-12,2026-09-12,2,Brando,,retirada,retirado,nao_informado,pago,109.70,109.70,0.00,Ok,3,Ajuste manual,1,14.90,14.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-082,2026-09-12,2026-09-12,3,Carla,,retirada,retirado,nao_informado,pago,46.44,46.44,0.00,Ok,1,Costela,0.5,32.45,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-082,2026-09-12,2026-09-12,3,Carla,,retirada,retirado,nao_informado,pago,46.44,46.44,0.00,Ok,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-082,2026-09-12,2026-09-12,3,Carla,,retirada,retirado,nao_informado,pago,46.44,46.44,0.00,Ok,3,Geleia defumada,1,29.90,29.90,planilha,"""Pimenta"" na planilha, importado como Geleia defumada",Controle_Pedidos_Churrasco
+P2-082,2026-09-12,2026-09-12,3,Carla,,retirada,retirado,nao_informado,pago,46.44,46.44,0.00,Ok,4,Desconto,1,-29.90,-29.90,planilha,desconto / diferença de preço,Controle_Pedidos_Churrasco
+P2-083,2026-09-12,2026-09-12,4,Joe,,retirada,retirado,nao_informado,pago,39.96,39.96,0.00,Ok,1,Cerveja Corona,4,39.96,9.99,planilha,venda interna/sem cliente cadastrado,Controle_Pedidos_Churrasco
+P2-084,2026-09-13,2026-09-13,1,Vanderlei,,retirada,retirado,credito,pago,129.39,129.39,0.00,Maionese temperada,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-084,2026-09-13,2026-09-13,1,Vanderlei,,retirada,retirado,credito,pago,129.39,129.39,0.00,Maionese temperada,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-084,2026-09-13,2026-09-13,1,Vanderlei,,retirada,retirado,credito,pago,129.39,129.39,0.00,Maionese temperada,3,Ajuste manual,1,25.50,25.50,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-085,2026-09-13,2026-09-13,2,Joe,,retirada,retirado,pix,pago,17.90,17.90,0.00,Ok,1,Geleia defumada,1,29.90,29.90,planilha,"""Pimenta"" na planilha, importado como Geleia defumada; venda interna/sem cliente cadastrado",Controle_Pedidos_Churrasco
+P2-085,2026-09-13,2026-09-13,2,Joe,,retirada,retirado,pix,pago,17.90,17.90,0.00,Ok,2,Desconto,1,-12.00,-12.00,planilha,desconto / diferença de preço,Controle_Pedidos_Churrasco
+P2-086,2026-09-13,2026-09-13,3,Gustavo,+5551995919930,retirada,retirado,credito,pago,115.40,115.40,0.00,Ok,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-086,2026-09-13,2026-09-13,3,Gustavo,+5551995919930,retirada,retirado,credito,pago,115.40,115.40,0.00,Ok,2,Ajuste manual,1,25.50,25.50,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-087,2026-09-13,2026-09-13,4,Vizinha,,retirada,retirado,debito,pago,71.40,71.40,0.00,OK,1,Ajuste manual,1,71.40,71.40,planilha,itens avulsos não detalhados na planilha; venda interna/sem cliente cadastrado,Controle_Pedidos_Churrasco
+P2-088,2026-09-13,2026-09-13,5,Maristela,,retirada,retirado,debito,pago,68.70,68.70,0.00,vem busca,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-088,2026-09-13,2026-09-13,5,Maristela,,retirada,retirado,debito,pago,68.70,68.70,0.00,vem busca,2,Ajuste manual,1,23.80,23.80,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-089,2026-09-13,2026-09-13,6,Cristina,+5551986030772,retirada,retirado,pix,pago,152.39,152.39,0.00,Maionese temperada,1,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-089,2026-09-13,2026-09-13,6,Cristina,+5551986030772,retirada,retirado,pix,pago,152.39,152.39,0.00,Maionese temperada,2,Picanha,0.5,54.50,109.00,planilha,,Controle_Pedidos_Churrasco
+P2-089,2026-09-13,2026-09-13,6,Cristina,+5551986030772,retirada,retirado,pix,pago,152.39,152.39,0.00,Maionese temperada,3,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-089,2026-09-13,2026-09-13,6,Cristina,+5551986030772,retirada,retirado,pix,pago,152.39,152.39,0.00,Maionese temperada,4,Ajuste manual,1,34.00,34.00,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-090,2026-09-13,2026-09-13,7,Cléo,,retirada,retirado,dinheiro,pago,194.98,194.98,0.00,Maionese Só batata Coca normal,1,Combo 1 - Picanha,1,184.99,184.99,planilha,refri do combo: Coca,Controle_Pedidos_Churrasco
+P2-090,2026-09-13,2026-09-13,7,Cléo,,retirada,retirado,dinheiro,pago,194.98,194.98,0.00,Maionese Só batata Coca normal,2,Cerveja Heineken,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-091,2026-09-13,2026-09-13,8,Joe,,retirada,retirado,pix,pago,29.97,29.97,0.00,OK,1,Cerveja Heineken,3,29.97,9.99,planilha,venda interna/sem cliente cadastrado,Controle_Pedidos_Churrasco
+P2-092,2026-09-13,2026-09-13,9,Amigos Jonata,,retirada,retirado,pix,pago,29.97,29.97,0.00,Ok,1,Cerveja Heineken,3,29.97,9.99,planilha,venda interna/sem cliente cadastrado,Controle_Pedidos_Churrasco
+P2-093,2026-09-19,2026-09-19,1,Douglas,+5551997861996,retirada,retirado,debito,pago,79.80,79.80,0.00,Para as 13h,1,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-093,2026-09-19,2026-09-19,1,Douglas,+5551997861996,retirada,retirado,debito,pago,79.80,79.80,0.00,Para as 13h,2,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-094,2026-09-19,2026-09-19,2,Marcos,,entrega,entregue,pix,pago,139.80,139.80,0.00,"Rua das Margaridas 120, casa. Perto do SENAI Centro de Soldagem Para 12h 12:30",1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-094,2026-09-19,2026-09-19,2,Marcos,,entrega,entregue,pix,pago,139.80,139.80,0.00,"Rua das Margaridas 120, casa. Perto do SENAI Centro de Soldagem Para 12h 12:30",2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-095,2026-09-19,2026-09-19,3,Vivi,,entrega,entregue,debito,pago,92.88,92.88,0.00,Maionese temperada Rua Eldorado número 53 bairro Mathias Velho Canoas Para 13:30,1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-095,2026-09-19,2026-09-19,3,Vivi,,entrega,entregue,debito,pago,92.88,92.88,0.00,Maionese temperada Rua Eldorado número 53 bairro Mathias Velho Canoas Para 13:30,2,Maionese 300 g,2,27.98,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-096,2026-09-19,2026-09-19,4,Gerusa,,entrega,entregue,pix,pago,118.55,118.55,0.00,No poema - Rio dos sinos 453 Ap 607 torre b,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-096,2026-09-19,2026-09-19,4,Gerusa,,entrega,entregue,pix,pago,118.55,118.55,0.00,No poema - Rio dos sinos 453 Ap 607 torre b,2,Coração,0.5,24.95,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-096,2026-09-19,2026-09-19,4,Gerusa,,entrega,entregue,pix,pago,118.55,118.55,0.00,No poema - Rio dos sinos 453 Ap 607 torre b,3,Tortinha de Limão,1,10.00,10.00,planilha,,Controle_Pedidos_Churrasco
+P2-096,2026-09-19,2026-09-19,4,Gerusa,,entrega,entregue,pix,pago,118.55,118.55,0.00,No poema - Rio dos sinos 453 Ap 607 torre b,4,Ajuste manual,1,38.70,38.70,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-097,2026-09-20,2026-09-20,1,Kim,,entrega,entregue,pix,pago,132.77,132.77,10.00,Maionese temperada Rua republica 1170 para 12:30 13h,1,Costela,1,64.90,64.90,planilha,,Controle_Pedidos_Churrasco
+P2-097,2026-09-20,2026-09-20,1,Kim,,entrega,entregue,pix,pago,132.77,132.77,10.00,Maionese temperada Rua republica 1170 para 12:30 13h,2,Maionese 300 g,2,27.98,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-097,2026-09-20,2026-09-20,1,Kim,,entrega,entregue,pix,pago,132.77,132.77,10.00,Maionese temperada Rua republica 1170 para 12:30 13h,3,Arroz 500 g,1,9.99,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-097,2026-09-20,2026-09-20,1,Kim,,entrega,entregue,pix,pago,132.77,132.77,10.00,Maionese temperada Rua republica 1170 para 12:30 13h,4,Pão de alho (bandeja),1,29.90,29.90,planilha,,Controle_Pedidos_Churrasco
+P2-098,2026-09-20,2026-09-20,2,Niki,,entrega,entregue,pix,pago,274.99,274.99,10.00,Maionese temperada No poema - Rio dos sinos 453 Ap 103 torre b Coca colca para 12:30,1,Combo 2 - Vazio,1,274.99,274.99,planilha,refri do combo: Coca,Controle_Pedidos_Churrasco
+P2-099,2026-09-20,2026-09-20,3,Cerani,,entrega,entregue,pix,pago,164.99,164.99,10.00,Maionese só batata No poema AP 106 Torre C Fanta Laranja Para 12h,1,Combo 1 - Vazio,1,164.99,164.99,planilha,refri do combo: Fanta laranja,Controle_Pedidos_Churrasco
+P2-100,2026-09-20,2026-09-20,4,Rejane,+5551999822697,retirada,retirado,pix,pago,63.89,63.89,0.00,Ok,1,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-100,2026-09-20,2026-09-20,4,Rejane,+5551999822697,retirada,retirado,pix,pago,63.89,63.89,0.00,Ok,2,Maionese 300 g,1,13.99,13.99,planilha,,Controle_Pedidos_Churrasco
+P2-101,2026-09-20,2026-09-20,5,Michelle,,retirada,retirado,nao_informado,pago,49.90,49.90,0.00,Para 12:30,1,Sobrecoxa,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-102,2026-09-20,2026-09-20,6,Rejane,+5551999822697,retirada,retirado,debito,pago,158.88,158.88,0.00,Fanta Laranja,1,Vazio,1,89.90,89.90,planilha,,Controle_Pedidos_Churrasco
+P2-102,2026-09-20,2026-09-20,6,Rejane,+5551999822697,retirada,retirado,debito,pago,158.88,158.88,0.00,Fanta Laranja,2,Fanta laranja,1,15.00,15.00,planilha,,Controle_Pedidos_Churrasco
+P2-102,2026-09-20,2026-09-20,6,Rejane,+5551999822697,retirada,retirado,debito,pago,158.88,158.88,0.00,Fanta Laranja,3,Cerveja Heineken,2,19.98,9.99,planilha,,Controle_Pedidos_Churrasco
+P2-102,2026-09-20,2026-09-20,6,Rejane,+5551999822697,retirada,retirado,debito,pago,158.88,158.88,0.00,Fanta Laranja,4,Ajuste manual,1,34.00,34.00,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-103,2026-09-20,2026-09-20,7,Felipe,,retirada,retirado,pix,pago,135.60,135.60,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,nome com mais de um cliente cadastrado — vincular manualmente,Controle_Pedidos_Churrasco
+P2-103,2026-09-20,2026-09-20,7,Felipe,,retirada,retirado,pix,pago,135.60,135.60,0.00,Ok,2,Coração,1,49.90,49.90,planilha,,Controle_Pedidos_Churrasco
+P2-103,2026-09-20,2026-09-20,7,Felipe,,retirada,retirado,pix,pago,135.60,135.60,0.00,Ok,3,Ajuste manual,1,40.80,40.80,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-104,2026-09-20,2026-09-20,8,Luciano,,retirada,retirado,credito,pago,137.90,137.90,0.00,Ok,1,Picanha,1,109.00,109.00,planilha,,Controle_Pedidos_Churrasco
+P2-104,2026-09-20,2026-09-20,8,Luciano,,retirada,retirado,credito,pago,137.90,137.90,0.00,Ok,2,Ajuste manual,1,28.90,28.90,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-105,2026-09-20,2026-09-20,9,Paula,,retirada,retirado,debito,pago,76.85,76.85,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-105,2026-09-20,2026-09-20,9,Paula,,retirada,retirado,debito,pago,76.85,76.85,0.00,Ok,2,Pão de alho (unidade),1,14.95,14.95,planilha,,Controle_Pedidos_Churrasco
+P2-105,2026-09-20,2026-09-20,9,Paula,,retirada,retirado,debito,pago,76.85,76.85,0.00,Ok,3,Ajuste manual,1,17.00,17.00,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-106,2026-09-20,2026-09-20,10,Marlene,+5551984915215,retirada,retirado,dinheiro,pago,92.50,92.50,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-106,2026-09-20,2026-09-20,10,Marlene,+5551984915215,retirada,retirado,dinheiro,pago,92.50,92.50,0.00,Ok,2,Ajuste manual,1,47.60,47.60,planilha,itens avulsos não detalhados na planilha,Controle_Pedidos_Churrasco
+P2-107,2026-09-20,2026-09-20,11,Rafael,+5551984036408,retirada,retirado,pix,pago,38.00,38.00,0.00,Ok,1,Vazio,0.5,44.90,89.80,planilha,,Controle_Pedidos_Churrasco
+P2-107,2026-09-20,2026-09-20,11,Rafael,+5551984036408,retirada,retirado,pix,pago,38.00,38.00,0.00,Ok,2,Desconto,1,-6.90,-6.90,planilha,desconto / diferença de preço,Controle_Pedidos_Churrasco
+P2-108,2026-09-20,2026-09-20,12,Caixa,,retirada,retirado,nao_informado,pago,19.98,19.98,0.00,ok,1,Cerveja Heineken,2,19.98,9.99,planilha,venda interna/sem cliente cadastrado,Controle_Pedidos_Churrasco

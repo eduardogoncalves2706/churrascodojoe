@@ -10,7 +10,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=../../.env src/db/migrate-cli.ts",
     "db:seed": "tsx --env-file=../../.env src/db/seed-cli.ts",
-    "import:custos": "tsx --env-file=../../.env src/db/import-custos-cli.ts"
+    "import:custos": "tsx --env-file=../../.env src/db/import-custos-cli.ts",
+    "import:clientes": "tsx --env-file=../../.env src/db/import-clientes-cli.ts",
+    "import:pedidos": "tsx --env-file=../../.env src/db/import-pedidos-cli.ts"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.163",

@@ -1,7 +1,9 @@
 import { handle } from 'hono/aws-lambda';
 import { app } from './app';
 import { getDb } from './db/client';
+import { importarClientes } from './db/import-clientes';
 import { importarCustos } from './db/import-custos';
+import { importarPedidos } from './db/import-pedidos';
 import { runMigrations } from './db/migrate';
 import { seed } from './db/seed';
 import { corrigirPrecos27_09 } from './db/updates/2026-09-27-correcoes';
@@ -27,5 +29,7 @@ export const handler = async (event: Record<string, unknown>, ctx: never) => {
   if (event?.joeAdmin === 'limpa-pedidos-cancelados-2026-09-27') { return { ok: await limparPedidosCancelados(getDb()) }; }
   if (event?.joeAdmin === 'religa-pedido-006-2026-09-27') { return { ok: await religarPedido006(getDb()) }; }
   if (event?.joeAdmin === 'importar-custos' && typeof event.csv === 'string') { return { ok: await importarCustos(getDb(), event.csv) }; }
+  if (event?.joeAdmin === 'importar-clientes' && typeof event.csv === 'string') { return { ok: await importarClientes(getDb(), event.csv) }; }
+  if (event?.joeAdmin === 'importar-pedidos' && typeof event.csv === 'string') { return { ok: await importarPedidos(getDb(), event.csv) }; }
   return http(event as never, ctx);
 };

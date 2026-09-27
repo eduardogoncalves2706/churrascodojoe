@@ -42,7 +42,7 @@ export default function App() {
       <Route path="*" element={
         <div className="md:flex min-h-screen">
           <aside className="no-print hidden md:flex md:flex-col w-56 shrink-0 bg-surface/60 p-3 gap-1 border-r border-white/5">
-            <h1 className="text-3xl text-primary-hover px-3 py-2">Churrasco do Joe</h1>
+            <div className="flex items-center gap-2 px-3 py-2"><img src="/logo-192.png" alt="" className="w-9 h-9 rounded-full" /><h1 className="text-2xl text-primary-hover leading-none">Churrasco do Joe</h1></div>
             {links.map((l) => <Link key={l.to} {...l} />)}
             <div className="mt-auto text-xs text-cream/60 px-3">
               {me.data && <p>{me.data.nome}</p>}

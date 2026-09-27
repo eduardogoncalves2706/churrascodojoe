@@ -39,6 +39,7 @@ function Login({ onDone }: { onDone: () => void }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(160deg,#0D0A07 0%,#2B1507 45%,#D4420A 100%)' }}>
       <form onSubmit={enviar} className="card w-full max-w-sm space-y-4 bg-bg/90">
+        <img src="/logo-192.png" alt="Churrasco do Joe" className="w-28 h-28 mx-auto rounded-full" />
         <h1 className="text-6xl text-primary-hover text-center">Churrasco do Joe</h1>
         <p className="font-serif italic text-gold text-center">Fogo, carne e gente boa.</p>
         {(etapa === 'login' || etapa === 'esqueci' || etapa === 'codigo') && <div className="space-y-1"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>}
