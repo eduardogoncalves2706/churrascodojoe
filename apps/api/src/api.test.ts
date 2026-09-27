@@ -98,8 +98,16 @@ describe('fluxo de novo pedido', () => {
 
   it('rejeita fracionado em produto que não permite', async () => {
     const prods = await json(await call('/produtos'));
-    const r = await call('/pedidos', { method: 'POST', body: JSON.stringify({ itens: [{ produtoId: prods.find((p: any) => p.nome === 'Picanha').id, quantidade: 0.5 }], canal: 'balcao', tipo: 'retirada' }) });
+    const r = await call('/pedidos', { method: 'POST', body: JSON.stringify({ itens: [{ produtoId: prods.find((p: any) => p.nome === 'Geleia defumada').id, quantidade: 0.5 }], canal: 'balcao', tipo: 'retirada' }) });
     expect(r.status).toBe(400);
+  });
+
+  it('permite 1/2 espeto de carne (preço vira metade)', async () => {
+    const prods = await json(await call('/produtos'));
+    const costela = prods.find((p: any) => p.nome === 'Costela');
+    expect(costela.permiteFracionado).toBe(true);
+    const r = await json(await call('/pedidos', { method: 'POST', body: JSON.stringify({ itens: [{ produtoId: costela.id, quantidade: 0.5 }], canal: 'balcao', tipo: 'retirada' }) }));
+    expect(Number(r.total)).toBeCloseTo(Number(costela.precoVenda) / 2, 2);
   });
 
   it('permite editar os itens até o pedido ser retirado/entregue', async () => {

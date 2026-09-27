@@ -12,7 +12,10 @@ test('novo pedido em tela de 360px: combo + carne, retirada, pix, comanda', asyn
 
   await page.getByRole('button', { name: 'Carnes' }).click();
   await page.getByRole('button', { name: /Picanha/ }).click();
-  await page.getByRole('listitem').filter({ hasText: 'Picanha' }).getByRole('button', { name: 'mais' }).click();
+  // Picanha permite 1/2 espeto: passo de 0,5 — dois cliques pra ir de 1 pra 2 espetos inteiros.
+  const maisPicanha = page.getByRole('listitem').filter({ hasText: 'Picanha' }).getByRole('button', { name: 'mais' });
+  await maisPicanha.click();
+  await maisPicanha.click();
 
   await expect(page.getByText('R$ 367,99').last()).toBeVisible(); // 149,99 + 2 × 109,00
   await page.getByRole('button', { name: 'Confirmar pedido' }).click();

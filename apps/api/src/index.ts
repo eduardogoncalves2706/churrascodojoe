@@ -4,6 +4,7 @@ import { getDb } from './db/client';
 import { runMigrations } from './db/migrate';
 import { seed } from './db/seed';
 import { corrigirPrecos27_09 } from './db/updates/2026-09-27-correcoes';
+import { habilitarFracionadoCarnes } from './db/updates/2026-09-27-fracionado-carnes';
 import { atualizarPrecosControlePedidos } from './db/updates/2026-09-precos-controle-pedidos';
 
 const http = handle(app);
@@ -17,5 +18,6 @@ export const handler = async (event: Record<string, unknown>, ctx: never) => {
   if (event?.joeAdmin === 'seed') { await seed(); return { ok: 'seed' }; }
   if (event?.joeAdmin === 'atualizar-precos-2026-09') { return { ok: await atualizarPrecosControlePedidos(getDb()) }; }
   if (event?.joeAdmin === 'correcoes-2026-09-27') { return { ok: await corrigirPrecos27_09(getDb()) }; }
+  if (event?.joeAdmin === 'fracionado-carnes-2026-09-27') { return { ok: await habilitarFracionadoCarnes(getDb()) }; }
   return http(event as never, ctx);
 };
