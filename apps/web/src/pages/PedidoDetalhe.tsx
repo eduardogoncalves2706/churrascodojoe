@@ -40,7 +40,8 @@ export default function PedidoDetalhe() {
         {p.motivoCancelamento && <p className="text-brasa">Cancelado: {p.motivoCancelamento}</p>}
       </div>
       <div className="card"><table className="w-full"><tbody>
-        {p.itens.map((i: Row) => <tr key={i.id}><td className="td">{Number(i.quantidade)}× {i.descricaoSnapshot}{i.observacao && <span className="text-gold"> ({i.observacao})</span>}</td><td className="td text-right">{brl(i.subtotal)}</td></tr>)}
+        {p.itens.map((i: Row) => <tr key={i.id}><td className="td">{Number(i.quantidade)}× {i.descricaoSnapshot}{i.observacao && <span className="text-gold"> ({i.observacao})</span>}
+          {i.escolhas?.composicao && <p className="text-xs text-cream/60">{i.escolhas.composicao.map((c: Row) => `${c.quantidade}× ${c.nome}`).join(' · ')}</p>}</td><td className="td text-right">{brl(i.subtotal)}</td></tr>)}
         <tr><td className="td text-cream/70">Subtotal</td><td className="td text-right">{brl(p.subtotal)}</td></tr>
         {Number(p.desconto) > 0 && <tr><td className="td text-cream/70">Desconto</td><td className="td text-right">−{brl(p.desconto)}</td></tr>}
         {p.tipo === 'entrega' && <tr><td className="td text-cream/70">Taxa de entrega</td><td className="td text-right">{brl(p.taxaEntrega)}</td></tr>}

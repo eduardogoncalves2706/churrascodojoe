@@ -68,11 +68,19 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string) {
         preco = toCents(v.preco);
         custo = custoVariante(itensCombo, v.carneProdutoId, custos, it.refrigeranteId);
         descricao = `${combo.nome} – ${carne.nome}`;
+        let refri: (typeof s.produtos.$inferSelect) | undefined;
         if (it.refrigeranteId) {
-          const [r] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.refrigeranteId));
-          if (r) descricao += ` · Refri: ${r.nome}`;
-          escolhas = { refrigeranteId: it.refrigeranteId };
+          [refri] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.refrigeranteId));
+          if (refri) descricao += ` · Refri: ${refri.nome}`;
         }
+        // Composição snapshot (para a comanda mostrar o detalhe do combo): resolve carne e refrigerante escolhidos.
+        const nomesInsumo = await tx.select().from(s.produtos);
+        const nome = (id: string) => nomesInsumo.find((p) => p.id === id)?.nome ?? '';
+        const composicao = itensCombo.map((ci) => ({
+          nome: ci.ehCarneEscolhida ? carne.nome : ci.grupoEscolha === 'refrigerante' && refri ? refri.nome : nome(ci.produtoId!),
+          quantidade: Number(ci.quantidade),
+        }));
+        escolhas = { refrigeranteId: it.refrigeranteId, composicao };
       } else if (it.produtoId) {
         const [p] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.produtoId));
         if (!p || !p.ativo) throw new ErroNegocio('produto_invalido', 'Produto inválido');
@@ -157,7 +165,11 @@ export async function cancelarPedido(db: Db, pedidoId: string, motivo: string, u
 export function resumoWhatsapp(p: typeof s.pedidos.$inferSelect, itens: (typeof s.pedidoItens.$inferSelect)[], bairro?: string | null): string {
   const brl = (v: string) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
   const linhas = [`*Churrasco do Joe — Pedido #${String(p.numeroDia).padStart(3, '0')}*`, ''];
-  for (const i of itens) linhas.push(`${Number(i.quantidade)}x ${i.descricaoSnapshot} — ${brl(i.subtotal)}${i.observacao ? ` (${i.observacao})` : ''}`);
+  for (const i of itens) {
+    linhas.push(`${Number(i.quantidade)}x ${i.descricaoSnapshot} — ${brl(i.subtotal)}${i.observacao ? ` (${i.observacao})` : ''}`);
+    const composicao = (i.escolhas as { composicao?: { nome: string; quantidade: number }[] } | null)?.composicao;
+    for (const c of composicao ?? []) linhas.push(`   • ${c.quantidade}x ${c.nome}`);
+  }
   linhas.push('');
   if (Number(p.desconto) > 0) linhas.push(`Desconto: -${brl(p.desconto)}`);
   if (p.tipo === 'entrega') linhas.push(`Entrega: ${brl(p.taxaEntrega)}`);

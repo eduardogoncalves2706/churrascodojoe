@@ -59,6 +59,9 @@ describe('fluxo de novo pedido', () => {
 
     const det = await json(await call(`/pedidos/${p.id}`));
     expect(det.itens[0].descricaoSnapshot).toBe('Combo 2 – 4 pessoas – Picanha · Refri: Coca');
+    expect(det.itens[0].escolhas.composicao).toEqual(expect.arrayContaining([
+      { nome: 'Picanha', quantidade: 2 }, { nome: 'Coração', quantidade: 1 }, { nome: 'Coca', quantidade: 1 },
+    ]));
     expect(det.custoTotal).not.toBeNull();
     const detOp = await json(await call(`/pedidos/${p.id}`, { role: 'operador' }));
     expect(detOp).not.toHaveProperty('custoTotal');

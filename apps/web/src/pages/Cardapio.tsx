@@ -13,9 +13,19 @@ export default function Cardapio({ admin }: { admin: boolean }) {
   const [reaj, setReaj] = useState({ percentual: '10', arredondar: 'nenhum' });
   const [previa, setPrevia] = useState<Row | null>(null);
   const [hist, setHist] = useState<Row[] | null>(null);
+  const [mostrarNovo, setMostrarNovo] = useState(false);
+  const CATEGORIAS = ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia', 'outros'];
+  const vazio = { nome: '', categoria: 'carne', unidadeVenda: 'unidade', precoVenda: '', permiteFracionado: false, parceiro: '', vendidoAPrecoDeCusto: false };
+  const [novo, setNovo] = useState(vazio);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['produtos'] });
   const patch = useMutation({ mutationFn: ({ id, body }: { id: string; body: Row }) => api(`/produtos/${id}`, { method: 'PATCH', body }), onSuccess: () => { setEditando(null); refresh(); } });
+  const criar = useMutation({
+    mutationFn: () => api('/produtos', { method: 'POST', body: {
+      ...novo, precoVenda: Number(novo.precoVenda.replace(',', '.') || 0), parceiro: novo.parceiro || null,
+    } }),
+    onSuccess: () => { setNovo(vazio); setMostrarNovo(false); refresh(); },
+  });
   const body = () => ({ percentual: Number(reaj.percentual.replace(',', '.')), arredondar: reaj.arredondar, produtoIds: [...sel] });
   const prever = useMutation({ mutationFn: () => api<Row>('/produtos/reajuste?dryRun=true', { method: 'POST', body: body() }), onSuccess: setPrevia });
   const aplicar = useMutation({ mutationFn: () => api('/produtos/reajuste', { method: 'POST', body: body() }), onSuccess: () => { setPrevia(null); setSel(new Set()); refresh(); } });
@@ -31,7 +41,23 @@ export default function Cardapio({ admin }: { admin: boolean }) {
   };
 
   return (
-    <div className="space-y-4"><Titulo extra={<button className="btn-ghost" onClick={csv}>Exportar CSV</button>}>Cardápio e preços</Titulo>
+    <div className="space-y-4"><Titulo extra={<div className="flex gap-2">{admin && <button className="btn" onClick={() => setMostrarNovo(!mostrarNovo)}>{mostrarNovo ? 'Cancelar' : '+ Novo produto'}</button>}<button className="btn-ghost" onClick={csv}>Exportar CSV</button></div>}>Cardápio e preços</Titulo>
+      {admin && mostrarNovo && <div className="card space-y-3">
+        <h3 className="font-label font-bold uppercase text-gold">Novo produto</h3>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div><label>Nome</label><input value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} /></div>
+          <div><label>Categoria</label><select value={novo.categoria} onChange={(e) => setNovo({ ...novo, categoria: e.target.value })}>{CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label>Unidade de venda</label><input value={novo.unidadeVenda} onChange={(e) => setNovo({ ...novo, unidadeVenda: e.target.value })} placeholder="espeto, kg, unidade…" /></div>
+          <div><label>Preço de venda (R$)</label><input inputMode="decimal" value={novo.precoVenda} onChange={(e) => setNovo({ ...novo, precoVenda: e.target.value })} disabled={novo.vendidoAPrecoDeCusto} /></div>
+          <div><label>Parceiro (opcional)</label><input value={novo.parceiro} onChange={(e) => setNovo({ ...novo, parceiro: e.target.value })} placeholder="ex.: Doces by Nick" /></div>
+        </div>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={novo.permiteFracionado} onChange={(e) => setNovo({ ...novo, permiteFracionado: e.target.checked })} />Permite fracionado (ex.: 0,5)</label>
+          <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={novo.vendidoAPrecoDeCusto} onChange={(e) => setNovo({ ...novo, vendidoAPrecoDeCusto: e.target.checked, precoVenda: e.target.checked ? '0' : novo.precoVenda })} />Vendido a preço de custo (parceiro)</label>
+        </div>
+        <button className="btn" disabled={!novo.nome || criar.isPending} onClick={() => criar.mutate()}>{criar.isPending ? 'Salvando…' : 'Salvar produto'}</button>
+        {criar.isError && <Erro e={criar.error} />}
+      </div>}
       {admin && sel.size > 0 && <div className="card flex flex-wrap items-end gap-2"><div><label>Reajuste %</label><input className="!w-24" value={reaj.percentual} onChange={(e) => setReaj({ ...reaj, percentual: e.target.value })} /></div>
         <div><label>Arredondar</label><select value={reaj.arredondar} onChange={(e) => setReaj({ ...reaj, arredondar: e.target.value })}><option value="nenhum">Não</option><option value="90">,90</option><option value="99">,99</option></select></div>
         <button className="btn" onClick={() => prever.mutate()}>Prévia ({sel.size})</button></div>}

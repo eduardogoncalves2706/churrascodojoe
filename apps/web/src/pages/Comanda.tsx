@@ -21,7 +21,9 @@ export default function Comanda() {
         <p className="font-bold uppercase">{p.tipo}</p>
         {p.tipo === 'entrega' && <p>{p.enderecoTexto} — {p.bairro}{p.referencia ? ` (${p.referencia})` : ''}</p>}
         <hr className="border-black my-2" />
-        {p.itens.map((i: Row) => <div key={i.id} className="mb-1"><p className="font-bold">{Number(i.quantidade)}× {i.descricaoSnapshot}</p>{i.observacao && <p>&nbsp;&nbsp;» {i.observacao}</p>}</div>)}
+        {p.itens.map((i: Row) => <div key={i.id} className="mb-1"><p className="font-bold">{Number(i.quantidade)}× {i.descricaoSnapshot}</p>
+          {i.escolhas?.composicao?.map((c: Row, idx: number) => <p key={idx}>&nbsp;&nbsp;· {c.quantidade}× {c.nome}</p>)}
+          {i.observacao && <p>&nbsp;&nbsp;» {i.observacao}</p>}</div>)}
         <hr className="border-black my-2" />
         {Number(p.desconto) > 0 && <p>Desconto: −{brl(p.desconto)}</p>}{p.tipo === 'entrega' && <p>Entrega: {brl(p.taxaEntrega)}</p>}
         <p className="font-bold text-lg">TOTAL: {brl(p.total)}</p>
