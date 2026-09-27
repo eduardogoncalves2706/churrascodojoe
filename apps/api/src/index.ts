@@ -1,6 +1,7 @@
+import { eq } from 'drizzle-orm';
 import { handle } from 'hono/aws-lambda';
 import { app } from './app';
-import { getDb } from './db/client';
+import { getDb, schema as s } from './db/client';
 import { importarClientes } from './db/import-clientes';
 import { importarCustos } from './db/import-custos';
 import { importarPedidos } from './db/import-pedidos';
@@ -31,5 +32,16 @@ export const handler = async (event: Record<string, unknown>, ctx: never) => {
   if (event?.joeAdmin === 'importar-custos' && typeof event.csv === 'string') { return { ok: await importarCustos(getDb(), event.csv) }; }
   if (event?.joeAdmin === 'importar-clientes' && typeof event.csv === 'string') { return { ok: await importarClientes(getDb(), event.csv) }; }
   if (event?.joeAdmin === 'importar-pedidos' && typeof event.csv === 'string') { return { ok: await importarPedidos(getDb(), event.csv) }; }
+  // Ajuste pontual de uma config (ex.: endereço do site) já semeada — seed() não sobrescreve o que já existe.
+  if (event?.joeAdmin === 'config-set' && typeof event.chave === 'string') {
+    const db = getDb();
+    await db.insert(s.configuracoes).values({ chave: event.chave, valor: event.valor })
+      .onConflictDoUpdate({ target: s.configuracoes.chave, set: { valor: event.valor } });
+    return { ok: 'config-set', chave: event.chave };
+  }
+  if (event?.joeAdmin === 'config-get' && typeof event.chave === 'string') {
+    const [r] = await getDb().select().from(s.configuracoes).where(eq(s.configuracoes.chave, event.chave));
+    return { ok: 'config-get', valor: r?.valor ?? null };
+  }
   return http(event as never, ctx);
 };

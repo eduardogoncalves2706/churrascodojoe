@@ -44,10 +44,10 @@ publicRoutes.get('/status', async (c) => {
 });
 
 publicRoutes.get('/site', async (c) => {
-  const [whatsapp, instagram, horarioTexto, enderecoModo, enderecoTexto, cnpj, razaoSocial, aceitaPedidos, regiaoEntrega, faq, parceiros] = await Promise.all([
+  const [whatsapp, instagram, horarioTexto, enderecoModo, enderecoTexto, enderecoMapsUrl, cnpj, razaoSocial, aceitaPedidos, regiaoEntrega, faq, parceiros] = await Promise.all([
     config('site_whatsapp', ''), config('site_instagram', ''),
     config('site_horario_texto', 'Sábados, domingos e feriados, das 11h às 14h. Encomendas podem ser feitas a qualquer momento durante a semana, para entrega no fim de semana.'),
-    config('site_endereco_modo', 'completo'), config('site_endereco_texto', ''),
+    config('site_endereco_modo', 'completo'), config('site_endereco_texto', ''), config('site_endereco_maps_url', ''),
     config('site_cnpj', ''), config('site_razao_social', ''),
     config('site_aceita_pedidos_site', true), config('site_regiao_entrega_texto', 'Canoas e Região Metropolitana'),
     config('site_faq', [
@@ -59,7 +59,7 @@ publicRoutes.get('/site', async (c) => {
     config('site_parceiros', [{ nome: 'Doces by Nick', instagram: null }, { nome: 'King of Geleia', instagram: null }]),
   ]);
   return c.body(JSON.stringify({
-    whatsapp, instagram, horarioTexto, endereco: { modo: enderecoModo, texto: enderecoTexto || null }, cnpj: cnpj || null, razaoSocial: razaoSocial || null,
+    whatsapp, instagram, horarioTexto, endereco: { modo: enderecoModo, texto: enderecoTexto || null, mapsUrl: enderecoMapsUrl || null }, cnpj: cnpj || null, razaoSocial: razaoSocial || null,
     aceitaPedidosSite: aceitaPedidos, regiaoEntregaTexto: regiaoEntrega, faq, parceiros,
   }), 200, { 'Cache-Control': 'max-age=300', 'content-type': 'application/json' });
 });
