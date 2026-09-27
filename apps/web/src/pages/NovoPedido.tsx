@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatQtd, toCents } from '@joe/shared';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, brl, brlC, num, type Row } from '../api';
+import { api, ApiError, brl, brlC, num, type Row } from '../api';
 import { Campo, Carregando, Erro } from '../components/ui';
 
 interface Item { key: string; produtoId?: string; varianteId?: string; refrigeranteId?: string; nome: string; precoCents: number; qtd: number; obs: string; fracionado: boolean; livre: boolean }
@@ -30,6 +30,7 @@ function preencherCliente(c: Row, setD: (fn: (x: Draft) => Draft) => void) {
 function useNovoPedidoState() {
   const [d, setD] = useState<Draft>(carregarDraft);
   const [sugestoes, setSugestoes] = useState<Row[]>([]);
+  const [erroBusca, setErroBusca] = useState<string | null>(null);
   const up = (p: Partial<Draft>) => setD((x) => ({ ...x, ...p }));
 
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* noop */ } }, [d]);
@@ -38,8 +39,12 @@ function useNovoPedidoState() {
   useEffect(() => {
     if (digitos.length < 10 || d.semCadastro) return;
     const t = setTimeout(async () => {
-      try { preencherCliente(await api<Row>(`/clientes/por-telefone/${digitos}`), setD); setSugestoes([]); }
-      catch { setD((x) => ({ ...x, clienteId: undefined })); }
+      try { preencherCliente(await api<Row>(`/clientes/por-telefone/${digitos}`), setD); setSugestoes([]); setErroBusca(null); }
+      catch (e) {
+        setD((x) => ({ ...x, clienteId: undefined }));
+        // 404 = telefone não cadastrado ainda, normal. Outros erros (ex.: sessão expirada) ficam visíveis.
+        setErroBusca(e instanceof ApiError && e.status === 404 ? null : e instanceof Error ? e.message : 'Erro ao buscar cliente');
+      }
     }, 350);
     return () => clearTimeout(t);
   }, [digitos, d.semCadastro]);
@@ -48,20 +53,20 @@ function useNovoPedidoState() {
   useEffect(() => {
     if (d.semCadastro || d.clienteId || d.nome.trim().length < 2) { setSugestoes([]); return; }
     const t = setTimeout(async () => {
-      try { setSugestoes((await api<Row[]>(`/clientes?busca=${encodeURIComponent(d.nome.trim())}`)).slice(0, 5)); }
-      catch { setSugestoes([]); }
+      try { setSugestoes((await api<Row[]>(`/clientes?busca=${encodeURIComponent(d.nome.trim())}`)).slice(0, 5)); setErroBusca(null); }
+      catch (e) { setSugestoes([]); setErroBusca(e instanceof Error ? e.message : 'Erro ao buscar clientes'); }
     }, 350);
     return () => clearTimeout(t);
   }, [d.nome, d.semCadastro, d.clienteId]);
 
   const selecionarSugestao = (c: Row) => { preencherCliente(c, setD); setSugestoes([]); };
 
-  return { d, setD, up, digitos, sugestoes, selecionarSugestao };
+  return { d, setD, up, digitos, sugestoes, erroBusca, selecionarSugestao };
 }
 
 export default function NovoPedido() {
   const qc = useQueryClient();
-  const { d, setD, up, digitos, sugestoes, selecionarSugestao } = useNovoPedidoState();
+  const { d, setD, up, digitos, sugestoes, erroBusca, selecionarSugestao } = useNovoPedidoState();
   const [aba, setAba] = useState<(typeof ABAS)[number]>('Combos');
   const [combo, setCombo] = useState<{ combo: Row; variante?: Row } | null>(null);
   const [feito, setFeito] = useState<Row | null>(null);
@@ -144,6 +149,7 @@ export default function NovoPedido() {
               <span className="font-label font-bold">{s.nome}</span>{s.telefone && <span className="text-cream/60 text-sm"> · {s.telefone}</span>}</button></li>
           ))}</ul>}
         </div>
+        {erroBusca && <p className="text-primary-hover text-sm">Não consegui buscar clientes: {erroBusca}. Tente recarregar a página.</p>}
         {d.clienteId && historico.data && (
           <div className="border-t border-white/10 pt-2 text-sm">
             {pedidosValidos.length === 0 ? <p className="text-cream/60">Primeiro pedido desse cliente.</p> : <>
