@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+*.log
+cdk.out
+test-results
+playwright-report
+infra/outputs*.json
+.DS_Store

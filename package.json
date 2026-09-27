@@ -1,0 +1,17 @@
+{
+  "name": "churrasco-joe",
+  "private": true,
+  "packageManager": "pnpm@12.6.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @joe/api --filter @joe/web dev",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:up": "docker compose up -d",
+    "db:generate": "pnpm --filter @joe/api db:generate",
+    "db:migrate": "pnpm --filter @joe/api db:migrate",
+    "db:seed": "pnpm --filter @joe/api db:seed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}
