@@ -1,0 +1,12 @@
+---
+interface Props { whatsapp: string }
+import { whatsappUrl } from '../lib/api';
+const { whatsapp } = Astro.props;
+---
+<a
+  href={whatsappUrl(whatsapp, 'Olá! Vi o site e queria fazer um pedido 🔥')}
+  target="_blank" rel="noopener" aria-label="Chamar no WhatsApp"
+  class="fixed bottom-5 right-5 z-50 flex items-center justify-center h-14 w-14 rounded-full bg-ok text-2xl shadow-2xl hover:scale-105 transition-transform"
+>
+  📱
+</a>

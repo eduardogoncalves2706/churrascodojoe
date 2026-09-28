@@ -1,0 +1,46 @@
+---
+import type { Combo } from '../lib/api';
+import { brl, whatsappUrl } from '../lib/api';
+interface Props { combos: Combo[]; whatsapp: string }
+const { combos, whatsapp } = Astro.props;
+---
+<section id="combos" class="max-w-6xl mx-auto px-4 py-16 sm:py-20">
+  <p class="section-kicker">Pra compartilhar</p>
+  <h2 class="section-title mt-1 mb-10">Combos</h2>
+
+  <div class="grid gap-6 md:grid-cols-2">
+    {combos.map((combo) => {
+      const precoMin = Math.min(...combo.variantes.map((v) => v.precoCents));
+      const msg = `Olá! Vi o ${combo.nome} no site e queria pedir 🔥`;
+      return (
+        <div class="card !p-6 flex flex-col gap-4">
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="font-display text-3xl text-gold leading-none">{combo.nome}</h3>
+            <span class="chip !border-primary-hover !text-primary-hover shrink-0">{combo.pessoas} pessoas</span>
+          </div>
+
+          <p class="text-cream/70 text-sm leading-relaxed">
+            Acompanha: {combo.itens.filter((i) => i.nome !== 'Carne escolhida').map((i) => `${i.quantidade === 0.5 ? '1/2' : i.quantidade}x ${i.nome}`).join(' · ')}
+          </p>
+
+          <div>
+            <p class="font-label uppercase text-xs tracking-wider text-gold mb-2">Escolha sua carne</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {combo.variantes.map((v) => (
+                <div class="rounded-md border border-white/10 bg-bg/40 px-3 py-2 text-center">
+                  <p class="font-label uppercase text-xs text-cream/70 leading-tight">Com {v.carne}</p>
+                  <p class="font-display text-xl text-primary-hover leading-tight">{brl(v.precoCents)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 mt-1 pt-3 border-t border-white/5">
+            <p class="text-cream/60 text-xs">A partir de <span class="text-gold font-bold">{brl(precoMin)}</span></p>
+            <a href={whatsappUrl(whatsapp, msg)} target="_blank" rel="noopener" class="btn !min-h-[40px] !px-4 text-sm">Pedir no WhatsApp</a>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</section>

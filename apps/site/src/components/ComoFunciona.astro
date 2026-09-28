@@ -1,0 +1,27 @@
+---
+const passos = [
+  ['🍖', 'Escolhe', 'Monta o pedido no cardápio ou já sabe o que quer.'],
+  ['📱', 'Envia', 'Manda pelo WhatsApp com tudo certinho — sem ficar repetindo item por item.'],
+  ['🛵', 'Recebe', 'A gente entrega em casa ou combina a retirada no ponto.'],
+];
+---
+<section id="como-funciona" class="bg-surface/40 py-16 sm:py-20">
+  <div class="max-w-5xl mx-auto px-4">
+    <p class="section-kicker">Simples assim</p>
+    <h2 class="section-title mt-1 mb-10">Como funciona</h2>
+
+    <div class="grid sm:grid-cols-3 gap-6">
+      {passos.map(([emoji, titulo, texto]) => (
+        <div class="text-center flex flex-col items-center gap-2">
+          <span class="text-5xl">{emoji}</span>
+          <h3 class="font-display text-2xl text-gold">{titulo}</h3>
+          <p class="text-cream/70 text-sm max-w-[22ch]">{texto}</p>
+        </div>
+      ))}
+    </div>
+
+    <p class="text-center mt-10 chip !inline-flex mx-auto !border-primary-hover !text-primary-hover">
+      📅 Encomende durante a semana para o fim de semana
+    </p>
+  </div>
+</section>

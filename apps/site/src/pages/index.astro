@@ -1,0 +1,52 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import Combos from '../components/Combos.astro';
+import Cardapio from '../components/Cardapio.astro';
+import ComoFunciona from '../components/ComoFunciona.astro';
+import Entrega from '../components/Entrega.astro';
+import OndeEstamos from '../components/OndeEstamos.astro';
+import Parceiros from '../components/Parceiros.astro';
+import Instagram from '../components/Instagram.astro';
+import Faq from '../components/Faq.astro';
+import Footer from '../components/Footer.astro';
+import WhatsFloat from '../components/WhatsFloat.astro';
+import { buscarCardapio, buscarSite, buscarStatus } from '../lib/api';
+
+const APP_URL = 'https://app.churrascodojoe.com.br';
+
+const [cardapio, site, status] = await Promise.all([buscarCardapio(), buscarSite(), buscarStatus()]);
+
+// Fallback se a API estiver fora no momento do build — o site nunca fica em branco (ver SPEC §7).
+const dados = {
+  produtos: cardapio?.produtos ?? [],
+  combos: cardapio?.combos ?? [],
+  whatsapp: site?.whatsapp || '5551998869170',
+  instagram: site?.instagram || '@churrascodojoe',
+  horarioTexto: site?.horarioTexto || 'Sábados, domingos e feriados, das 11h às 14h.',
+  endereco: site?.endereco ?? { modo: 'combinado', texto: null, mapsUrl: null },
+  cnpj: site?.cnpj ?? null,
+  razaoSocial: site?.razaoSocial ?? null,
+  regiaoEntregaTexto: site?.regiaoEntregaTexto || 'Canoas e Região Metropolitana',
+  faq: site?.faq ?? [],
+  parceiros: site?.parceiros ?? [],
+};
+---
+<Base whatsapp={dados.whatsapp} enderecoTexto={dados.endereco.texto}>
+  <Header appUrl={APP_URL} />
+  <Hero status={status} whatsapp={dados.whatsapp} />
+  <Combos combos={dados.combos} whatsapp={dados.whatsapp} />
+  <Cardapio produtos={dados.produtos} whatsapp={dados.whatsapp} />
+  <ComoFunciona />
+  <Entrega regiaoEntregaTexto={dados.regiaoEntregaTexto} whatsapp={dados.whatsapp} />
+  <OndeEstamos modo={dados.endereco.modo} texto={dados.endereco.texto} mapsUrl={dados.endereco.mapsUrl} horarioTexto={dados.horarioTexto} />
+  <Parceiros parceiros={dados.parceiros} />
+  <Instagram instagram={dados.instagram} />
+  {dados.faq.length > 0 && <Faq faq={dados.faq} />}
+  <Footer
+    whatsapp={dados.whatsapp} instagram={dados.instagram} horarioTexto={dados.horarioTexto}
+    regiaoEntregaTexto={dados.regiaoEntregaTexto} cnpj={dados.cnpj} razaoSocial={dados.razaoSocial} appUrl={APP_URL}
+  />
+  <WhatsFloat whatsapp={dados.whatsapp} />
+</Base>

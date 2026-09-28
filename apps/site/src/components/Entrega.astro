@@ -1,0 +1,12 @@
+---
+interface Props { regiaoEntregaTexto: string; whatsapp: string }
+import { whatsappUrl } from '../lib/api';
+const { regiaoEntregaTexto, whatsapp } = Astro.props;
+---
+<section id="entrega" class="max-w-4xl mx-auto px-4 py-16 sm:py-20 text-center">
+  <p class="section-kicker">Onde chega</p>
+  <h2 class="section-title mt-1 mb-6">Área de entrega</h2>
+  <p class="text-cream/80 text-lg max-w-xl mx-auto">🛵 Entregamos em <span class="text-gold font-bold">{regiaoEntregaTexto}</span>.</p>
+  <p class="text-cream/50 text-sm mt-2 max-w-md mx-auto">A taxa de entrega é confirmada pelo WhatsApp conforme o seu endereço. Delivery só nos dias de operação.</p>
+  <a href={whatsappUrl(whatsapp, 'Olá! Queria saber se vocês entregam no meu bairro 🛵')} target="_blank" rel="noopener" class="btn-ghost mt-6">Perguntar se entrega no meu bairro</a>
+</section>

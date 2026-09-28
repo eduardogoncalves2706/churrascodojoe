@@ -1,0 +1,13 @@
+---
+interface Props { instagram: string }
+const { instagram } = Astro.props;
+const handle = instagram.replace('@', '');
+---
+<section class="max-w-3xl mx-auto px-4 py-16 sm:py-20 text-center">
+  <p class="section-kicker">Segue a gente</p>
+  <h2 class="section-title mt-1 mb-4">Instagram</h2>
+  <p class="text-cream/70 mb-6">Bastidor da brasa, cardápio e novidades primeiro por lá.</p>
+  <a href={`https://instagram.com/${handle}`} target="_blank" rel="noopener" class="btn">
+    📷 {instagram}
+  </a>
+</section>

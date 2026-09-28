@@ -1,0 +1,71 @@
+---
+import type { Produto } from '../lib/api';
+import { brl, whatsappUrl } from '../lib/api';
+interface Props { produtos: Produto[]; whatsapp: string }
+const { produtos, whatsapp } = Astro.props;
+
+const CATEGORIAS: Record<string, string> = { carne: 'Carnes', acompanhamento: 'Acompanhamentos', bebida: 'Bebidas', doces: 'Doces & Geleias' };
+const chaveCategoria = (p: Produto) => (p.categoria === 'sobremesa' || p.categoria === 'geleia' ? 'doces' : p.categoria);
+const ordem = ['carne', 'acompanhamento', 'bebida', 'doces'];
+const grupos = ordem
+  .map((cat) => ({ cat, label: CATEGORIAS[cat], itens: produtos.filter((p) => chaveCategoria(p) === cat).sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome)) }))
+  .filter((g) => g.itens.length > 0);
+---
+<section id="cardapio" class="max-w-6xl mx-auto px-4 py-16 sm:py-20">
+  <p class="section-kicker">Direto da brasa</p>
+  <h2 class="section-title mt-1 mb-8">Cardápio</h2>
+
+  <div class="flex flex-wrap justify-center gap-2 mb-10" role="tablist">
+    <input type="radio" name="cat" id="cat-todas" class="hidden" checked />
+    <label for="cat-todas" data-tab class="chip cursor-pointer">Todas</label>
+    {grupos.map((g) => (
+      <>
+        <input type="radio" name="cat" id={`cat-${g.cat}`} class="hidden" />
+        <label for={`cat-${g.cat}`} data-tab class="chip cursor-pointer">{g.label}</label>
+      </>
+    ))}
+  </div>
+
+  {grupos.map((g) => (
+    <div class={`cardapio-grupo grupo-${g.cat} grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-2`}>
+      {g.itens.map((p) => {
+        const msg = `Olá! Vi o ${p.nome} no cardápio do site 🔥`;
+        return (
+          <div class:list={['card !p-4 flex flex-col gap-1', { 'opacity-40': !p.disponivelHoje }]}>
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-label font-bold uppercase text-cream leading-tight">{p.nome}</h3>
+              {!p.disponivelHoje && <span class="chip !text-[10px] !min-h-0 !py-1 !px-2 !border-brasa !text-brasa shrink-0">Esgotado hoje</span>}
+            </div>
+            {p.descricaoCurta && <p class="text-cream/60 text-xs">{p.descricaoCurta}</p>}
+            <p class="text-cream/50 text-xs font-label uppercase">{p.unidadeVenda}{p.parceiro ? ` · ${p.parceiro}` : ''}</p>
+            <div class="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+              <span class="font-display text-2xl text-primary-hover">{brl(p.precoCents)}</span>
+              {p.disponivelHoje && (
+                <a href={whatsappUrl(whatsapp, msg)} target="_blank" rel="noopener" aria-label={`Pedir ${p.nome} no WhatsApp`} class="btn !min-h-[36px] !w-9 !p-0 !px-0 text-lg leading-none">+</a>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  ))}
+
+  <p class="text-center text-cream/40 text-xs mt-8">Fotos dos pratos em breve. Preços e disponibilidade atualizados direto do nosso sistema.</p>
+</section>
+
+<script>
+  // Chips = <label> de radios ocultos; sem :has() garantido em todo alvo, então o JS decide o que mostrar.
+  const radios = document.querySelectorAll<HTMLInputElement>('input[name="cat"]');
+  const tabs = document.querySelectorAll<HTMLLabelElement>('label[data-tab]');
+  const grupos = document.querySelectorAll<HTMLElement>('.cardapio-grupo');
+  function aplicar() {
+    const ativo = document.querySelector<HTMLInputElement>('input[name="cat"]:checked')?.id;
+    grupos.forEach((g) => {
+      const cat = Array.from(g.classList).find((c) => c.startsWith('grupo-'))?.replace('grupo-', '');
+      g.style.display = ativo === 'cat-todas' || ativo === `cat-${cat}` ? '' : 'none';
+    });
+    tabs.forEach((t) => t.classList.toggle('chip-on', t.htmlFor === ativo));
+  }
+  radios.forEach((r) => r.addEventListener('change', aplicar));
+  aplicar();
+</script>

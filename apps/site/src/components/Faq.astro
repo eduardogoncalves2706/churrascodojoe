@@ -1,0 +1,21 @@
+---
+import type { FaqItem } from '../lib/api';
+interface Props { faq: FaqItem[] }
+const { faq } = Astro.props;
+---
+<section class="max-w-3xl mx-auto px-4 py-16 sm:py-20">
+  <p class="section-kicker">Dúvidas</p>
+  <h2 class="section-title mt-1 mb-10">Perguntas frequentes</h2>
+
+  <div class="flex flex-col gap-3">
+    {faq.map((f) => (
+      <details class="card !p-0 overflow-hidden group">
+        <summary class="cursor-pointer list-none px-4 py-4 flex items-center justify-between gap-3 font-label font-bold uppercase text-cream">
+          {f.pergunta}
+          <span class="text-gold text-xl group-open:rotate-45 transition-transform shrink-0">+</span>
+        </summary>
+        <p class="px-4 pb-4 text-cream/70 text-sm leading-relaxed">{f.resposta}</p>
+      </details>
+    ))}
+  </div>
+</section>

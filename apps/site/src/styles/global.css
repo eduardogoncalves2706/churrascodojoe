@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-bg text-cream font-sans antialiased; }
+  h1, h2, h3 { @apply font-display tracking-wide; }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-md font-label font-bold uppercase tracking-wide bg-primary hover:bg-primary-hover text-cream transition-colors; }
+  .btn-ghost { @apply btn bg-transparent border border-gold/50 text-gold hover:bg-surface; }
+  .card { @apply bg-surface rounded-lg p-4 border border-white/5; }
+  .chip { @apply inline-flex items-center min-h-[40px] px-4 rounded-full border border-gold/40 font-label font-bold uppercase text-sm text-gold whitespace-nowrap; }
+  .chip-on { @apply bg-primary border-primary !text-cream; }
+  .section-title { @apply font-display text-4xl sm:text-5xl text-gold text-center; }
+  .section-kicker { @apply font-label font-bold uppercase tracking-[0.2em] text-primary-hover text-sm text-center; }
+}

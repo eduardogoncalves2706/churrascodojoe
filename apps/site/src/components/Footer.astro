@@ -1,0 +1,44 @@
+---
+import { whatsappUrl } from '../lib/api';
+interface Props {
+  whatsapp: string; instagram: string; horarioTexto: string; regiaoEntregaTexto: string;
+  cnpj: string | null; razaoSocial: string | null; appUrl: string;
+}
+const { whatsapp, instagram, horarioTexto, regiaoEntregaTexto, cnpj, razaoSocial, appUrl } = Astro.props;
+const whatsFormatado = `(${whatsapp.slice(2, 4)}) ${whatsapp.slice(4, 9)}-${whatsapp.slice(9)}`;
+---
+<footer id="contato" class="border-t border-white/5 bg-surface/30">
+  <div class="max-w-6xl mx-auto px-4 py-12 grid gap-8 sm:grid-cols-2 md:grid-cols-4 text-sm">
+    <div class="flex flex-col gap-3">
+      <img src="/logo.png" alt="Churrasco do Joe" class="h-14 w-14 rounded-full" />
+      <p class="text-cream/60">Espeto no capricho, do jeito certo.</p>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <p class="font-label font-bold uppercase text-gold text-xs tracking-wider">Contato</p>
+      <a href={whatsappUrl(whatsapp)} target="_blank" rel="noopener" class="text-cream/80 hover:text-primary-hover">📱 {whatsFormatado}</a>
+      <a href={`https://instagram.com/${instagram.replace('@', '')}`} target="_blank" rel="noopener" class="text-cream/80 hover:text-primary-hover">📷 {instagram}</a>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <p class="font-label font-bold uppercase text-gold text-xs tracking-wider">Funcionamento</p>
+      <p class="text-cream/70">{horarioTexto}</p>
+      <p class="text-cream/70">🛵 {regiaoEntregaTexto}</p>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <p class="font-label font-bold uppercase text-gold text-xs tracking-wider">Institucional</p>
+      <a href="/privacidade" class="text-cream/70 hover:text-primary-hover">Política de privacidade</a>
+      <a href={appUrl} class="text-cream/50 hover:text-primary-hover text-xs">🔒 Área interna</a>
+    </div>
+  </div>
+
+  <div class="border-t border-white/5 px-4 py-4 text-center text-cream/40 text-xs">
+    {razaoSocial && cnpj ? (
+      <p>{razaoSocial} · CNPJ {cnpj}</p>
+    ) : (
+      <p>Pedidos e negociação sempre pelo WhatsApp — {whatsFormatado}.</p>
+    )}
+    <p class="mt-1">© {new Date().getFullYear()} Churrasco do Joe. Todos os direitos reservados.</p>
+  </div>
+</footer>

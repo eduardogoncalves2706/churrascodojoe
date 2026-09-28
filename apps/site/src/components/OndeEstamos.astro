@@ -1,0 +1,46 @@
+---
+interface Props { modo: string; texto: string | null; mapsUrl: string | null; horarioTexto: string }
+const { modo, texto, mapsUrl, horarioTexto } = Astro.props;
+const embedSrc = texto ? `https://www.google.com/maps?q=${encodeURIComponent(texto)}&output=embed` : null;
+---
+<section id="onde-estamos" class="bg-surface/40 py-16 sm:py-20">
+  <div class="max-w-5xl mx-auto px-4">
+    <p class="section-kicker">Ponto de retirada</p>
+    <h2 class="section-title mt-1 mb-10">Onde estamos</h2>
+
+    <div class="grid md:grid-cols-2 gap-6 items-stretch">
+      <div class="card !p-6 flex flex-col justify-center gap-4">
+        <div>
+          <p class="font-label uppercase text-xs tracking-wider text-gold mb-1">Horário</p>
+          <p class="text-cream/90">{horarioTexto}</p>
+        </div>
+        {modo === 'completo' && texto && (
+          <div>
+            <p class="font-label uppercase text-xs tracking-wider text-gold mb-1">Endereço</p>
+            <p class="text-cream/90">📍 {texto}</p>
+          </div>
+        )}
+        {modo !== 'completo' && (
+          <div>
+            <p class="font-label uppercase text-xs tracking-wider text-gold mb-1">Retirada</p>
+            <p class="text-cream/90">Endereço combinado pelo WhatsApp na hora de confirmar o pedido.</p>
+          </div>
+        )}
+        {mapsUrl && (
+          <a href={mapsUrl} target="_blank" rel="noopener" class="btn-ghost self-start">🗺️ Como chegar</a>
+        )}
+      </div>
+
+      {embedSrc && modo === 'completo' && (
+        <div class="rounded-lg overflow-hidden border border-white/10 min-h-[260px]">
+          <iframe
+            src={embedSrc}
+            width="100%" height="100%" style="border:0; min-height:260px;"
+            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+            title="Mapa do ponto de retirada — Churrasco do Joe"
+          ></iframe>
+        </div>
+      )}
+    </div>
+  </div>
+</section>

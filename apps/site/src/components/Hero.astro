@@ -1,0 +1,38 @@
+---
+import type { StatusOperacao } from '../lib/api';
+interface Props { status: StatusOperacao | null; whatsapp: string }
+const { status, whatsapp } = Astro.props;
+const msgPadrao = 'Olá! Vi o site e queria fazer um pedido 🔥';
+---
+<section class="relative overflow-hidden bg-brasa">
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent to-bg/95" aria-hidden="true"></div>
+  <div class="relative max-w-4xl mx-auto px-4 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center flex flex-col items-center gap-5">
+    <img src="/logo.png" alt="" class="h-24 w-24 sm:h-32 sm:w-32 rounded-full border-4 border-gold/70 shadow-2xl" />
+
+    <h1 class="font-display text-5xl sm:text-7xl text-cream drop-shadow-lg">CHURRASCO DO JOE</h1>
+    <p class="font-serif italic text-xl sm:text-2xl text-gold">O Autêntico Sabor Gaúcho</p>
+    <p class="font-label uppercase tracking-[0.3em] text-cream/80 text-sm">Autêntico · Gaúcho · Delicioso</p>
+
+    <div id="status-badge" class="chip bg-bg/60 text-cream border-gold/50 !text-sm" data-inicio={status?.horario.inicio} data-fim={status?.horario.fim}>
+      {status?.aberto ? '🔥 ' : '🕒 '}{status?.mensagem ?? 'Sábados, domingos e feriados, das 11h às 14h'}
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3 mt-2 w-full sm:w-auto">
+      <a href="#cardapio" class="btn">Ver cardápio</a>
+      <a href={`https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msgPadrao)}`} target="_blank" rel="noopener" class="btn-ghost">
+        📱 Chamar no WhatsApp
+      </a>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { buscarStatus } from '../lib/api';
+  // Refina o selo assim que a página carrega — o horário/dia muda, então o valor do build pode estar velho.
+  buscarStatus().then((s) => {
+    if (!s) return;
+    const el = document.getElementById('status-badge');
+    if (!el) return;
+    el.textContent = (s.aberto ? '🔥 ' : '🕒 ') + s.mensagem;
+  });
+</script>

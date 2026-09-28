@@ -1,0 +1,19 @@
+---
+import type { Parceiro } from '../lib/api';
+interface Props { parceiros: Parceiro[] }
+const { parceiros } = Astro.props;
+if (parceiros.length === 0) return null;
+---
+<section class="max-w-4xl mx-auto px-4 py-16 sm:py-20 text-center">
+  <p class="section-kicker">Quem faz junto</p>
+  <h2 class="section-title mt-1 mb-10">Parceiros</h2>
+  <div class="flex flex-wrap justify-center gap-4">
+    {parceiros.map((p) => (
+      <div class="card !p-5 flex flex-col items-center gap-2 min-w-[160px]">
+        <span class="text-3xl">🤝</span>
+        <p class="font-label font-bold uppercase text-cream">{p.nome}</p>
+        {p.instagram && <a href={`https://instagram.com/${p.instagram.replace('@', '')}`} target="_blank" rel="noopener" class="text-gold text-sm hover:text-primary-hover">{p.instagram}</a>}
+      </div>
+    ))}
+  </div>
+</section>

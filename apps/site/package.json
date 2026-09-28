@@ -1,0 +1,22 @@
+{
+  "name": "@joe/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro check && astro build",
+    "typecheck": "astro check",
+    "test": "echo 'sem testes unitários no site'",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^5.16.0",
+    "@astrojs/tailwind": "^6.0.2",
+    "tailwindcss": "^3.4.19"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.5",
+    "typescript": "^5.9.3"
+  }
+}
