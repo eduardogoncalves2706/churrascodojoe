@@ -26,12 +26,11 @@ new WebStack(app, Name('Web'), {
 
 // Site público: domínio real é www (Registro.br não aceita CNAME no ápice; a raiz redireciona pro www
 // via "Redirecionamento" do próprio Registro.br, fora da AWS). Certificado já emitido cobre os dois como SAN.
-// 1º deploy sem alias (o DNS de www ainda aponta pro CloudFront antigo — a AWS recusa um 2º
-// CloudFront reivindicando um domínio que hoje resolve pra outra distribuição). Depois que o
-// Eduardo trocar o CNAME pro domínio novo, redeploy com siteDomain=www.churrascodojoe.com.br.
+// Domínio real é o www (Registro.br não aceita CNAME no ápice; a raiz redireciona pro www via
+// "Redirecionamento" do próprio Registro.br, fora da AWS). Certificado já emitido cobre os dois como SAN.
 new SiteStack(app, Name('Site'), {
   env, prefix, prod,
-  domainName: app.node.tryGetContext('siteDomain'),
+  domainName: app.node.tryGetContext('siteDomain') ?? (prod ? 'www.churrascodojoe.com.br' : undefined),
   certificateArn: app.node.tryGetContext('siteCertificateArn') ?? (prod ? 'arn:aws:acm:us-east-1:255530396736:certificate/2085182a-8244-4cb9-ad0d-e69a6186b539' : undefined),
 });
 

@@ -65,7 +65,9 @@ function handler(event) {
     });
     new deploy.BucketDeployment(this, 'Paginas', {
       sources: [deploy.Source.asset(dist, { exclude: ['_astro/*'] })],
-      destinationBucket: bucket, prune: true, distribution, distributionPaths: ['/*'],
+      // prune:false — com dois BucketDeployment na mesma origem, prune:true nesse apagaria o _astro/*
+      // que o outro (Assets) acabou de subir (cada deployment só "conhece" a própria fonte).
+      destinationBucket: bucket, prune: false, distribution, distributionPaths: ['/*'],
       cacheControl: [deploy.CacheControl.fromString('public,max-age=60')],
     });
 
