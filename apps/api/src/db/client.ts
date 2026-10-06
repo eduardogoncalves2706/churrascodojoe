@@ -5,7 +5,7 @@ import * as schema from './schema';
 
 // O driver `pg` já decodifica colunas json/jsonb sozinho (JSON.parse), e o Drizzle decodifica de novo
 // por cima — pra um valor que já virou string (ex.: um número guardado como texto), o segundo parse
-// pode transformar em number por acidente (ex.: "5551998869170" → 5551998869170). Desliga a decodificação
+// pode transformar em number por acidente (ex.: "5551998867190" → 5551998867190). Desliga a decodificação
 // do `pg` (deixa como texto cru) pra só o Drizzle decodificar, uma vez.
 pg.types.setTypeParser(pg.types.builtins.JSON, (v) => v);
 pg.types.setTypeParser(pg.types.builtins.JSONB, (v) => v);

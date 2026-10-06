@@ -103,7 +103,7 @@ export async function seed() {
     taxas_maquininha: { pix: 0.49, debito: 1.43, credito: 3.36, dinheiro: 0 }, horario_pico: { inicio: 11, fim: 14 }, dias_operacao: ['sab', 'dom'],
     mensagem_whatsapp_confirmacao: 'Pedido confirmado! Já estamos preparando.', margem_minima_pct: 40, comanda_formato: 'termica80', base_rateio: 'receita',
     // Landing page pública (docs/SPEC_landing_page.md) — editável depois em Configurações → Site.
-    site_whatsapp: '5551998869170', site_instagram: '@churrascodojoe',
+    site_whatsapp: '5551998867190', site_instagram: '@churrascodojoe',
     site_horario_texto: 'Sábados, domingos e feriados, das 11h às 14h. Encomendas podem ser feitas a qualquer momento durante a semana, para retirada ou entrega no fim de semana.',
     site_endereco_modo: 'completo', site_endereco_texto: 'R. Apus, 27 - Estância Velha, Canoas - RS, 92031-110',
     site_endereco_maps_url: 'https://www.google.com/maps/place/R.+Apus,+27+-+Est%C3%A2ncia+Velha,+Canoas+-+RS,+92031-110/data=!4m2!3m1!1s0x951970387f19f519:0x8d8265771b869154',

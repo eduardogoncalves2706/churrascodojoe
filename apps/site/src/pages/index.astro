@@ -22,7 +22,7 @@ const [cardapio, site, status] = await Promise.all([buscarCardapio(), buscarSite
 const dados = {
   produtos: cardapio?.produtos ?? [],
   combos: cardapio?.combos ?? [],
-  whatsapp: site?.whatsapp || '5551998869170',
+  whatsapp: site?.whatsapp || '5551998867190',
   instagram: site?.instagram || '@churrascodojoe',
   horarioTexto: site?.horarioTexto || 'Sábados, domingos e feriados, das 11h às 14h.',
   endereco: site?.endereco ?? { modo: 'combinado', texto: null, mapsUrl: null },
