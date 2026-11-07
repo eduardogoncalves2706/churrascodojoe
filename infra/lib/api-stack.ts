@@ -38,7 +38,11 @@ export class ApiStack extends cdk.Stack {
       vpc: props.vpc, securityGroups: [props.lambdaSg], vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       logRetention: logs.RetentionDays.ONE_MONTH,
       environment: {
-        DB_HOST: props.db.dbInstanceEndpointAddress, DB_PORT: props.db.dbInstanceEndpointPort, DB_NAME: props.dbName, DB_USER: props.dbUser, DB_SECRET_ARN: props.secret.secretArn,
+        DB_HOST: props.db.dbInstanceEndpointAddress, DB_PORT: props.db.dbInstanceEndpointPort, DB_NAME: props.dbName, DB_USER: props.dbUser,
+        // Senha resolvida em tempo de deploy (referência dinâmica do CloudFormation) — a Lambda não
+        // chama a API do Secrets Manager em runtime, então não precisa do VPC Endpoint dele (custo
+        // fixo de ~US$7/mês). Troca de senha: o valor só atualiza num próximo deploy.
+        DB_PASSWORD: props.secret.secretValueFromJson('password').unsafeUnwrap(),
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         CORS_ORIGIN_PUBLIC: 'https://www.churrascodojoe.com.br',
         NODE_OPTIONS: '--enable-source-maps',
@@ -47,8 +51,6 @@ export class ApiStack extends cdk.Stack {
         commandHooks: { beforeBundling: () => [], beforeInstall: () => [], afterBundling: (inputDir: string, outputDir: string) => [`cp -r "${inputDir}/apps/api/src/db/migrations" "${outputDir}/migrations"`] },
         banner: "import{createRequire as __cr}from'module';const require=__cr(import.meta.url);" },
     });
-    // permissões mínimas: ler só o segredo do banco; rede: só a porta do Postgres
-    props.secret.grantRead(fn);
     // Tela de Usuários: convidar, listar, ativar/desativar, trocar grupo — restrito a este user pool
     fn.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
       actions: [

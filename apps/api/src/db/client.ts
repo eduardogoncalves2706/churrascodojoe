@@ -1,4 +1,3 @@
-import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from './schema';
@@ -15,21 +14,19 @@ export type Db = ReturnType<typeof drizzle<typeof schema>>;
 let db: Db | undefined;
 
 /**
- * Local: DATABASE_URL. AWS: RDS Postgres em VPC isolada; credenciais lidas do Secrets Manager
- * (DB_SECRET_ARN) sob demanda e mantidas em cache. Trocar de banco = mudar só este arquivo.
+ * Local: DATABASE_URL. AWS: RDS Postgres em VPC isolada; senha vem pronta em DB_PASSWORD, resolvida
+ * do Secrets Manager em tempo de *deploy* (referência dinâmica do CloudFormation) — a Lambda nunca
+ * chama a API do Secrets Manager em runtime, o que elimina o VPC Endpoint dele (custo fixo por hora).
+ * Trocar de banco = mudar só este arquivo.
  */
 function createPool(): pg.Pool {
-  if (process.env.DB_SECRET_ARN) {
-    const sm = new SecretsManagerClient({});
-    let cred: Promise<{ password: string }> | undefined;
-    const secret = () => (cred ??= sm.send(new GetSecretValueCommand({ SecretId: process.env.DB_SECRET_ARN })).then((r) => JSON.parse(r.SecretString!)));
-    const pool = new pg.Pool({
+  if (process.env.DB_PASSWORD) {
+    return new pg.Pool({
       host: process.env.DB_HOST, port: Number(process.env.DB_PORT ?? 5432), database: process.env.DB_NAME ?? 'joe', max: 3,
-      user: process.env.DB_USER ?? 'joe_admin', password: async () => (await secret()).password,
+      user: process.env.DB_USER ?? 'joe_admin', password: process.env.DB_PASSWORD,
       ssl: { rejectUnauthorized: false }, // tráfego dentro de VPC isolada; TLS obrigatório no servidor
       idleTimeoutMillis: 30_000, connectionTimeoutMillis: 10_000,
     });
-    return pool;
   }
   return new pg.Pool({ connectionString: process.env.DATABASE_URL ?? 'postgres://joe:joe@localhost:5433/joe' });
 }

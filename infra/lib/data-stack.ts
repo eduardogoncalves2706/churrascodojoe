@@ -1,9 +1,18 @@
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 interface Props extends cdk.StackProps { prefix: string; prod: boolean; backupDays?: number }
 
@@ -20,20 +29,13 @@ export class DataStack extends cdk.Stack {
     super(scope, id, props);
     const keep = props.prod ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY;
 
-    // Sem NAT Gateway (~US$35/mês): a Lambda fala com o RDS dentro da VPC isolada e
-    // com o Secrets Manager por um endpoint privado (uma AZ).
+    // Sem NAT Gateway nem VPC Endpoints (cada um custa ~US$7/mês fixo, 24h): a Lambda fala com o RDS
+    // dentro da VPC isolada; a senha do banco vem pronta por env var (ver ApiStack), não busca no
+    // Secrets Manager em runtime. A tela de Usuários (Cognito Admin*) fica sem rede daqui pra fora —
+    // é uma função rara; se precisar, habilita o CognitoEndpoint temporariamente e reverte depois.
     this.vpc = new ec2.Vpc(this, 'Vpc', {
       maxAzs: 2, natGateways: 0,
       subnetConfiguration: [{ name: 'db', subnetType: ec2.SubnetType.PRIVATE_ISOLATED, cidrMask: 24 }],
-    });
-    this.vpc.addInterfaceEndpoint('SecretsEndpoint', {
-      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-      subnets: { subnets: [this.vpc.isolatedSubnets[0]] },
-    });
-    // Tela de Usuários (Cognito AdminCreateUser etc.) — sem isso a Lambda não alcança o Cognito e trava até o timeout.
-    this.vpc.addInterfaceEndpoint('CognitoEndpoint', {
-      service: ec2.InterfaceVpcEndpointAwsService.COGNITO_IDP,
-      subnets: { subnets: [this.vpc.isolatedSubnets[0]] },
     });
 
     this.db = new rds.DatabaseInstance(this, 'Db', {
@@ -60,6 +62,40 @@ export class DataStack extends cdk.Stack {
       cors: [{ allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT], allowedOrigins: ['https://*.cloudfront.net'], allowedHeaders: ['*'] }],
       removalPolicy: keep, autoDeleteObjects: !props.prod,
     });
+
+    // Liga/desliga o banco por agenda: negócio só atende fim de semana (ver docs/SPEC.md), então o
+    // RDS fica ligado só nesses dois blocos de 8h — ~70h/mês em vez de 730h (~90% de economia).
+    // Horário de Brasília (UTC-3, sem horário de verão) — convertido pra UTC no cron.
+    if (props.prod) {
+      const scheduler = new NodejsFunction(this, 'RdsScheduler', {
+        functionName: `${props.prefix}-rds-scheduler`,
+        entry: path.join(root, 'apps/api/src/rds-scheduler.ts'),
+        handler: 'handler',
+        depsLockFilePath: path.join(root, 'pnpm-lock.yaml'),
+        projectRoot: root,
+        runtime: lambda.Runtime.NODEJS_24_X,
+        architecture: lambda.Architecture.ARM_64,
+        timeout: cdk.Duration.seconds(30),
+        environment: { DB_INSTANCE_ID: this.db.instanceIdentifier },
+        bundling: { format: OutputFormat.ESM, minify: true, target: 'node24', mainFields: ['module', 'main'],
+          banner: "import{createRequire as __cr}from'module';const require=__cr(import.meta.url);" },
+      });
+      scheduler.addToRolePolicy(new iam.PolicyStatement({
+        actions: ['rds:StartDBInstance', 'rds:StopDBInstance'],
+        resources: [`arn:aws:rds:${this.region}:${this.account}:db:${this.db.instanceIdentifier}`],
+      }));
+
+      const horario = (nome: string, diaSemana: 'SAT' | 'SUN', horaUtc: number, action: 'start' | 'stop') =>
+        new events.Rule(this, nome, {
+          ruleName: `${props.prefix}-db-${nome.toLowerCase()}`,
+          schedule: events.Schedule.cron({ minute: '0', hour: String(horaUtc), weekDay: diaSemana }),
+          targets: [new targets.LambdaFunction(scheduler, { event: events.RuleTargetInput.fromObject({ action }) })],
+        });
+      horario('LigaSab', 'SAT', 11, 'start'); // sáb 08h BRT
+      horario('DesligaSab', 'SAT', 19, 'stop'); // sáb 16h BRT
+      horario('LigaDom', 'SUN', 11, 'start'); // dom 08h BRT
+      horario('DesligaDom', 'SUN', 19, 'stop'); // dom 16h BRT
+    }
 
     new cdk.CfnOutput(this, 'DbEndpoint', { value: this.db.dbInstanceEndpointAddress });
     new cdk.CfnOutput(this, 'SecretArn', { value: this.secret.secretArn });
