@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { handle } from 'hono/aws-lambda';
 import { app } from './app';
 import { getDb, schema as s } from './db/client';
@@ -42,6 +42,17 @@ export const handler = async (event: Record<string, unknown>, ctx: never) => {
   if (event?.joeAdmin === 'config-get' && typeof event.chave === 'string') {
     const [r] = await getDb().select().from(s.configuracoes).where(eq(s.configuracoes.chave, event.chave));
     return { ok: 'config-get', valor: r?.valor ?? null };
+  }
+  // Apaga um pedido de teste (ex.: criado validando o /v1/public/pedidos) por número + data de operação.
+  if (event?.joeAdmin === 'apaga-pedido-teste' && typeof event.numeroDia === 'number' && typeof event.dataOperacao === 'string') {
+    const db = getDb();
+    const [p] = await db.select().from(s.pedidos).where(and(eq(s.pedidos.numeroDia, event.numeroDia), eq(s.pedidos.dataOperacao, event.dataOperacao)));
+    if (!p) return { ok: 'apaga-pedido-teste', achou: false };
+    await db.delete(s.pagamentos).where(eq(s.pagamentos.pedidoId, p.id));
+    await db.delete(s.pedidoStatusHistorico).where(eq(s.pedidoStatusHistorico.pedidoId, p.id));
+    await db.delete(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, p.id));
+    await db.delete(s.pedidos).where(eq(s.pedidos.id, p.id));
+    return { ok: 'apaga-pedido-teste', achou: true, nome: p.nomeClienteSnapshot };
   }
   return http(event as never, ctx);
 };
