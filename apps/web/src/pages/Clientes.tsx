@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { api, brl, type Row } from '../api';
+import { api, brl, whatsappUrl, type Row } from '../api';
 import { Campo, Carregando, Erro, Titulo, Vazio } from '../components/ui';
 
 interface Form {
@@ -55,7 +55,14 @@ function FormCliente({ inicial, onSalvo, onCancelar }: { inicial: Form; onSalvo:
       {achou && !inicial.id && <p className="text-sm text-primary-hover">Esse telefone já é de {f.nome} — os dados abaixo são dele, e salvar atualiza o cadastro (não duplica).</p>}
       <div className="grid gap-2 sm:grid-cols-2">
         <Campo label="Nome"><input value={f.nome} onChange={(e) => up({ nome: e.target.value })} /></Campo>
-        <Campo label="Telefone (opcional)"><input inputMode="tel" placeholder="(51) 99999-9999" value={f.telefone} onChange={(e) => up({ telefone: e.target.value })} /></Campo>
+        <Campo label="Telefone (opcional)">
+          <div className="flex gap-2 items-center">
+            <input inputMode="tel" placeholder="(51) 99999-9999" value={f.telefone} onChange={(e) => up({ telefone: e.target.value })} />
+            {f.telefone.replace(/\D/g, '').length >= 10 && (
+              <a href={whatsappUrl(f.telefone)} target="_blank" rel="noopener" className="text-ok text-2xl shrink-0" aria-label="Chamar no WhatsApp" title="Chamar no WhatsApp">📱</a>
+            )}
+          </div>
+        </Campo>
         <Campo label="Instagram (opcional)"><input value={f.instagram} onChange={(e) => up({ instagram: e.target.value })} /></Campo>
         <Campo label="Observações (opcional)"><input value={f.observacoes} onChange={(e) => up({ observacoes: e.target.value })} placeholder="ex.: gosta mal passada" /></Campo>
       </div>
@@ -109,6 +116,11 @@ export default function Clientes() {
               <span><b>{c.nome}</b> <span className="text-cream/60">{c.telefone ?? 'sem telefone'}</span></span><br />
               <span className="text-gold text-sm">{c.qtdPedidos} pedidos · {brl(c.totalGasto)}{c.ultimoPedido && ` · último ${c.ultimoPedido}`}</span>
             </button>
+            {c.telefone && (
+              <a href={whatsappUrl(c.telefone)} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} className="text-ok text-xl shrink-0" aria-label="Chamar no WhatsApp" title="Chamar no WhatsApp">
+                📱
+              </a>
+            )}
             <button className="text-gold underline text-sm shrink-0" onClick={() => editar(c)}>editar</button>
           </div>
           {c.observacoes && <p className="text-sm text-gold">{c.observacoes}</p>}

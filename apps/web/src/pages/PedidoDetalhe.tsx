@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatQtd, proximoStatus } from '@joe/shared';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, brl, hora, num, STATUS_LABEL, type Row } from '../api';
+import { api, brl, hora, num, STATUS_LABEL, whatsappUrl, type Row } from '../api';
 import { Carregando, Erro } from '../components/ui';
 
 interface ItemEdit { key: string; produtoId?: string; comboVarianteId?: string; refrigeranteId?: string; nome: string; quantidade: number; observacao: string }
@@ -83,7 +83,12 @@ export default function PedidoDetalhe() {
       <div className="flex items-center gap-3 flex-wrap"><h2 className="text-5xl text-gold">Pedido #{num(p.numeroDia)}</h2>
         <span className={`chip ${p.status === 'cancelado' ? 'bg-brasa border-brasa' : 'chip-on'}`}>{STATUS_LABEL[p.status]}</span><Link to="/pedidos" className="ml-auto text-gold underline">voltar</Link></div>
       <div className="card space-y-1">
-        <p className="text-lg">{p.nomeClienteSnapshot ?? 'Balcão'} <span className="text-cream/60">{p.telefoneSnapshot}</span></p>
+        <p className="text-lg flex items-center gap-2">
+          {p.nomeClienteSnapshot ?? 'Balcão'} <span className="text-cream/60">{p.telefoneSnapshot}</span>
+          {p.telefoneSnapshot && (
+            <a href={whatsappUrl(p.telefoneSnapshot)} target="_blank" rel="noopener" className="text-ok text-xl" aria-label="Chamar no WhatsApp" title="Chamar no WhatsApp">📱</a>
+          )}
+        </p>
         {admin && !p.clienteId && (
           <div className="relative">
             <p className="text-xs text-brasa">Sem cadastro de cliente vinculado — busque e religue:</p>

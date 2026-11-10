@@ -30,6 +30,11 @@ export const pct = (v: number | null | undefined) => (v == null ? '—' : `${v.t
 export const hoje = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
 export const hora = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
 export const num = (n: number) => String(n).padStart(3, '0');
+/** Abre a conversa com o cliente direto no WhatsApp (Web ou app), sem precisar procurar o contato. */
+export const whatsappUrl = (telefone: string) => {
+  const digitos = telefone.replace(/\D/g, '');
+  return `https://wa.me/${digitos.startsWith('55') ? digitos : `55${digitos}`}`;
+};
 
 export const STATUS_LABEL: Record<string, string> = {
   aguardando_confirmacao: 'Aguardando confirmação', recusado: 'Recusado',
