@@ -29,6 +29,13 @@
       "when": 1790546573384,
       "tag": "0003_square_supreme_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794337129040,
+      "tag": "0004_public_tinkerer",
+      "breakpoints": true
     }
   ]
 }

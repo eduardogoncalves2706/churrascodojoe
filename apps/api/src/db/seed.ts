@@ -18,9 +18,11 @@ const INSUMOS: [string, string, string, Cat][] = [
 type CatP = (typeof s.categoriaProdutoEnum.enumValues)[number];
 interface P { nome: string; cat: CatP; un: string; preco: string; insumo?: string; ficha?: number; fator?: number; fracionado?: boolean; parceiro?: string; custo?: boolean }
 const PRODUTOS: P[] = [
-  ...(['Picanha:109.90', 'Maminha:89.90', 'Alcatra:89.90', 'Vazio:89.90', 'Costela:64.90'] as const).map((x): P => {
+  // Preço e "permite meio espeto" sincronizados com Controle_Pedidos_Churrasco.xlsx (ver
+  // db/updates/2026-09-precos-controle-pedidos.ts e 2026-09-27-fracionado-carnes.ts, já aplicados em produção).
+  ...(['Picanha:109.00', 'Maminha:89.90', 'Alcatra:89.90', 'Vazio:89.90', 'Costela:64.90'] as const).map((x): P => {
     const [nome, preco] = x.split(':');
-    return { nome, cat: 'carne', un: 'espeto', preco, insumo: nome, fator: 0.9, ficha: 1 / 0.9 };
+    return { nome, cat: 'carne', un: 'espeto', preco, insumo: nome, fator: 0.9, ficha: 1 / 0.9, fracionado: true };
   }),
   { nome: 'Salsichão', cat: 'carne', un: 'peça', preco: '59.90', insumo: 'Linguiça/Salsichão', fator: 1, ficha: 1, fracionado: true },
   { nome: 'Salsichão (unidade)', cat: 'carne', un: 'unidade', preco: '3.99' },
@@ -37,7 +39,7 @@ const PRODUTOS: P[] = [
 ];
 
 const COMBOS = [
-  { nome: 'Combo 1 – 2 pessoas', pessoas: 2, q: [1, 0.5, 1, 0.5, 1, 1, 1], precos: { Costela: '139.99', Vazio: '156.99', Alcatra: '156.99', Maminha: '156.99', Picanha: '174.99' } },
+  { nome: 'Combo 1 – 2 pessoas', pessoas: 2, q: [1, 0.5, 1, 0.5, 1, 1, 1], precos: { Costela: '149.99', Vazio: '164.99', Alcatra: '164.99', Maminha: '164.99', Picanha: '184.99' } },
   { nome: 'Combo 2 – 4 pessoas', pessoas: 4, q: [2, 1, 2, 0.5, 2, 2, 1], precos: { Costela: '259.99', Vazio: '274.99', Alcatra: '274.99', Maminha: '274.99', Picanha: '299.99' } },
 ];
 const COMBO_ITENS = ['*carne', 'Coração', 'Pão de alho (unidade)', 'Salsichão', 'Arroz 500 g', 'Maionese 300 g', 'Coca'];
@@ -128,6 +130,8 @@ export async function seed() {
     ['Impostos', 'saida', 'impostos'], ['Taxa de cartão', 'saida', 'taxas'], ['Meta Ads/Marketing', 'saida', 'marketing'],
     ['Investimento em equipamento', 'saida', 'investimento'], ['Aporte de sócio', 'entrada', 'aporte_socio'],
     ['Distribuição de lucro', 'saida', 'retirada_socio'], ['Reserva administrativa', 'saida', 'reserva'], ['Reserva de investimento', 'saida', 'reserva'],
+    // Placeholder da importação de extrato (ver db/import-extrato.ts) até o usuário escolher a categoria de verdade.
+    ['A classificar (entrada)', 'entrada', 'nao_classificado'], ['A classificar (saída)', 'saida', 'nao_classificado'],
   ];
   await db.insert(s.categoriasFinanceiras).values(CATEGORIAS.map(([nome, tipo, grupoDre, rateavel]) => ({ nome, tipo, grupoDre, rateavel: !!rateavel }))).onConflictDoNothing();
 

@@ -8,6 +8,8 @@ import Cardapio from './pages/Cardapio';
 import Clientes from './pages/Clientes';
 import Combos from './pages/Combos';
 import Comanda from './pages/Comanda';
+import Estoque from './pages/Estoque';
+import Financeiro from './pages/Financeiro';
 import Insumos from './pages/Insumos';
 import NovoPedido from './pages/NovoPedido';
 import PedidoDetalhe from './pages/PedidoDetalhe';
@@ -22,8 +24,8 @@ const main = [
 ];
 const mais = [
   { to: '/cardapio', label: 'Cardápio', admin: false }, { to: '/combos', label: 'Combos', admin: false }, { to: '/clientes', label: 'Clientes', admin: false },
-  { to: '/insumos', label: 'Insumos e ficha', admin: true }, { to: '/bairros', label: 'Bairros e taxas', admin: true },
-  { to: '/usuarios', label: 'Usuários', admin: true },
+  { to: '/insumos', label: 'Insumos e ficha', admin: true }, { to: '/estoque', label: 'Estoque', admin: true }, { to: '/bairros', label: 'Bairros e taxas', admin: true },
+  { to: '/financeiro', label: 'Financeiro', admin: true }, { to: '/usuarios', label: 'Usuários', admin: true },
 ];
 
 function Link({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
@@ -63,7 +65,9 @@ export default function App() {
               <Route path="/combos" element={<Combos admin={admin} />} />
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/insumos" element={admin ? <Insumos /> : <Navigate to="/" />} />
+              <Route path="/estoque" element={admin ? <Estoque /> : <Navigate to="/" />} />
               <Route path="/bairros" element={admin ? <Bairros /> : <Navigate to="/" />} />
+              <Route path="/financeiro" element={admin ? <Financeiro /> : <Navigate to="/" />} />
               <Route path="/usuarios" element={admin ? <Usuarios /> : <Navigate to="/" />} />
             </Routes>
           </main>

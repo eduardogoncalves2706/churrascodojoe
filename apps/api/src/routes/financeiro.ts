@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireAdmin, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
+import { importarExtrato } from '../db/import-extrato';
 import { calcularRateio, periodoPadrao } from '../services/rateio';
 
 export const financeiro = new Hono<Env>();
@@ -61,6 +62,12 @@ financeiro.patch('/lancamentos/:id', zValidator('json', lancamentoBody.partial()
 financeiro.post('/lancamentos/:id/pagar', zValidator('json', z.object({ dataPagamento: z.iso.date().optional() })), async (c) => {
   const dataPagamento = c.req.valid('json').dataPagamento ?? new Date().toISOString().slice(0, 10);
   return c.json((await db().update(s.lancamentos).set({ status: 'realizado', dataPagamento, updatedAt: new Date() }).where(eq(s.lancamentos.id, c.req.param('id'))).returning())[0]);
+});
+
+/* ---------- Conciliação de extrato (ex.: exportado do app da Stone) ---------- */
+financeiro.post('/importar-extrato', zValidator('json', z.object({ ofx: z.string().min(1), contaId: z.uuid() })), async (c) => {
+  const { ofx, contaId } = c.req.valid('json');
+  return c.json(await importarExtrato(db(), ofx, contaId, c.get('user').nome));
 });
 
 /* ---------- Fluxo de caixa ---------- */

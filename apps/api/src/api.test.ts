@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { app } from './app';
+import { parseOfx } from './db/import-extrato';
 
 const call = (path: string, init?: RequestInit & { role?: string }) =>
   app.request(`/v1${path}`, { ...init, headers: { 'content-type': 'application/json', 'x-mock-role': init?.role ?? 'admin', ...(init?.headers ?? {}) } });
@@ -171,5 +172,98 @@ describe('financeiro', () => {
   it('operador não acessa financeiro', async () => {
     expect((await call('/dre', { role: 'operador' })).status).toBe(403);
     expect((await call('/lancamentos', { role: 'operador' })).status).toBe(403);
+  });
+
+  const OFX_EXEMPLO = `
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>
+<STMTTRN>
+<TRNTYPE>CREDIT
+<DTPOSTED>20261101120000
+<TRNAMT>150.00
+<FITID>stone-0001
+<MEMO>Recebimento Pix - Pedido 017
+</STMTTRN>
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20261103083000
+<TRNAMT>-45.90
+<FITID>stone-0002
+<MEMO>Compra - Supermercado Nutri
+</STMTTRN>
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20261104000000
+<TRNAMT>-12.50
+<MEMO>Sem FITID — usa chave alternativa
+</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
+  it('parseOfx lê transações no formato "SGML" (sem fechar tag) que a maioria dos bancos/fintechs usa', () => {
+    const linhas = parseOfx(OFX_EXEMPLO);
+    expect(linhas).toHaveLength(3);
+    expect(linhas[0]).toMatchObject({ fitid: 'stone-0001', data: '2026-11-01', valor: 150, tipo: 'entrada' });
+    expect(linhas[1]).toMatchObject({ fitid: 'stone-0002', data: '2026-11-03', valor: -45.9, tipo: 'saida' });
+    expect(linhas[2].fitid).toBeTruthy(); // sem FITID no arquivo: cai na chave alternativa, nunca fica vazio
+    expect(linhas[2].tipo).toBe('saida');
+  });
+
+  it('importa extrato, cria lançamentos "a classificar" e reimportar não duplica', async () => {
+    // FITID só precisa ser único entre si; precisa mudar a cada execução da suíte (banco local persiste
+    // entre rodadas), senão a 2ª rodada já encontra os lançamentos da 1ª e o teste de "importa 3" falha.
+    const run = Date.now();
+    const ofx = OFX_EXEMPLO
+      .replaceAll('stone-0001', `teste-${run}-0001`).replaceAll('stone-0002', `teste-${run}-0002`)
+      .replace('Sem FITID — usa chave alternativa', `Sem FITID — usa chave alternativa (${run})`); // 3ª linha não tem FITID; precisa variar pra não colidir com a rodada anterior
+    const contas = await json(await call('/contas'));
+    const conta = contas.find((c: any) => c.nome === 'Maquininha') ?? contas[0];
+
+    const r1 = await json(await call('/importar-extrato', { method: 'POST', body: JSON.stringify({ ofx, contaId: conta.id }) }));
+    expect(r1).toMatchObject({ total: 3, importados: 3, duplicados: 0 });
+
+    const r2 = await json(await call('/importar-extrato', { method: 'POST', body: JSON.stringify({ ofx, contaId: conta.id }) }));
+    expect(r2).toMatchObject({ total: 3, importados: 0, duplicados: 3 }); // idempotente: mesmo arquivo de novo
+
+    const lancamentos = await json(await call('/lancamentos?categoriaId=' + (await buscarCategoriaId('A classificar (saída)'))));
+    expect(lancamentos.some((l: any) => l.descricao.includes('Supermercado Nutri'))).toBe(true);
+  });
+
+  async function buscarCategoriaId(nome: string) {
+    const categorias = await json(await call('/categorias'));
+    return categorias.find((c: any) => c.nome === nome)?.id;
+  }
+});
+
+describe('estoque', () => {
+  it('registrar entrada de compra soma no estoque atual do insumo', async () => {
+    const insumos = await json(await call('/insumos'));
+    const carvao = insumos.find((i: any) => i.nome === 'Carvão');
+
+    const antes = (await json(await call('/estoque'))).find((e: any) => e.insumoId === carvao.id);
+    await call('/estoque/lotes', { method: 'POST', body: JSON.stringify({ insumoId: carvao.id, origem: 'compra', quantidade: 10, validade: null }) });
+    const depois = (await json(await call('/estoque'))).find((e: any) => e.insumoId === carvao.id);
+
+    expect(depois.estoqueAtual).toBe((antes?.estoqueAtual ?? 0) + 10);
+  });
+
+  it('desativar um lote tira ele da conta do estoque atual', async () => {
+    const insumos = await json(await call('/insumos'));
+    const arroz = insumos.find((i: any) => i.nome === 'Arroz');
+
+    const lote = await json(await call('/estoque/lotes', { method: 'POST', body: JSON.stringify({ insumoId: arroz.id, origem: 'compra', quantidade: 25 }) }));
+    const comLote = (await json(await call('/estoque'))).find((e: any) => e.insumoId === arroz.id);
+    await call(`/estoque/lotes/${lote.id}`, { method: 'PATCH', body: JSON.stringify({ ativo: false }) });
+    const semLote = (await json(await call('/estoque'))).find((e: any) => e.insumoId === arroz.id);
+
+    expect(semLote.estoqueAtual).toBe(comLote.estoqueAtual - 25);
+  });
+
+  it('necessidade da semana nunca pede negativo (já tem estoque suficiente = 0 a comprar)', async () => {
+    const r = await json(await call('/estoque/necessidade?de=2026-01-01&ate=2026-01-01')); // período sem pedido nenhum
+    expect(Array.isArray(r)).toBe(true);
+    for (const item of r) expect(item.aComprar).toBeGreaterThanOrEqual(0);
+  });
+
+  it('operador não acessa estoque (mesmo custo/fornecedor sensível que o resto do catálogo)', async () => {
+    expect((await call('/estoque', { role: 'operador' })).status).toBe(403);
   });
 });

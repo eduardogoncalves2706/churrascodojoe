@@ -4,6 +4,7 @@ import { auth, type Env } from './auth';
 import { catalogo } from './routes/catalogo';
 import { clientes } from './routes/clientes';
 import { config } from './routes/config';
+import { estoque } from './routes/estoque';
 import { financeiro } from './routes/financeiro';
 import { pedidos } from './routes/pedidos';
 import { publicRoutes } from './routes/public';
@@ -26,6 +27,7 @@ v1.route('/', clientes);
 v1.route('/', pedidos);
 v1.route('/', usuarios);
 v1.route('/', financeiro);
+v1.route('/', estoque);
 app.route('/v1', v1);
 
 app.notFound((c) => c.json({ error: { code: 'nao_encontrado', message: 'Rota não encontrada' } }, 404));

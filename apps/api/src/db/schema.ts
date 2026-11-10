@@ -25,6 +25,7 @@ export const tipoCategoriaEnum = pgEnum('tipo_categoria', ['entrada', 'saida']);
 export const grupoDreEnum = pgEnum('grupo_dre', [
   'receita_vendas', 'outras_receitas', 'cmv', 'custo_indireto', 'pessoal', 'entrega', 'ocupacao', 'utilidades', 'marketing', 'taxas',
   'impostos', 'investimento', 'aporte_socio', 'retirada_socio', 'reserva', 'transferencia',
+  'nao_classificado', // placeholder de importação de extrato, antes de o usuário escolher a categoria de verdade — nunca entra no DRE
 ]);
 export const tipoLancamentoEnum = pgEnum('tipo_lancamento', ['entrada', 'saida', 'transferencia']);
 export const statusLancamentoEnum = pgEnum('status_lancamento', ['previsto', 'realizado', 'cancelado']);
@@ -51,7 +52,20 @@ export const configuracoes = pgTable('configuracoes', {
 export const insumos = pgTable('insumos', {
   id: id(), nome: text('nome').notNull().unique(), categoria: categoriaInsumoEnum('categoria').notNull(), unidadeCompra: text('unidade_compra').notNull(),
   custoAtual: money('custo_atual').notNull().default('0'), fornecedorPadraoId: uuid('fornecedor_padrao_id').references(() => fornecedores.id),
+  // Estoque mínimo "de segurança" (ex.: sempre ter carvão), somado à necessidade calculada pelos pedidos
+  // da semana (ver services/estoque.ts) — opcional, nem todo insumo precisa.
+  estoqueMinimo: qty('estoque_minimo').default('0'),
   ativo: boolean('ativo').notNull().default(true), ...audit,
+});
+
+export const estoqueLotes = pgTable('estoque_lotes', {
+  id: id(), insumoId: uuid('insumo_id').notNull().references(() => insumos.id),
+  // Compra = entrada de verdade; ajuste = correção manual (perda, quebra, contagem). Negativo em
+  // qualquer um dos dois serve pra dar baixa sem apagar o histórico da entrada original.
+  origem: text('origem').notNull().default('compra'), quantidade: qty('quantidade').notNull(),
+  validade: date('validade'), fornecedorId: uuid('fornecedor_id').references(() => fornecedores.id),
+  custoUnitario: money('custo_unitario'), observacao: text('observacao'), ativo: boolean('ativo').notNull().default(true),
+  createdBy: text('created_by'), ...audit,
 });
 
 export const insumoCustosHistorico = pgTable('insumo_custos_historico', {
@@ -178,8 +192,14 @@ export const lancamentos = pgTable('lancamentos', {
   dataVencimento: date('data_vencimento').notNull(), dataPagamento: date('data_pagamento'), status: statusLancamentoEnum('status').notNull().default('previsto'),
   pedidoId: uuid('pedido_id').references(() => pedidos.id), fornecedorId: uuid('fornecedor_id').references(() => fornecedores.id),
   colaboradorId: uuid('colaborador_id').references(() => colaboradores.id), socioId: uuid('socio_id').references(() => socios.id),
-  anexoKey: text('anexo_key'), recorrenciaId: uuid('recorrencia_id'), observacao: text('observacao'), createdBy: text('created_by'), ...audit,
-});
+  anexoKey: text('anexo_key'), recorrenciaId: uuid('recorrencia_id'), observacao: text('observacao'), createdBy: text('created_by'),
+  // Id único da transação no extrato importado (FITID do OFX) — garante que reimportar o mesmo
+  // arquivo não duplica lançamento (ver db/import-extrato.ts).
+  extratoRef: text('extrato_ref'),
+  ...audit,
+  // unique "normal" (não parcial): NULL nunca conflita com NULL no Postgres, então lançamento manual
+  // (sem extrato_ref) não esbarra nisso — e ON CONFLICT (extrato_ref) casa certinho com o índice.
+}, (t) => [unique('lancamentos_extrato_ref_uniq').on(t.extratoRef)]);
 
 export const pagamentos = pgTable('pagamentos', {
   id: id(), pedidoId: uuid('pedido_id').notNull().references(() => pedidos.id), forma: formaPagamentoEnum('forma').notNull(), valor: money('valor').notNull(),

@@ -142,15 +142,16 @@ catalogo.get('/insumos', requireAdmin, async (c) => {
     return { ...i, custoCents: toCents(i.custoAtual), custoAnteriorCents: h[1] ? toCents(h[1].custo) : null, ultimoCustoEm: h[0]?.vigenteDesde ?? null };
   }));
 });
-const insumoBody = z.object({ nome: z.string().min(1), categoria: z.enum(s.categoriaInsumoEnum.enumValues), unidadeCompra: z.string().min(1), custoAtual: money, fornecedorPadraoId: z.uuid().nullish() });
+const insumoBody = z.object({ nome: z.string().min(1), categoria: z.enum(s.categoriaInsumoEnum.enumValues), unidadeCompra: z.string().min(1), custoAtual: money, fornecedorPadraoId: z.uuid().nullish(), estoqueMinimo: z.number().min(0).nullish() });
 catalogo.post('/insumos', requireAdmin, zValidator('json', insumoBody), async (c) => {
-  const b = c.req.valid('json');
-  const [i] = await db().insert(s.insumos).values({ ...b, custoAtual: b.custoAtual.toFixed(2) }).returning();
+  const { estoqueMinimo, ...b } = c.req.valid('json');
+  const [i] = await db().insert(s.insumos).values({ ...b, custoAtual: b.custoAtual.toFixed(2), estoqueMinimo: estoqueMinimo?.toFixed(3) }).returning();
   await db().insert(s.insumoCustosHistorico).values({ insumoId: i.id, custo: i.custoAtual, fornecedorId: b.fornecedorPadraoId, observacao: 'Cadastro' });
   return c.json(i, 201);
 });
 catalogo.patch('/insumos/:id', requireAdmin, zValidator('json', insumoBody.omit({ custoAtual: true }).partial().extend({ ativo: z.boolean().optional() })), async (c) => {
-  const [i] = await db().update(s.insumos).set({ ...c.req.valid('json'), updatedAt: new Date() }).where(eq(s.insumos.id, c.req.param('id'))).returning();
+  const { estoqueMinimo, ...b } = c.req.valid('json');
+  const [i] = await db().update(s.insumos).set({ ...b, ...(estoqueMinimo !== undefined ? { estoqueMinimo: estoqueMinimo?.toFixed(3) } : {}), updatedAt: new Date() }).where(eq(s.insumos.id, c.req.param('id'))).returning();
   return c.json(i);
 });
 /** Atualiza custo: grava histórico; margens de produtos/combos recalculam sozinhas (custo vem da ficha ao vivo). */
