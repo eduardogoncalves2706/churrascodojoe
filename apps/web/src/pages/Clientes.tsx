@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { api, brl, whatsappUrl, type Row } from '../api';
-import { Campo, Carregando, Erro, Titulo, Vazio } from '../components/ui';
+import { Campo, Carregando, Erro, MensagemWhats, Titulo, Vazio } from '../components/ui';
 
 interface Form {
   id?: string; nome: string; telefone: string; instagram: string; observacoes: string; temEndereco: boolean;
@@ -55,17 +55,11 @@ function FormCliente({ inicial, onSalvo, onCancelar }: { inicial: Form; onSalvo:
       {achou && !inicial.id && <p className="text-sm text-primary-hover">Esse telefone já é de {f.nome} — os dados abaixo são dele, e salvar atualiza o cadastro (não duplica).</p>}
       <div className="grid gap-2 sm:grid-cols-2">
         <Campo label="Nome"><input value={f.nome} onChange={(e) => up({ nome: e.target.value })} /></Campo>
-        <Campo label="Telefone (opcional)">
-          <div className="flex gap-2 items-center">
-            <input inputMode="tel" placeholder="(51) 99999-9999" value={f.telefone} onChange={(e) => up({ telefone: e.target.value })} />
-            {f.telefone.replace(/\D/g, '').length >= 10 && (
-              <a href={whatsappUrl(f.telefone)} target="_blank" rel="noopener" className="text-ok text-2xl shrink-0" aria-label="Chamar no WhatsApp" title="Chamar no WhatsApp">📱</a>
-            )}
-          </div>
-        </Campo>
+        <Campo label="Telefone (opcional)"><input inputMode="tel" placeholder="(51) 99999-9999" value={f.telefone} onChange={(e) => up({ telefone: e.target.value })} /></Campo>
         <Campo label="Instagram (opcional)"><input value={f.instagram} onChange={(e) => up({ instagram: e.target.value })} /></Campo>
         <Campo label="Observações (opcional)"><input value={f.observacoes} onChange={(e) => up({ observacoes: e.target.value })} placeholder="ex.: gosta mal passada" /></Campo>
       </div>
+      {f.telefone.replace(/\D/g, '').length >= 10 && <MensagemWhats telefone={f.telefone} />}
       <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.temEndereco} onChange={(e) => up({ temEndereco: e.target.checked })} />Cadastrar endereço</label>
       {f.temEndereco && <div className="grid gap-2 sm:grid-cols-2">
         <Campo label="Endereço"><input value={f.logradouro} onChange={(e) => up({ logradouro: e.target.value })} placeholder="Rua" /></Campo>
@@ -124,7 +118,10 @@ export default function Clientes() {
             <button className="text-gold underline text-sm shrink-0" onClick={() => editar(c)}>editar</button>
           </div>
           {c.observacoes && <p className="text-sm text-gold">{c.observacoes}</p>}
-          {aberto === c.id && <div className="mt-2 border-t border-white/10 pt-2">{ped.data?.map((p) => <p key={p.id} className="text-sm">{p.dataOperacao} · #{p.numeroDia} · {brl(p.total)} · {p.status}</p>)}</div>}
+          {aberto === c.id && <div className="mt-2 border-t border-white/10 pt-2 space-y-2">
+            {ped.data?.map((p) => <p key={p.id} className="text-sm">{p.dataOperacao} · #{p.numeroDia} · {brl(p.total)} · {p.status}</p>)}
+            {c.telefone && <MensagemWhats telefone={c.telefone} />}
+          </div>}
         </div>))}
     </div>
   );
