@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, type Row } from '../api';
-import { Campo, Carregando, Erro, Titulo, Vazio } from '../components/ui';
+import { Campo, Carregando, Erro, SeletorPeriodo, Titulo, Vazio } from '../components/ui';
 
 /** Próximo sábado e domingo a partir de hoje (se hoje já for sáb/dom, usa o fim de semana atual). */
 function proximoFimDeSemana() {
@@ -67,11 +67,7 @@ export default function Estoque() {
       <section className="card space-y-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-label font-bold uppercase text-gold">O que comprar</h3>
-          <div className="flex gap-2 items-center text-sm">
-            <input type="date" className="!w-auto" value={periodo.de} onChange={(e) => setPeriodo({ ...periodo, de: e.target.value })} />
-            <span className="text-cream/60">até</span>
-            <input type="date" className="!w-auto" value={periodo.ate} onChange={(e) => setPeriodo({ ...periodo, ate: e.target.value })} />
-          </div>
+          <SeletorPeriodo de={periodo.de} ate={periodo.ate} onChange={setPeriodo} />
         </div>
         <p className="text-xs text-cream/60">Calculado a partir dos pedidos já confirmados ou aguardando confirmação no período, descontando o que já tem em estoque.</p>
         {necessidade.isLoading && <Carregando />}

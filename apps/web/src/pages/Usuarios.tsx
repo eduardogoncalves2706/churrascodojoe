@@ -20,6 +20,10 @@ export default function Usuarios() {
   return (
     <div className="space-y-4">
       <Titulo>Usuários</Titulo>
+      <div className="card border-2 border-primary">
+        <p className="text-primary-hover font-label font-bold uppercase">⏸ Função pausada</p>
+        <p className="text-sm text-cream/70 mt-1">Pra economizar custo, o acesso direto ao Cognito foi desligado — esta tela não vai carregar/salvar nada até ele ser religado. Precisa convidar ou editar alguém? Chama que eu ligo na hora, uso e desligo de novo.</p>
+      </div>
       <div className="card space-y-3">
         <h3 className="font-label font-bold uppercase text-gold">Convidar usuário</h3>
         <p className="text-sm text-cream/60">A pessoa recebe uma senha temporária por e-mail e troca no primeiro acesso.</p>

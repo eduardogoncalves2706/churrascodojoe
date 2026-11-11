@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { api, brl, brlC, hoje, pct, type Row } from '../api';
-import { Campo, Carregando, Erro, Titulo, Vazio } from '../components/ui';
+import { Campo, Carregando, Erro, SeletorPeriodo, Titulo, Vazio } from '../components/ui';
 
 const GRUPO_LABEL: Record<string, string> = {
   receita_vendas: 'Receita de vendas', outras_receitas: 'Outras receitas', cmv: 'CMV (custo direto)', custo_indireto: 'Custo indireto (rateado)',
@@ -110,7 +110,7 @@ function FluxoCaixa({ categorias, contas }: { categorias: Row[]; contas: Row[] }
       <div className="card space-y-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-label font-bold uppercase text-gold">Fluxo de caixa</h3>
-          <div className="flex gap-2 items-center text-sm"><input type="date" className="!w-auto" value={de} onChange={(e) => setDe(e.target.value)} /><span className="text-cream/60">até</span><input type="date" className="!w-auto" value={ate} onChange={(e) => setAte(e.target.value)} /></div>
+          <SeletorPeriodo de={de} ate={ate} onChange={({ de, ate }) => { setDe(de); setAte(ate); }} />
         </div>
         <p className="text-gold font-label uppercase">Entradas {brlC(Math.round(entradas * 100))} · Saídas {brlC(Math.round(saidas * 100))} · Saldo <span className={entradas - saidas >= 0 ? 'text-ok' : 'text-brasa'}>{brlC(Math.round((entradas - saidas) * 100))}</span></p>
         {q.isLoading && <Carregando />}

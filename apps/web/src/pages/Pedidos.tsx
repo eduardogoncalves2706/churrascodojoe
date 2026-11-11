@@ -3,7 +3,7 @@ import { proximoStatus, type StatusPedido } from '@joe/shared';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, brl, hoje, hora, num, STATUS_LABEL, type Row } from '../api';
-import { Carregando, Erro, Titulo, Vazio } from '../components/ui';
+import { Carregando, Erro, Modal, SeletorData, Titulo, Vazio } from '../components/ui';
 
 const COLUNAS: StatusPedido[] = ['confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue'];
 
@@ -25,9 +25,11 @@ export default function Pedidos() {
   });
   const refreshTudo = () => { qc.invalidateQueries({ queryKey: ['pedidos'] }); qc.invalidateQueries({ queryKey: ['pedidos-pendentes-site'] }); };
   const confirmarSite = useMutation({ mutationFn: (id: string) => api(`/pedidos/${id}/confirmar-site`, { method: 'POST' }), onSuccess: refreshTudo });
+  const [recusando, setRecusando] = useState<Row | null>(null);
+  const [motivoRecusa, setMotivoRecusa] = useState('');
   const recusarSite = useMutation({
-    mutationFn: (id: string) => { const motivo = prompt('Motivo da recusa (obrigatório):'); if (!motivo) throw new Error('cancelado'); return api(`/pedidos/${id}/recusar-site`, { method: 'POST', body: { motivo } }); },
-    onSuccess: refreshTudo,
+    mutationFn: (id: string) => api(`/pedidos/${id}/recusar-site`, { method: 'POST', body: { motivo: motivoRecusa } }),
+    onSuccess: () => { setRecusando(null); setMotivoRecusa(''); refreshTudo(); },
   });
 
   const lista = (q.data ?? []).filter((p) => !filtro || p.tipo === filtro);
@@ -53,8 +55,20 @@ export default function Pedidos() {
 
   return (
     <div>
-      <Titulo extra={<div className="flex gap-2 items-center"><input type="date" className="!w-auto" value={data} onChange={(e) => setData(e.target.value)} />
+      <Titulo extra={<div className="flex gap-2 items-center"><SeletorData value={data} onChange={setData} />
         <select className="!w-auto" value={filtro} onChange={(e) => setFiltro(e.target.value)}><option value="">Todos</option><option value="entrega">Entrega</option><option value="retirada">Retirada</option></select></div>}>Pedidos</Titulo>
+
+      {recusando && (
+        <Modal titulo={`Recusar pedido #${num(recusando.numeroDia)}`} onFechar={() => { setRecusando(null); setMotivoRecusa(''); }}>
+          <p className="text-sm text-cream/70">O cliente não é notificado automaticamente — avise pelo WhatsApp se precisar.</p>
+          <textarea className="w-full min-h-[80px]" autoFocus placeholder="Motivo da recusa (obrigatório)" value={motivoRecusa} onChange={(e) => setMotivoRecusa(e.target.value)} />
+          <div className="flex gap-2">
+            <button className="btn-danger flex-1" disabled={!motivoRecusa.trim() || recusarSite.isPending} onClick={() => recusarSite.mutate(recusando.id)}>{recusarSite.isPending ? 'Recusando…' : 'Confirmar recusa'}</button>
+            <button className="btn-ghost" onClick={() => { setRecusando(null); setMotivoRecusa(''); }}>Cancelar</button>
+          </div>
+          {recusarSite.isError && <Erro e={recusarSite.error} />}
+        </Modal>
+      )}
       <p className="text-gold mb-3 font-label uppercase">{lista.filter((p) => p.status !== 'cancelado').length} pedidos · {brl(total)}</p>
 
       {(pendentesSite.data?.length ?? 0) > 0 && (
@@ -70,7 +84,7 @@ export default function Pedidos() {
                 </Link>
                 <div className="flex gap-2">
                   <button className="btn !min-h-[36px] flex-1" disabled={confirmarSite.isPending} onClick={() => confirmarSite.mutate(p.id)}>Confirmar</button>
-                  <button className="btn-danger !min-h-[36px] flex-1" disabled={recusarSite.isPending} onClick={() => recusarSite.mutate(p.id)}>Recusar</button>
+                  <button className="btn-danger !min-h-[36px] flex-1" onClick={() => setRecusando(p)}>Recusar</button>
                 </div>
               </div>
             ))}

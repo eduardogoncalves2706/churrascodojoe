@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { whatsappUrl } from '../api';
+import { hoje, whatsappUrl } from '../api';
 
 /** Caixinha de texto + botão que abre o WhatsApp do cliente já com a mensagem digitada — sem API, sem automação. */
 export function MensagemWhats({ telefone }: { telefone: string }) {
@@ -9,6 +9,103 @@ export function MensagemWhats({ telefone }: { telefone: string }) {
     <div className="flex gap-2 items-center flex-wrap">
       <input className="flex-1 min-w-[160px]" placeholder="Mensagem (opcional)" value={texto} onChange={(e) => setTexto(e.target.value)} />
       <a href={whatsappUrl(telefone, texto)} target="_blank" rel="noopener" className="btn !min-h-[40px] !px-4 text-sm shrink-0">📱 Enviar</a>
+    </div>
+  );
+}
+
+const DIAS_SEMANA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const paraData = (s: string) => new Date(`${s}T12:00:00`); // meio-dia evita problema de fuso ao converter string YYYY-MM-DD
+const formatarCurto = (s: string) => paraData(s).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).replace('.', '');
+const diasDoMes = (ano: number, mes: number) => {
+  const inicioOffset = new Date(ano, mes, 1).getDay();
+  const total = new Date(ano, mes + 1, 0).getDate();
+  return [...Array(inicioOffset).fill(null), ...Array.from({ length: total }, (_, i) => i + 1)];
+};
+
+/** Calendário em popover — troca o `<input type="date">` nativo (feio e difícil de navegar no desktop)
+ * por um calendário de verdade, com destaque pros dias de operação (sáb/dom/feriado). */
+export function Calendario({ value, onChange, destacar }: { value: string; onChange: (v: string) => void; destacar?: (data: string) => boolean }) {
+  const [aberto, setAberto] = useState(false);
+  const [cursor, setCursor] = useState(() => { const d = paraData(value); return { ano: d.getFullYear(), mes: d.getMonth() }; });
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const fechar = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false); };
+    document.addEventListener('mousedown', fechar);
+    return () => document.removeEventListener('mousedown', fechar);
+  }, [aberto]);
+
+  const abrir = () => { const d = paraData(value); setCursor({ ano: d.getFullYear(), mes: d.getMonth() }); setAberto(true); };
+  const mudarMes = (delta: number) => setCursor((c) => { const d = new Date(c.ano, c.mes + delta, 1); return { ano: d.getFullYear(), mes: d.getMonth() }; });
+  const montar = (dia: number) => `${cursor.ano}-${String(cursor.mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" className="chip whitespace-nowrap" onClick={() => (aberto ? setAberto(false) : abrir())}>📅 {formatarCurto(value)}</button>
+      {aberto && (
+        <div className="absolute z-20 mt-1 card !p-3 w-64 shadow-xl">
+          <div className="flex items-center justify-between mb-2">
+            <button type="button" className="btn-ghost !min-h-0 !px-2 !py-1" aria-label="Mês anterior" onClick={() => mudarMes(-1)}>‹</button>
+            <span className="font-label font-bold uppercase text-gold text-sm">{MESES[cursor.mes]} {cursor.ano}</span>
+            <button type="button" className="btn-ghost !min-h-0 !px-2 !py-1" aria-label="Próximo mês" onClick={() => mudarMes(1)}>›</button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs text-cream/50 mb-1">{DIAS_SEMANA.map((d, i) => <span key={i}>{d}</span>)}</div>
+          <div className="grid grid-cols-7 gap-1">
+            {diasDoMes(cursor.ano, cursor.mes).map((dia, i) => {
+              if (!dia) return <span key={i} />;
+              const dataStr = montar(dia as number);
+              const selecionado = dataStr === value;
+              return (
+                <button type="button" key={i} onClick={() => { onChange(dataStr); setAberto(false); }}
+                  className={`h-8 rounded-md text-sm transition-colors ${selecionado ? 'bg-primary text-cream font-bold' : destacar?.(dataStr) ? 'text-primary-hover font-bold hover:bg-surface' : 'text-cream/80 hover:bg-surface'}`}>
+                  {dia}
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" className="btn-ghost w-full mt-2 !min-h-[36px] text-sm" onClick={() => { onChange(hoje()); setAberto(false); }}>Hoje</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const finsDeSemana = (d: string) => [0, 6].includes(paraData(d).getDay());
+
+/** Um dia só, com ‹ › pra pular dia a dia sem abrir o calendário (uso mais comum: ver ontem/amanhã). */
+export function SeletorData({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const somar = (n: number) => { const d = paraData(value); d.setDate(d.getDate() + n); onChange(d.toISOString().slice(0, 10)); };
+  return (
+    <div className="flex items-center gap-1">
+      <button type="button" className="btn-ghost !min-h-[40px] !px-2" aria-label="Dia anterior" onClick={() => somar(-1)}>‹</button>
+      <Calendario value={value} onChange={onChange} destacar={finsDeSemana} />
+      <button type="button" className="btn-ghost !min-h-[40px] !px-2" aria-label="Próximo dia" onClick={() => somar(1)}>›</button>
+      {value !== hoje() && <button type="button" className="text-gold underline text-xs ml-1 whitespace-nowrap" onClick={() => onChange(hoje())}>hoje</button>}
+    </div>
+  );
+}
+
+/** Período (de/até) — dois calendários lado a lado. */
+export function SeletorPeriodo({ de, ate, onChange }: { de: string; ate: string; onChange: (v: { de: string; ate: string }) => void }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <Calendario value={de} onChange={(v) => onChange({ de: v, ate })} destacar={finsDeSemana} />
+      <span className="text-cream/60 text-sm">até</span>
+      <Calendario value={ate} onChange={(v) => onChange({ de, ate: v })} destacar={finsDeSemana} />
+    </div>
+  );
+}
+
+/** Modal simples — substitui window.prompt()/confirm() nativos (destoam do resto do visual). */
+export function Modal({ titulo, children, onFechar }: { titulo: string; children: ReactNode; onFechar: () => void }) {
+  return (
+    <div className="fixed inset-0 z-40 bg-black/70 flex items-center justify-center p-4" onClick={onFechar}>
+      <div className="card w-full max-w-sm space-y-3" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-label font-bold uppercase text-gold">{titulo}</h3>
+        {children}
+      </div>
     </div>
   );
 }

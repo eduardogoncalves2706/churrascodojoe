@@ -3,7 +3,7 @@ import { formatQtd } from '@joe/shared';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, hoje, type Row } from '../api';
-import { Carregando, Titulo, Vazio } from '../components/ui';
+import { Carregando, SeletorData, Titulo, Vazio } from '../components/ui';
 
 export default function Producao() {
   const [sp] = useSearchParams();
@@ -19,7 +19,7 @@ export default function Producao() {
   };
 
   return (
-    <div className="space-y-4"><Titulo extra={<input type="date" className="!w-auto" value={data} onChange={(e) => setData(e.target.value)} />}>Produção do dia</Titulo>
+    <div className="space-y-4"><Titulo extra={<SeletorData value={data} onChange={setData} />}>Produção do dia</Titulo>
       {q.isLoading && <Carregando />}{q.data && !q.data.pedidos && <Vazio>Sem pedidos para esta data.</Vazio>}
       {q.data && q.data.pedidos > 0 && <>
         <section className="card"><h3 className="font-label font-bold uppercase text-gold mb-2">A preparar ({q.data.pedidos} pedidos)</h3>

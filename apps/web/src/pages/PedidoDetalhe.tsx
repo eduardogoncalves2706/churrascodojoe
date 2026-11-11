@@ -3,7 +3,7 @@ import { formatQtd, proximoStatus } from '@joe/shared';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, brl, hora, num, STATUS_LABEL, type Row } from '../api';
-import { Carregando, Erro, MensagemWhats } from '../components/ui';
+import { Carregando, Erro, MensagemWhats, Modal } from '../components/ui';
 
 interface ItemEdit { key: string; produtoId?: string; comboVarianteId?: string; refrigeranteId?: string; nome: string; quantidade: number; observacao: string }
 const BLOQUEADO = ['saiu_entrega', 'entregue', 'retirado', 'cancelado'];
@@ -13,7 +13,9 @@ export default function PedidoDetalhe() {
   const qc = useQueryClient();
   const [forma, setForma] = useState('pix');
   const [valor, setValor] = useState('');
-  const [motivo, setMotivo] = useState('');
+  const [motivoCancelamento, setMotivoCancelamento] = useState('');
+  const [motivoRecusa, setMotivoRecusa] = useState('');
+  const [confirmandoCancelamento, setConfirmandoCancelamento] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [editandoItens, setEditandoItens] = useState(false);
   const [itensEdit, setItensEdit] = useState<ItemEdit[]>([]);
@@ -26,9 +28,9 @@ export default function PedidoDetalhe() {
   const refresh = () => { qc.invalidateQueries({ queryKey: ['pedido', id] }); qc.invalidateQueries({ queryKey: ['pedidos'] }); };
   const status = useMutation({ mutationFn: (para: string) => api(`/pedidos/${id}/status`, { method: 'POST', body: { para } }), onSuccess: refresh });
   const pagar = useMutation({ mutationFn: () => api(`/pedidos/${id}/pagamentos`, { method: 'POST', body: { forma, valor: Number(valor.replace(',', '.')) } }), onSuccess: () => { setValor(''); refresh(); } });
-  const cancelar = useMutation({ mutationFn: () => api(`/pedidos/${id}/cancelar`, { method: 'POST', body: { motivo } }), onSuccess: refresh });
+  const cancelar = useMutation({ mutationFn: () => api(`/pedidos/${id}/cancelar`, { method: 'POST', body: { motivo: motivoCancelamento } }), onSuccess: () => { setConfirmandoCancelamento(false); refresh(); } });
   const confirmarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/confirmar-site`, { method: 'POST' }), onSuccess: refresh });
-  const recusarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/recusar-site`, { method: 'POST', body: { motivo } }), onSuccess: refresh });
+  const recusarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/recusar-site`, { method: 'POST', body: { motivo: motivoRecusa } }), onSuccess: refresh });
   const motoboy = useMutation({ mutationFn: (motoboyId: string) => api(`/pedidos/${id}`, { method: 'PATCH', body: { motoboyId: motoboyId || null } }), onSuccess: refresh });
   const [buscaCliente, setBuscaCliente] = useState('');
   const [sugestoesCliente, setSugestoesCliente] = useState<Row[]>([]);
@@ -144,8 +146,8 @@ export default function PedidoDetalhe() {
           <p className="text-primary-hover font-label font-bold uppercase">🔔 Pedido feito pelo site — confirme ou recuse</p>
           <div className="flex gap-2 flex-wrap">
             <button className="btn" disabled={confirmarSite.isPending} onClick={() => confirmarSite.mutate()}>Confirmar pedido</button>
-            <input className="flex-1 min-w-[160px]" placeholder="Motivo se for recusar" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-            <button className="btn-danger" disabled={!motivo.trim() || recusarSite.isPending} onClick={() => recusarSite.mutate()}>Recusar</button>
+            <input className="flex-1 min-w-[160px]" placeholder="Motivo se for recusar" value={motivoRecusa} onChange={(e) => setMotivoRecusa(e.target.value)} />
+            <button className="btn-danger" disabled={!motivoRecusa.trim() || recusarSite.isPending} onClick={() => recusarSite.mutate()}>Recusar</button>
           </div>
           {(confirmarSite.isError || recusarSite.isError) && <Erro e={confirmarSite.error ?? recusarSite.error} />}
         </div>
@@ -167,8 +169,18 @@ export default function PedidoDetalhe() {
 
       <div className="card"><h3 className="font-label font-bold uppercase text-gold mb-1">Histórico</h3>{p.historico.map((h: Row) => <p key={h.id} className="text-sm text-cream/70">{hora(h.em)} — {h.de ? `${STATUS_LABEL[h.de] ?? h.de} → ` : ''}{STATUS_LABEL[h.para] ?? h.para}{h.nota && ` (${h.nota})`}</p>)}</div>
 
-      {!['cancelado', 'entregue', 'retirado'].includes(p.status) && <div className="card flex gap-2 flex-wrap"><input className="flex-1" placeholder="Motivo do cancelamento" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-        <button className="btn-danger" disabled={!motivo.trim()} onClick={() => confirm('Cancelar este pedido?') && cancelar.mutate()}>Cancelar pedido</button></div>}
+      {!['cancelado', 'entregue', 'retirado'].includes(p.status) && <div className="card flex gap-2 flex-wrap"><input className="flex-1" placeholder="Motivo do cancelamento" value={motivoCancelamento} onChange={(e) => setMotivoCancelamento(e.target.value)} />
+        <button className="btn-danger" disabled={!motivoCancelamento.trim()} onClick={() => setConfirmandoCancelamento(true)}>Cancelar pedido</button></div>}
+
+      {confirmandoCancelamento && (
+        <Modal titulo={`Cancelar pedido #${num(p.numeroDia)}?`} onFechar={() => setConfirmandoCancelamento(false)}>
+          <p className="text-sm text-cream/70">Motivo: {motivoCancelamento}</p>
+          <div className="flex gap-2">
+            <button className="btn-danger flex-1" disabled={cancelar.isPending} onClick={() => cancelar.mutate()}>{cancelar.isPending ? 'Cancelando…' : 'Sim, cancelar'}</button>
+            <button className="btn-ghost" onClick={() => setConfirmandoCancelamento(false)}>Voltar</button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
