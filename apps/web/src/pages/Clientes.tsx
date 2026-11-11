@@ -83,11 +83,14 @@ export default function Clientes() {
   const [inativos, setInativos] = useState(false);
   const [aberto, setAberto] = useState<string | null>(null);
   const [form, setForm] = useState<Form | null>(null);
+  const [carregandoId, setCarregandoId] = useState<string | null>(null);
   const q = useQuery({ queryKey: ['clientes', busca, inativos], queryFn: () => api<Row[]>(`/clientes?busca=${encodeURIComponent(busca)}${inativos ? '&inativoDias=30' : ''}`) });
   const ped = useQuery({ queryKey: ['cliente-pedidos', aberto], queryFn: () => api<Row[]>(`/clientes/${aberto}/pedidos`), enabled: !!aberto });
 
+  // Mostra "carregando…" no botão clicado — sem isso, numa rede lenta dava pra clicar de novo achando que não funcionou.
   const editar = async (c: Row) => {
-    const det = await api<Row>(`/clientes/${c.id}`);
+    setCarregandoId(c.id);
+    const det = await api<Row>(`/clientes/${c.id}`).finally(() => setCarregandoId(null));
     const e = det.enderecos?.find((x: Row) => x.principal) ?? det.enderecos?.[0];
     setForm({
       id: det.id, nome: det.nome, telefone: det.telefone ?? '', instagram: det.instagram ?? '', observacoes: det.observacoes ?? '',
@@ -115,7 +118,7 @@ export default function Clientes() {
                 📱
               </a>
             )}
-            <button className="text-gold underline text-sm shrink-0" onClick={() => editar(c)}>editar</button>
+            <button className="text-gold underline text-sm shrink-0 disabled:opacity-50" disabled={carregandoId === c.id} onClick={() => editar(c)}>{carregandoId === c.id ? 'carregando…' : 'editar'}</button>
           </div>
           {c.observacoes && <p className="text-sm text-gold">{c.observacoes}</p>}
           {aberto === c.id && <div className="mt-2 border-t border-white/10 pt-2 space-y-2">

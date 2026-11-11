@@ -18,6 +18,7 @@ export default function Pedidos() {
   const qc = useQueryClient();
   const [data, setData] = useState(hoje());
   const [filtro, setFiltro] = useState('');
+  const [busca, setBusca] = useState('');
   const q = useQuery({ queryKey: ['pedidos', data], queryFn: () => api<Row[]>(`/pedidos?data=${data}`), refetchInterval: 20_000 });
   const pendentesSite = useQuery({ queryKey: ['pedidos-pendentes-site'], queryFn: () => api<Row[]>('/pedidos/pendentes-site'), refetchInterval: 20_000 });
   const avancar = useMutation({
@@ -33,7 +34,10 @@ export default function Pedidos() {
     onSuccess: () => { setRecusando(null); setMotivoRecusa(''); refreshTudo(); },
   });
 
-  const lista = (q.data ?? []).filter((p) => !filtro || p.tipo === filtro);
+  // Busca por número do pedido ou nome do cliente — acha rápido num dia de pico sem rolar as 5 colunas.
+  const alvo = busca.trim().toLowerCase();
+  const lista = (q.data ?? []).filter((p) => !filtro || p.tipo === filtro)
+    .filter((p) => !alvo || String(p.numeroDia).includes(alvo) || (p.nomeClienteSnapshot ?? '').toLowerCase().includes(alvo));
   const grupo = (st: StatusPedido) => lista.filter((p) => p.status === st || (st === 'entregue' && p.status === 'retirado'));
   const cancelados = lista.filter((p) => p.status === 'cancelado');
   const total = lista.filter((p) => p.status !== 'cancelado').reduce((a, p) => a + Number(p.total), 0);
@@ -56,8 +60,9 @@ export default function Pedidos() {
 
   return (
     <div>
-      <Titulo extra={<div className="flex gap-2 items-center"><SeletorData value={data} onChange={setData} />
-        <select className="!w-auto" value={filtro} onChange={(e) => setFiltro(e.target.value)}><option value="">Todos</option><option value="entrega">Entrega</option><option value="retirada">Retirada</option></select></div>}>Pedidos</Titulo>
+      <Titulo extra={<div className="flex gap-2 items-center flex-wrap"><SeletorData value={data} onChange={setData} />
+        <select className="!w-auto" value={filtro} onChange={(e) => setFiltro(e.target.value)}><option value="">Todos</option><option value="entrega">Entrega</option><option value="retirada">Retirada</option></select>
+        <input className="!w-auto min-w-[160px]" placeholder="Buscar nº ou cliente…" value={busca} onChange={(e) => setBusca(e.target.value)} /></div>}>Pedidos</Titulo>
 
       {recusando && (
         <Modal titulo={`Recusar pedido #${num(recusando.numeroDia)}`} onFechar={() => { setRecusando(null); setMotivoRecusa(''); }}>
@@ -94,11 +99,13 @@ export default function Pedidos() {
       )}
 
       {q.isLoading && <Carregando />}{q.isError && <Erro e={q.error} />}
-      {q.data && !lista.length && <Vazio>Nenhum pedido nesta data.</Vazio>}
-      <div className="grid gap-4 md:grid-cols-5">
+      {q.data && !lista.length && <Vazio>{alvo || filtro ? 'Nenhum pedido corresponde ao filtro.' : 'Nenhum pedido nesta data.'}</Vazio>}
+      <div className="grid gap-4 md:grid-cols-5 md:items-start">
         {COLUNAS.map((st) => (
-          <section key={st} className="space-y-2">
-            <h3 className="font-label font-bold uppercase text-gold">{st === 'entregue' ? 'Entregue / Retirado' : STATUS_LABEL[st]} ({grupo(st).length})</h3>
+          // Altura máxima + scroll próprio no desktop: num dia cheio, uma coluna com 20 pedidos não
+          // empurra as outras 4 pra baixo da tela. No mobile (colunas empilhadas) rola a página normal.
+          <section key={st} className="space-y-2 md:max-h-[calc(100vh-220px)] md:overflow-y-auto md:pr-1">
+            <h3 className="font-label font-bold uppercase text-gold sticky top-0 bg-bg py-1 -mt-1">{st === 'entregue' ? 'Entregue / Retirado' : STATUS_LABEL[st]} ({grupo(st).length})</h3>
             {grupo(st).map((p) => <Card key={p.id} p={p} />)}
           </section>
         ))}

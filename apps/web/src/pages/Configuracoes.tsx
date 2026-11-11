@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { api } from '../api';
-import { Campo, Carregando, Titulo } from '../components/ui';
+import { BotaoSalvar, Campo, Carregando, Titulo, useSalvarSecao } from '../components/ui';
 
 /** Lê/grava uma config pela chave genérica (GET/PUT /configuracoes/:chave) — sem schema próprio no
  * backend, então toda tela de Configurações passa por aqui. 404 (chave nunca gravada) cai no padrão. */
@@ -18,28 +18,6 @@ function useConfig<T>(chave: string, padrao: T) {
 
 function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
   return <section className="card space-y-3"><h3 className="font-label font-bold uppercase text-gold">{titulo}</h3>{children}</section>;
-}
-
-/** Salva tudo da seção de uma vez (Promise.all) — um botão só, um retorno visual só. */
-function useSalvarSecao(acoes: () => Promise<unknown>[]) {
-  const [salvando, setSalvando] = useState(false);
-  const [salvo, setSalvo] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const salvar = async () => {
-    setSalvando(true); setErro(null);
-    try { await Promise.all(acoes()); setSalvo(true); setTimeout(() => setSalvo(false), 2000); }
-    catch (e) { setErro(e instanceof Error ? e.message : 'Erro ao salvar'); }
-    finally { setSalvando(false); }
-  };
-  return { salvar, salvando, salvo, erro };
-}
-function BotaoSalvar({ salvando, salvo, erro, onClick }: { salvando: boolean; salvo: boolean; erro: string | null; onClick: () => void }) {
-  return (
-    <div className="space-y-1">
-      <button className="btn" disabled={salvando} onClick={onClick}>{salvando ? 'Salvando…' : salvo ? 'Salvo!' : 'Salvar'}</button>
-      {erro && <p className="card text-primary-hover">{erro}</p>}
-    </div>
-  );
 }
 
 const DIAS = [['dom', 'Dom'], ['seg', 'Seg'], ['ter', 'Ter'], ['qua', 'Qua'], ['qui', 'Qui'], ['sex', 'Sex'], ['sab', 'Sáb']] as const;

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, brlC, pct, type Row } from '../api';
-import { Carregando, Erro, Titulo } from '../components/ui';
+import { BotaoSalvar, Carregando, Titulo, useSalvarSecao } from '../components/ui';
 
 interface ItemLinha { produtoId: string; ehCarneEscolhida: boolean; quantidade: string; grupoEscolha: string }
 interface VarianteLinha { carneProdutoId: string; preco: string; ativo: boolean; persistida: boolean }
@@ -31,6 +31,9 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
     mutationFn: () => api(`/combos/${combo.id}/variantes`, { method: 'PUT', body: variantes.map((v) => ({ carneProdutoId: v.carneProdutoId, preco: Number(v.preco.replace(',', '.') || 0), ativo: v.ativo })) }),
     onSuccess: refresh,
   });
+  // Um botão só pras 3 seções — 3 botões separados dava pra editar dados + itens e esquecer de
+  // salvar as variantes (ou vice-versa), achando que já tinha salvo tudo.
+  const { salvar, ...estadoSalvar } = useSalvarSecao(() => [salvarMeta.mutateAsync(), salvarItens.mutateAsync(), salvarVariantes.mutateAsync()]);
 
   const nomeProduto = (id: string) => produtos.data?.find((p) => p.id === id)?.nome ?? '';
 
@@ -50,8 +53,6 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
           <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={meta.ativo} onChange={(e) => setMeta({ ...meta, ativo: e.target.checked })} />Ativo</label>
           <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={meta.visivelSite} onChange={(e) => setMeta({ ...meta, visivelSite: e.target.checked })} />Aparece no site</label>
         </div>
-        <button className="btn-ghost" disabled={salvarMeta.isPending} onClick={() => salvarMeta.mutate()}>Salvar dados</button>
-        {salvarMeta.isError && <Erro e={salvarMeta.error} />}
       </div>
 
       <div className="space-y-2">
@@ -70,11 +71,7 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
             <button className="btn-ghost !px-3" onClick={() => setItens(itens.filter((_, j) => j !== idx))}>×</button>
           </div>
         ))}
-        <div className="flex gap-2">
-          <button className="btn-ghost" onClick={() => setItens([...itens, { produtoId: '', ehCarneEscolhida: false, quantidade: '1', grupoEscolha: '' }])}>+ item</button>
-          <button className="btn" disabled={salvarItens.isPending} onClick={() => salvarItens.mutate()}>Salvar composição</button>
-        </div>
-        {salvarItens.isError && <Erro e={salvarItens.error} />}
+        <button className="btn-ghost" onClick={() => setItens([...itens, { produtoId: '', ehCarneEscolhida: false, quantidade: '1', grupoEscolha: '' }])}>+ item</button>
       </div>
 
       <div className="space-y-2">
@@ -91,13 +88,11 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
             {!v.persistida && <button className="btn-ghost !px-3" onClick={() => setVariantes(variantes.filter((_, j) => j !== idx))}>×</button>}
           </div>
         ))}
-        <div className="flex gap-2">
-          <button className="btn-ghost" onClick={() => setVariantes([...variantes, { carneProdutoId: '', preco: '', ativo: true, persistida: false }])}>+ variante</button>
-          <button className="btn" disabled={salvarVariantes.isPending} onClick={() => salvarVariantes.mutate()}>Salvar variantes</button>
-        </div>
+        <button className="btn-ghost" onClick={() => setVariantes([...variantes, { carneProdutoId: '', preco: '', ativo: true, persistida: false }])}>+ variante</button>
         <p className="text-xs text-cream/50">Uma variante nunca é apagada (pedidos antigos referenciam ela) — para removê-la da venda, desmarque "Ativa".</p>
-        {salvarVariantes.isError && <Erro e={salvarVariantes.error} />}
       </div>
+
+      <BotaoSalvar onClick={salvar} {...estadoSalvar} />
     </div>
   );
 }

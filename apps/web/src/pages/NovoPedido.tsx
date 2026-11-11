@@ -141,7 +141,12 @@ export default function NovoPedido() {
   if (produtos.isError) return <Erro e={produtos.error} />;
 
   const lista = (produtos.data ?? []).filter((p) => p.ativo && p.disponivelHoje && abaDe(p.categoria) === aba);
-  const pronto = d.itens.length > 0 && (d.tipo === 'retirada' || d.semEndereco || (d.enderecoTexto && d.bairroId)) && (!d.agendar || d.quando);
+  // Em vez de só desabilitar o botão, diz o que falta — evita o "por que não confirma?" na hora do rush.
+  const faltando = d.itens.length === 0 ? 'Adicione pelo menos um item'
+    : d.tipo === 'entrega' && !d.semEndereco && !(d.enderecoTexto && d.bairroId) ? 'Informe endereço e bairro (ou marque "Endereço depois")'
+    : d.agendar && !d.quando ? 'Escolha a data e hora do agendamento'
+    : null;
+  const pronto = !faltando;
   const pedidosValidos = (historico.data ?? []).filter((p) => p.status !== 'cancelado');
   const totalGasto = pedidosValidos.reduce((a, p) => a + Number(p.total), 0);
 
@@ -243,6 +248,7 @@ export default function NovoPedido() {
           <div className="flex-1 text-sm text-cream/80 leading-tight">Subtotal {brlC(subtotal)}{desconto > 0 && ` · desc. −${brlC(desconto)}`}{taxa > 0 && ` · taxa ${brlC(taxa)}`}<p className="font-display text-4xl text-gold">{brlC(total)}</p></div>
           <button className="btn !min-h-[52px] px-6" disabled={!pronto || criar.isPending} onClick={() => criar.mutate()}>{criar.isPending ? 'Enviando…' : 'Confirmar pedido'}</button>
         </div>
+        {faltando && !criar.isPending && <p className="text-cream/60 text-xs text-center mt-1">{faltando}</p>}
         {criar.isError && <p className="text-primary-hover text-sm text-center">{(criar.error as Error).message}</p>}
       </div>
     </div>

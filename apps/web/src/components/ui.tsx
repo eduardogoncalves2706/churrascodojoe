@@ -116,6 +116,30 @@ export function SeletorMotivo({ opcoes, value, onChange, placeholder = 'Descreva
   );
 }
 
+/** Salva várias mutations de uma vez (Promise.all) — um botão só, um retorno visual só. Evita o
+ * risco de uma tela com múltiplas seções editáveis dar a entender que salvou tudo quando só uma
+ * seção foi de fato enviada ao servidor (ex.: editor de combo com dados/itens/variantes juntos). */
+export function useSalvarSecao(acoes: () => Promise<unknown>[]) {
+  const [salvando, setSalvando] = useState(false);
+  const [salvo, setSalvo] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const salvar = async () => {
+    setSalvando(true); setErro(null);
+    try { await Promise.all(acoes()); setSalvo(true); setTimeout(() => setSalvo(false), 2000); }
+    catch (e) { setErro(e instanceof Error ? e.message : 'Erro ao salvar'); }
+    finally { setSalvando(false); }
+  };
+  return { salvar, salvando, salvo, erro };
+}
+export function BotaoSalvar({ salvando, salvo, erro, onClick }: { salvando: boolean; salvo: boolean; erro: string | null; onClick: () => void }) {
+  return (
+    <div className="space-y-1">
+      <button className="btn" disabled={salvando} onClick={onClick}>{salvando ? 'Salvando…' : salvo ? 'Salvo!' : 'Salvar'}</button>
+      {erro && <p className="card text-primary-hover">{erro}</p>}
+    </div>
+  );
+}
+
 /** Modal simples — substitui window.prompt()/confirm() nativos (destoam do resto do visual). */
 export function Modal({ titulo, children, onFechar }: { titulo: string; children: ReactNode; onFechar: () => void }) {
   return (
