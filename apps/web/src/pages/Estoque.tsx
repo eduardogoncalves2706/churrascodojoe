@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { api, type Row } from '../api';
+import { api, diasAteVencer, type Row } from '../api';
 import { Campo, Carregando, Erro, SeletorPeriodo, Titulo, Vazio } from '../components/ui';
 
 /** Próximo sábado e domingo a partir de hoje (se hoje já for sáb/dom, usa o fim de semana atual). */
@@ -12,11 +12,6 @@ function proximoFimDeSemana() {
   const dom = new Date(sab); dom.setDate(sab.getDate() + 1);
   const fmt = (x: Date) => x.toISOString().slice(0, 10);
   return { de: fmt(sab), ate: fmt(dom) };
-}
-
-function diasAteVencer(validade: string | null) {
-  if (!validade) return null;
-  return Math.ceil((new Date(validade + 'T00:00:00').getTime() - Date.now()) / 86_400_000);
 }
 
 function NovaEntrada({ insumos, onSalvo }: { insumos: Row[]; onSalvo: () => void }) {

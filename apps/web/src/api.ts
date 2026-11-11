@@ -30,6 +30,8 @@ export const pct = (v: number | null | undefined) => (v == null ? '—' : `${v.t
 export const hoje = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
 export const hora = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
 export const num = (n: number) => String(n).padStart(3, '0');
+/** Dias até vencer (negativo = já venceu); null = sem validade cadastrada. */
+export const diasAteVencer = (validade: string | null) => (validade == null ? null : Math.ceil((new Date(validade + 'T00:00:00').getTime() - Date.now()) / 86_400_000));
 /** Abre a conversa com o cliente direto no WhatsApp (Web ou app), já com o texto digitado se houver. */
 export const whatsappUrl = (telefone: string, texto?: string) => {
   const digitos = telefone.replace(/\D/g, '');

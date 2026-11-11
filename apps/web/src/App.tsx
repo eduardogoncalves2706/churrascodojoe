@@ -8,6 +8,8 @@ import Cardapio from './pages/Cardapio';
 import Clientes from './pages/Clientes';
 import Combos from './pages/Combos';
 import Comanda from './pages/Comanda';
+import Configuracoes from './pages/Configuracoes';
+import Dashboard from './pages/Dashboard';
 import Estoque from './pages/Estoque';
 import Financeiro from './pages/Financeiro';
 import Insumos from './pages/Insumos';
@@ -23,13 +25,14 @@ const main = [
   { to: '/producao', label: 'Produção', admin: false }, { to: '/agenda', label: 'Agenda', admin: false },
 ];
 const mais = [
+  { to: '/', label: 'Início', admin: false },
   { to: '/cardapio', label: 'Cardápio', admin: false }, { to: '/combos', label: 'Combos', admin: false }, { to: '/clientes', label: 'Clientes', admin: false },
   { to: '/insumos', label: 'Insumos e ficha', admin: true }, { to: '/estoque', label: 'Estoque', admin: true }, { to: '/bairros', label: 'Bairros e taxas', admin: true },
-  { to: '/financeiro', label: 'Financeiro', admin: true }, { to: '/usuarios', label: 'Usuários', admin: true },
+  { to: '/financeiro', label: 'Financeiro', admin: true }, { to: '/configuracoes', label: 'Configurações', admin: true }, { to: '/usuarios', label: 'Usuários', admin: true },
 ];
 
 function Link({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
-  return <NavLink to={to} onClick={onClick} className={({ isActive }) => `block px-3 py-2 rounded-md font-label font-bold uppercase tracking-wide ${isActive ? 'bg-primary text-cream' : 'text-gold hover:bg-surface'}`}>{label}</NavLink>;
+  return <NavLink to={to} end={to === '/'} onClick={onClick} className={({ isActive }) => `block px-3 py-2 rounded-md font-label font-bold uppercase tracking-wide ${isActive ? 'bg-primary text-cream' : 'text-gold hover:bg-surface'}`}>{label}</NavLink>;
 }
 
 export default function App() {
@@ -44,7 +47,7 @@ export default function App() {
       <Route path="*" element={
         <div className="md:flex min-h-screen">
           <aside className="no-print hidden md:flex md:flex-col w-56 shrink-0 bg-surface/60 p-3 gap-1 border-r border-white/5">
-            <div className="flex items-center gap-2 px-3 py-2"><img src="/logo-192.png" alt="" className="w-9 h-9 rounded-full" /><h1 className="text-2xl text-primary-hover leading-none">Churrasco do Joe</h1></div>
+            <NavLink to="/" end className="flex items-center gap-2 px-3 py-2"><img src="/logo-192.png" alt="" className="w-9 h-9 rounded-full" /><h1 className="text-2xl text-primary-hover leading-none">Churrasco do Joe</h1></NavLink>
             {links.map((l) => <Link key={l.to} {...l} />)}
             <div className="mt-auto text-xs text-cream/60 px-3">
               {me.data && <p>{me.data.nome}</p>}
@@ -55,7 +58,7 @@ export default function App() {
           <main className="flex-1 min-w-0 p-4 pb-28 md:pb-6 max-w-5xl mx-auto w-full">
             {me.isError && <p className="card text-primary-hover mb-3">Conectando ao banco… tentando novamente.</p>}
             <Routes>
-              <Route path="/" element={<Navigate to="/novo" replace />} />
+              <Route path="/" element={<Dashboard admin={admin} />} />
               <Route path="/novo" element={<NovoPedido />} />
               <Route path="/pedidos" element={<Pedidos />} />
               <Route path="/pedidos/:id" element={<PedidoDetalhe />} />
@@ -68,6 +71,7 @@ export default function App() {
               <Route path="/estoque" element={admin ? <Estoque /> : <Navigate to="/" />} />
               <Route path="/bairros" element={admin ? <Bairros /> : <Navigate to="/" />} />
               <Route path="/financeiro" element={admin ? <Financeiro /> : <Navigate to="/" />} />
+              <Route path="/configuracoes" element={admin ? <Configuracoes /> : <Navigate to="/" />} />
               <Route path="/usuarios" element={admin ? <Usuarios /> : <Navigate to="/" />} />
             </Routes>
           </main>
