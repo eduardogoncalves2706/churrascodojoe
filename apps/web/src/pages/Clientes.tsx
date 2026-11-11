@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { api, brl, whatsappUrl, type Row } from '../api';
-import { Campo, Carregando, Erro, MensagemWhats, Titulo, Vazio } from '../components/ui';
+import { Campo, Carregando, Drawer, Erro, MensagemWhats, Titulo, Vazio } from '../components/ui';
 
 interface Form {
   id?: string; nome: string; telefone: string; instagram: string; observacoes: string; temEndereco: boolean;
@@ -50,8 +50,7 @@ function FormCliente({ inicial, onSalvo, onCancelar }: { inicial: Form; onSalvo:
   });
 
   return (
-    <div className="card space-y-3">
-      <h3 className="font-label font-bold uppercase text-gold">{f.id ? 'Editar cliente' : 'Novo cliente'}</h3>
+    <div className="space-y-3">
       {achou && !inicial.id && <p className="text-sm text-primary-hover">Esse telefone já é de {f.nome} — os dados abaixo são dele, e salvar atualiza o cadastro (não duplica).</p>}
       <div className="grid gap-2 sm:grid-cols-2">
         <Campo label="Nome"><input value={f.nome} onChange={(e) => up({ nome: e.target.value })} /></Campo>
@@ -102,7 +101,11 @@ export default function Clientes() {
   return (
     <div className="space-y-3">
       <Titulo extra={<button className="btn" onClick={() => setForm(FORM_VAZIO)}>+ Novo cliente</button>}>Clientes</Titulo>
-      {form && <FormCliente inicial={form} onSalvo={fechar} onCancelar={() => setForm(null)} />}
+      {form && (
+        <Drawer titulo={form.id ? 'Editar cliente' : 'Novo cliente'} onFechar={() => setForm(null)}>
+          <FormCliente inicial={form} onSalvo={fechar} onCancelar={() => setForm(null)} />
+        </Drawer>
+      )}
       <div className="flex gap-2 flex-wrap"><input className="flex-1" placeholder="Buscar por nome ou telefone" value={busca} onChange={(e) => setBusca(e.target.value)} />
         <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={inativos} onChange={(e) => setInativos(e.target.checked)} />Sem pedir há +30 dias</label></div>
       {q.isLoading && <Carregando />}{q.data && !q.data.length && <Vazio>Nenhum cliente.</Vazio>}

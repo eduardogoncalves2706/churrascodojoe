@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, brl, brlC, pct, type Row } from '../api';
-import { Carregando, Erro, Titulo } from '../components/ui';
+import { Carregando, Drawer, Erro, Titulo } from '../components/ui';
 
 const CATEGORIAS = ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia', 'outros'];
 interface FormProduto {
@@ -33,8 +33,7 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
     onSuccess: onSalvo,
   });
   return (
-    <div className="card space-y-3">
-      <h3 className="font-label font-bold uppercase text-gold">{f.id ? `Editar — ${inicial.nome}` : 'Novo produto'}</h3>
+    <div className="space-y-3">
       <div className="grid gap-2 sm:grid-cols-2">
         <div><label>Nome</label><input value={f.nome} onChange={(e) => up({ nome: e.target.value })} /></div>
         <div><label>Categoria</label><select value={f.categoria} onChange={(e) => up({ categoria: e.target.value })}>{CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
@@ -91,7 +90,11 @@ export default function Cardapio({ admin }: { admin: boolean }) {
 
   return (
     <div className="space-y-4"><Titulo extra={<div className="flex gap-2">{admin && <button className="btn" onClick={() => setForm(FORM_VAZIO)}>+ Novo produto</button>}<button className="btn-ghost" onClick={csv}>Exportar CSV</button></div>}>Cardápio e preços</Titulo>
-      {admin && form && <FormProdutoCard inicial={form} onSalvo={fechar} onCancelar={() => setForm(null)} />}
+      {admin && form && (
+        <Drawer titulo={form.id ? `Editar — ${form.nome}` : 'Novo produto'} onFechar={() => setForm(null)}>
+          <FormProdutoCard inicial={form} onSalvo={fechar} onCancelar={() => setForm(null)} />
+        </Drawer>
+      )}
       {admin && sel.size > 0 && <div className="card flex flex-wrap items-end gap-2"><div><label>Reajuste %</label><input className="!w-24" value={reaj.percentual} onChange={(e) => setReaj({ ...reaj, percentual: e.target.value })} /></div>
         <div><label>Arredondar</label><select value={reaj.arredondar} onChange={(e) => setReaj({ ...reaj, arredondar: e.target.value })}><option value="nenhum">Não</option><option value="90">,90</option><option value="99">,99</option></select></div>
         <button className="btn" onClick={() => prever.mutate()}>Prévia ({sel.size})</button></div>}
@@ -108,7 +111,7 @@ export default function Cardapio({ admin }: { admin: boolean }) {
           const baixa = admin && !p.vendidoAPrecoDeCusto && p.margemPct != null && p.margemPct < min;
           return (<tr key={p.id} className={p.disponivelHoje && p.ativo ? '' : 'opacity-50'}>
             {admin && <td className="td"><input type="checkbox" className="!w-5 !min-h-0" checked={sel.has(p.id)} onChange={(e) => { const n = new Set(sel); e.target.checked ? n.add(p.id) : n.delete(p.id); setSel(n); }} /></td>}
-            <td className="td">{p.nome}{!p.ativo && <span className="text-xs text-brasa"> · inativo</span>}{p.parceiro && <span className="text-xs text-gold"> · {p.parceiro}</span>}</td><td className="td text-cream/60">{p.unidadeVenda}</td>
+            <td className="td">{p.nome}{!p.ativo && <span className="text-xs text-brasa"> · inativo</span>}{p.estoqueSuficiente === false && <span className="text-xs text-brasa" title="Sem estoque suficiente — não aparece em Novo pedido"> · sem estoque</span>}{p.parceiro && <span className="text-xs text-gold"> · {p.parceiro}</span>}</td><td className="td text-cream/60">{p.unidadeVenda}</td>
             <td className="td text-right">{admin && editandoPreco === p.id
               ? <input autoFocus className="!w-24 text-right" inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} onBlur={() => Number(preco.replace(',', '.')) >= 0 && preco !== '' ? patch.mutate({ id: p.id, body: { precoVenda: Number(preco.replace(',', '.')) } }) : setEditandoPreco(null)} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
               : <button disabled={!admin} className="font-display text-2xl text-gold" onClick={() => { setEditandoPreco(p.id); setPreco(String(p.precoVenda)); }}>{p.vendidoAPrecoDeCusto ? 'custo' : brl(p.precoVenda)}</button>}

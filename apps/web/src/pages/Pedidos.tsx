@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { proximoStatus, type StatusPedido } from '@joe/shared';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api, brl, hoje, hora, num, STATUS_LABEL, type Row } from '../api';
-import { Carregando, Erro, Modal, SeletorData, SeletorMotivo, Titulo, Vazio } from '../components/ui';
+import { Carregando, Drawer, Erro, Modal, SeletorData, SeletorMotivo, Titulo, Vazio } from '../components/ui';
+import PedidoDetalhe from './PedidoDetalhe';
 
 const COLUNAS: StatusPedido[] = ['confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue'];
 const MOTIVOS_RECUSA = ['Item esgotado', 'Fora da área de entrega', 'Fechados nesse horário', 'Pedido duplicado'];
@@ -33,6 +33,8 @@ export default function Pedidos() {
     mutationFn: (id: string) => api(`/pedidos/${id}/recusar-site`, { method: 'POST', body: { motivo: motivoRecusa } }),
     onSuccess: () => { setRecusando(null); setMotivoRecusa(''); refreshTudo(); },
   });
+  const [abertoId, setAbertoId] = useState<string | null>(null);
+  const [colSobre, setColSobre] = useState<StatusPedido | null>(null);
 
   // Busca por número do pedido ou nome do cliente — acha rápido num dia de pico sem rolar as 5 colunas.
   const alvo = busca.trim().toLowerCase();
@@ -42,20 +44,32 @@ export default function Pedidos() {
   const cancelados = lista.filter((p) => p.status === 'cancelado');
   const total = lista.filter((p) => p.status !== 'cancelado').reduce((a, p) => a + Number(p.total), 0);
 
+  // Clique abre o detalhe num drawer (sem navegar, sem perder a posição do quadro) e arrastar o
+  // card pra outra coluna muda o status direto — igual Trello. No touch o arrastar não "pega"
+  // (navegadores de celular ignoram o drag nativo), então o botão "→" continua ali de reserva.
   const Card = ({ p }: { p: Row }) => {
     const prox = proximoStatus(p.status, p.tipo);
     const e = espera(p);
     return (
-      <div className="card space-y-1">
-        <Link to={`/pedidos/${p.id}`} className="block">
+      <div className="card space-y-1 cursor-grab active:cursor-grabbing" draggable onDragStart={(ev) => ev.dataTransfer.setData('text/plain', p.id)}>
+        <button type="button" className="block w-full text-left" onClick={() => setAbertoId(p.id)}>
           <div className="flex justify-between items-baseline"><span className="font-display text-3xl text-gold">#{num(p.numeroDia)}</span><span className="font-display text-2xl">{brl(p.total)}</span></div>
           <p className="leading-tight">{p.nomeClienteSnapshot ?? 'Balcão'}{p.bairro ? ` · ${p.bairro}` : ''}</p>
           <p className="text-xs flex gap-2 flex-wrap"><span>{p.tipo === 'entrega' ? '🛵 Entrega' : '🏪 Retirada'}</span><span>{p.agendadoPara ? `📅 ${hora(p.agendadoPara)}` : hora(p.createdAt)}</span>
             <span aria-label={p.statusPagamento}>{p.statusPagamento === 'pago' ? '✔ pago' : '✖ ' + p.statusPagamento}</span>{e.min > 0 && <span className={e.cls}>{e.min} min</span>}</p>
-        </Link>
+        </button>
         {prox && <button className="btn w-full !min-h-[40px]" disabled={avancar.isPending} onClick={() => avancar.mutate({ id: p.id, para: prox })}>→ {STATUS_LABEL[prox]}</button>}
       </div>
     );
+  };
+  // Coluna "entregue" mostra entregue+retirado juntos — ao soltar, manda pro status certo conforme o tipo.
+  const soltar = (st: StatusPedido) => (ev: React.DragEvent) => {
+    ev.preventDefault(); setColSobre(null);
+    const id = ev.dataTransfer.getData('text/plain');
+    const p = lista.find((x) => x.id === id);
+    if (!id || !p) return;
+    const para = st === 'entregue' && p.tipo === 'retirada' ? 'retirado' : st;
+    if (p.status !== para) avancar.mutate({ id, para });
   };
 
   return (
@@ -83,11 +97,11 @@ export default function Pedidos() {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {pendentesSite.data!.map((p) => (
               <div key={p.id} className="card space-y-1">
-                <Link to={`/pedidos/${p.id}`} className="block">
+                <button type="button" className="block w-full text-left" onClick={() => setAbertoId(p.id)}>
                   <div className="flex justify-between items-baseline"><span className="font-display text-2xl text-gold">#{num(p.numeroDia)}</span><span className="font-display text-xl">{brl(p.total)}</span></div>
                   <p className="leading-tight">{p.nomeClienteSnapshot}{p.bairro ? ` · ${p.bairro}` : ''}</p>
                   <p className="text-xs text-cream/60">{p.dataOperacao} · {p.agendadoPara ? `agendado ${hora(p.agendadoPara)}` : 'hoje, o quanto antes'}</p>
-                </Link>
+                </button>
                 <div className="flex gap-2">
                   <button className="btn !min-h-[36px] flex-1" disabled={confirmarSite.isPending} onClick={() => confirmarSite.mutate(p.id)}>Confirmar</button>
                   <button className="btn-danger !min-h-[36px] flex-1" onClick={() => setRecusando(p)}>Recusar</button>
@@ -99,18 +113,25 @@ export default function Pedidos() {
       )}
 
       {q.isLoading && <Carregando />}{q.isError && <Erro e={q.error} />}
+      {avancar.isError && <Erro e={avancar.error} />}
       {q.data && !lista.length && <Vazio>{alvo || filtro ? 'Nenhum pedido corresponde ao filtro.' : 'Nenhum pedido nesta data.'}</Vazio>}
       <div className="grid gap-4 md:grid-cols-5 md:items-start">
         {COLUNAS.map((st) => (
           // Altura máxima + scroll próprio no desktop: num dia cheio, uma coluna com 20 pedidos não
           // empurra as outras 4 pra baixo da tela. No mobile (colunas empilhadas) rola a página normal.
-          <section key={st} className="space-y-2 md:max-h-[calc(100vh-220px)] md:overflow-y-auto md:pr-1">
+          <section key={st} className={`space-y-2 rounded-lg transition-colors md:max-h-[calc(100vh-220px)] md:overflow-y-auto md:pr-1 ${colSobre === st ? 'bg-primary/10' : ''}`}
+            onDragOver={(ev) => { ev.preventDefault(); if (colSobre !== st) setColSobre(st); }}
+            onDragLeave={() => setColSobre((c) => (c === st ? null : c))}
+            onDrop={soltar(st)}
+          >
             <h3 className="font-label font-bold uppercase text-gold sticky top-0 bg-bg py-1 -mt-1">{st === 'entregue' ? 'Entregue / Retirado' : STATUS_LABEL[st]} ({grupo(st).length})</h3>
             {grupo(st).map((p) => <Card key={p.id} p={p} />)}
           </section>
         ))}
       </div>
       {cancelados.length > 0 && <details className="mt-6"><summary className="text-brasa cursor-pointer">Cancelados ({cancelados.length})</summary><div className="grid gap-2 md:grid-cols-5 mt-2">{cancelados.map((p) => <Card key={p.id} p={p} />)}</div></details>}
+
+      {abertoId && <Drawer onFechar={() => setAbertoId(null)} largura="max-w-2xl"><PedidoDetalhe id={abertoId} onFechar={() => setAbertoId(null)} /></Drawer>}
     </div>
   );
 }

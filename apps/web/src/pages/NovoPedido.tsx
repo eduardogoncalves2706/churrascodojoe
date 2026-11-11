@@ -3,7 +3,7 @@ import { formatQtd, toCents } from '@joe/shared';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError, brl, brlC, num, type Row } from '../api';
-import { Campo, Carregando, Erro } from '../components/ui';
+import { Campo, Carregando, Drawer, Erro } from '../components/ui';
 
 interface Item { key: string; produtoId?: string; varianteId?: string; refrigeranteId?: string; nome: string; precoCents: number; qtd: number; obs: string; fracionado: boolean; livre: boolean }
 interface Draft {
@@ -81,6 +81,8 @@ export default function NovoPedido() {
   const [combo, setCombo] = useState<{ combo: Row; variante?: Row } | null>(null);
   const [feito, setFeito] = useState<Row | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [revisando, setRevisando] = useState(false);
+  const [avisoRepetir, setAvisoRepetir] = useState<string | null>(null);
 
   const produtos = useQuery({ queryKey: ['produtos'], queryFn: () => api<Row[]>('/produtos') });
   const combos = useQuery({ queryKey: ['combos'], queryFn: () => api<Row[]>('/combos') });
@@ -115,8 +117,36 @@ export default function NovoPedido() {
       pagamentos: d.pagarDepois ? [] : [{ forma: d.forma, valor: total / 100 }],
     } }),
     onSuccess: async (p) => {
-      setFeito(p); setD(VAZIO); try { localStorage.removeItem(KEY); } catch { /* noop */ }
+      setFeito(p); setD(VAZIO); setRevisando(false); try { localStorage.removeItem(KEY); } catch { /* noop */ }
       qc.invalidateQueries({ queryKey: ['pedidos'] });
+    },
+  });
+
+  // "Repetir": busca o pedido antigo completo (a lista de histórico só traz o resumo, sem itens) e
+  // adiciona os itens ao rascunho atual, com o preço de HOJE — item descontinuado é ignorado e avisado.
+  const repetirPedido = useMutation({
+    mutationFn: (pedidoId: string) => api<Row>(`/pedidos/${pedidoId}`),
+    onSuccess: (antigo) => {
+      let ignorados = 0;
+      const novos: Item[] = [];
+      for (const i of antigo.itens as Row[]) {
+        const qtd = Number(i.quantidade);
+        if (i.comboVarianteId) {
+          const combo = combos.data?.find((c) => c.variantes.some((v: Row) => v.id === i.comboVarianteId));
+          const variante = combo?.variantes.find((v: Row) => v.id === i.comboVarianteId);
+          if (!combo || !variante || !variante.ativo) { ignorados++; continue; }
+          const refrigeranteId = i.escolhas?.refrigeranteId as string | undefined;
+          const refri = refrigeranteId ? produtos.data?.find((p) => p.id === refrigeranteId) : undefined;
+          novos.push({ key: crypto.randomUUID(), varianteId: variante.id, refrigeranteId, nome: `${combo.nome} – ${variante.carne}${refri ? ` · ${refri.nome}` : ''}`, precoCents: variante.precoCents, qtd, obs: i.observacao ?? '', fracionado: false, livre: false });
+        } else if (i.produtoId) {
+          const prod = produtos.data?.find((p) => p.id === i.produtoId);
+          if (!prod || !prod.ativo) { ignorados++; continue; }
+          novos.push({ key: crypto.randomUUID(), produtoId: prod.id, nome: prod.nome, precoCents: prod.precoCents, qtd, obs: i.observacao ?? '', fracionado: prod.permiteFracionado, livre: prod.vendidoAPrecoDeCusto });
+        } else ignorados++;
+      }
+      up({ itens: [...d.itens, ...novos] });
+      setAvisoRepetir(ignorados > 0 ? `${novos.length} item(ns) adicionados — ${ignorados} não estão mais disponíveis e ficaram de fora.` : `${novos.length} item(ns) do pedido anterior adicionados.`);
+      setTimeout(() => setAvisoRepetir(null), 5000);
     },
   });
 
@@ -140,7 +170,8 @@ export default function NovoPedido() {
   if (produtos.isLoading || combos.isLoading) return <Carregando />;
   if (produtos.isError) return <Erro e={produtos.error} />;
 
-  const lista = (produtos.data ?? []).filter((p) => p.ativo && p.disponivelHoje && abaDe(p.categoria) === aba);
+  // estoqueSuficiente === false: sem insumo pra fazer nem 1 unidade — não oferece o que não dá pra fazer.
+  const lista = (produtos.data ?? []).filter((p) => p.ativo && p.disponivelHoje && p.estoqueSuficiente !== false && abaDe(p.categoria) === aba);
   // Em vez de só desabilitar o botão, diz o que falta — evita o "por que não confirma?" na hora do rush.
   const faltando = d.itens.length === 0 ? 'Adicione pelo menos um item'
     : d.tipo === 'entrega' && !d.semEndereco && !(d.enderecoTexto && d.bairroId) ? 'Informe endereço e bairro (ou marque "Endereço depois")'
@@ -170,7 +201,13 @@ export default function NovoPedido() {
           <div className="border-t border-white/10 pt-2 text-sm">
             {pedidosValidos.length === 0 ? <p className="text-cream/60">Primeiro pedido desse cliente.</p> : <>
               <p className="text-gold font-label font-bold uppercase">{pedidosValidos.length} pedido{pedidosValidos.length > 1 ? 's' : ''} anterior{pedidosValidos.length > 1 ? 'es' : ''} · {brl(totalGasto)} no total</p>
-              <ul className="mt-1 space-y-0.5 text-cream/70">{pedidosValidos.slice(0, 5).map((p) => <li key={p.id}>{p.dataOperacao} · #{num(p.numeroDia)} · {brl(p.total)} · {p.status}</li>)}</ul>
+              <ul className="mt-1 space-y-0.5 text-cream/70">{pedidosValidos.slice(0, 5).map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-2">
+                  <span>{p.dataOperacao} · #{num(p.numeroDia)} · {brl(p.total)} · {p.status}</span>
+                  <button type="button" className="text-gold underline text-xs shrink-0" disabled={repetirPedido.isPending} onClick={() => repetirPedido.mutate(p.id)}>repetir</button>
+                </li>
+              ))}</ul>
+              {avisoRepetir && <p className="text-xs text-primary-hover">{avisoRepetir}</p>}
             </>}
           </div>
         )}
@@ -198,10 +235,10 @@ export default function NovoPedido() {
         {aba === 'Combos' && combo && <div className="space-y-3">
           <div className="flex justify-between"><p className="font-label font-bold uppercase text-lg">{combo.combo.nome}</p><button className="text-gold underline" onClick={() => setCombo(null)}>voltar</button></div>
           <p className="text-xs text-gold font-label uppercase">Escolha a carne</p>
-          <div className="grid grid-cols-2 gap-2">{combo.combo.variantes.filter((v: Row) => v.ativo).map((v: Row) => <button key={v.id} className={`card text-left min-h-[56px] ${combo.variante?.id === v.id ? 'border-primary' : ''}`} onClick={() => setCombo({ ...combo, variante: v })}><span className="font-label font-bold uppercase">{v.carne}</span><br /><span className="text-gold">{brlC(v.precoCents)}</span></button>)}</div>
+          <div className="grid grid-cols-2 gap-2">{combo.combo.variantes.filter((v: Row) => v.ativo && produtos.data?.find((p) => p.id === v.carneProdutoId)?.estoqueSuficiente !== false).map((v: Row) => <button key={v.id} className={`card text-left min-h-[56px] ${combo.variante?.id === v.id ? 'border-primary' : ''}`} onClick={() => setCombo({ ...combo, variante: v })}><span className="font-label font-bold uppercase">{v.carne}</span><br /><span className="text-gold">{brlC(v.precoCents)}</span></button>)}</div>
           {combo.variante && <>
             <p className="text-xs text-gold font-label uppercase">Refrigerante</p>
-            <div className="flex gap-2 flex-wrap">{produtos.data?.filter((p) => p.categoria === 'bebida' && ['Coca', 'Guaraná', 'Pepsi'].includes(p.nome) && p.disponivelHoje).map((p) => (
+            <div className="flex gap-2 flex-wrap">{produtos.data?.filter((p) => p.categoria === 'bebida' && ['Coca', 'Guaraná', 'Pepsi'].includes(p.nome) && p.disponivelHoje && p.estoqueSuficiente !== false).map((p) => (
               <button key={p.id} className="chip" onClick={() => { add({ varianteId: combo.variante!.id, refrigeranteId: p.id, nome: `${combo.combo.nome} – ${combo.variante!.carne} · ${p.nome}`, precoCents: combo.variante!.precoCents, fracionado: false, livre: false }); setCombo(null); }}>{p.nome}</button>))}</div>
           </>}
         </div>}
@@ -246,11 +283,46 @@ export default function NovoPedido() {
       <div className="fixed bottom-14 md:bottom-0 inset-x-0 md:left-56 bg-surface border-t border-gold/30 p-3 z-10">
         <div className="max-w-5xl mx-auto flex items-center gap-3">
           <div className="flex-1 text-sm text-cream/80 leading-tight">Subtotal {brlC(subtotal)}{desconto > 0 && ` · desc. −${brlC(desconto)}`}{taxa > 0 && ` · taxa ${brlC(taxa)}`}<p className="font-display text-4xl text-gold">{brlC(total)}</p></div>
-          <button className="btn !min-h-[52px] px-6" disabled={!pronto || criar.isPending} onClick={() => criar.mutate()}>{criar.isPending ? 'Enviando…' : 'Confirmar pedido'}</button>
+          <button className="btn !min-h-[52px] px-6" disabled={!pronto} onClick={() => setRevisando(true)}>Revisar e confirmar</button>
         </div>
-        {faltando && !criar.isPending && <p className="text-cream/60 text-xs text-center mt-1">{faltando}</p>}
-        {criar.isError && <p className="text-primary-hover text-sm text-center">{(criar.error as Error).message}</p>}
+        {faltando && <p className="text-cream/60 text-xs text-center mt-1">{faltando}</p>}
       </div>
+
+      {revisando && (
+        <Drawer titulo="Revisar antes de confirmar" onFechar={() => setRevisando(false)}>
+          <p className="text-xs text-cream/60">Lê pro cliente antes de fechar — mais fácil acrescentar algo agora do que editar depois.</p>
+          <div>
+            <p className="text-xs font-label font-bold uppercase text-gold">Cliente</p>
+            <p>{d.nome || 'Balcão'}{d.telefone && ` · ${d.telefone}`}</p>
+          </div>
+          <div>
+            <p className="text-xs font-label font-bold uppercase text-gold">Itens</p>
+            <ul className="divide-y divide-white/10">{d.itens.map((i) => (
+              <li key={i.key} className="py-1 flex justify-between gap-2 text-sm">
+                <span>{formatQtd(i.qtd)}× {i.nome}{i.obs && <span className="text-gold"> ({i.obs})</span>}</span>
+                <span className="shrink-0">{brlC(Math.round(i.precoCents * i.qtd))}</span>
+              </li>
+            ))}</ul>
+          </div>
+          <div>
+            <p className="text-xs font-label font-bold uppercase text-gold">{d.tipo === 'entrega' ? 'Entrega' : 'Retirada'}</p>
+            {d.tipo === 'entrega' && !d.semEndereco && <p className="text-sm">{d.enderecoTexto}{bairro ? ` — ${bairro.nome}` : ''}{d.referencia && ` (${d.referencia})`}</p>}
+            {d.tipo === 'entrega' && d.semEndereco && <p className="text-sm text-cream/60">Endereço a combinar com o cliente.</p>}
+            {d.agendar && d.quando && <p className="text-sm">📅 {new Date(d.quando).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</p>}
+          </div>
+          <div>
+            <p className="text-xs font-label font-bold uppercase text-gold">Pagamento</p>
+            <p className="text-sm">{d.pagarDepois ? 'A combinar' : d.forma}{desconto > 0 && ` · desconto ${brlC(desconto)}`}</p>
+          </div>
+          {d.obs && <div><p className="text-xs font-label font-bold uppercase text-gold">Observações</p><p className="text-sm">{d.obs}</p></div>}
+          <p className="font-display text-3xl text-gold text-right">{brlC(total)}</p>
+          <div className="flex gap-2">
+            <button className="btn-ghost flex-1" onClick={() => setRevisando(false)}>Voltar e editar</button>
+            <button className="btn flex-1" disabled={criar.isPending} onClick={() => criar.mutate()}>{criar.isPending ? 'Enviando…' : 'Confirmar pedido'}</button>
+          </div>
+          {criar.isError && <Erro e={criar.error} />}
+        </Drawer>
+      )}
     </div>
   );
 }

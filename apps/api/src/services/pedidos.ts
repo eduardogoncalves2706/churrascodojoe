@@ -1,4 +1,4 @@
-import { toCents, fromCents, STATUS_PEDIDO, dataOperacaoLocal, type Canal, type StatusPedido } from '@joe/shared';
+import { toCents, fromCents, formatQtd, STATUS_PEDIDO, dataOperacaoLocal, type Canal, type StatusPedido } from '@joe/shared';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { schema as s } from '../db/client';
@@ -239,9 +239,11 @@ export function resumoWhatsapp(p: typeof s.pedidos.$inferSelect, itens: (typeof 
   const brl = (v: string) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
   const linhas = [`*Churrasco do Joe — Pedido #${String(p.numeroDia).padStart(3, '0')}*`, ''];
   for (const i of itens) {
-    linhas.push(`${Number(i.quantidade)}x ${i.descricaoSnapshot} — ${brl(i.subtotal)}${i.observacao ? ` (${i.observacao})` : ''}`);
+    const qtdPedida = Number(i.quantidade);
+    linhas.push(`${qtdPedida}x ${i.descricaoSnapshot} — ${brl(i.subtotal)}${i.observacao ? ` (${i.observacao})` : ''}`);
     const composicao = (i.escolhas as { composicao?: { nome: string; quantidade: number }[] } | null)?.composicao;
-    for (const c of composicao ?? []) linhas.push(`   • ${c.quantidade}x ${c.nome}`);
+    // composicao.quantidade é por 1 combo — multiplica pela quantidade pedida (2 combos = o dobro de cada item).
+    for (const c of composicao ?? []) linhas.push(`   • ${formatQtd(c.quantidade * qtdPedida)}x ${c.nome}`);
   }
   linhas.push('');
   if (Number(p.desconto) > 0) linhas.push(`Desconto: -${brl(p.desconto)}`);

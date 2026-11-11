@@ -9,6 +9,7 @@ import Clientes from './pages/Clientes';
 import Combos from './pages/Combos';
 import Comanda from './pages/Comanda';
 import Configuracoes from './pages/Configuracoes';
+import Consulta from './pages/Consulta';
 import Dashboard from './pages/Dashboard';
 import Estoque from './pages/Estoque';
 import Financeiro from './pages/Financeiro';
@@ -20,19 +21,34 @@ import Producao from './pages/Producao';
 import Bairros from './pages/Bairros';
 import Usuarios from './pages/Usuarios';
 
-const main = [
-  { to: '/novo', label: 'Novo pedido', admin: false }, { to: '/pedidos', label: 'Pedidos', admin: false },
-  { to: '/producao', label: 'Produção', admin: false }, { to: '/agenda', label: 'Agenda', admin: false },
+// Agrupado por assunto (menu/submenu) em vez de uma lista única — mais fácil de achar numa tela
+// com 11 destinos. Os 3 primeiros de "Pedidos" também abastecem a barra inferior no mobile.
+const GRUPOS = [
+  { nome: 'Pedidos', admin: false, links: [
+    { to: '/novo', label: 'Novo pedido' }, { to: '/pedidos', label: 'Lista de pedidos' },
+    { to: '/producao', label: 'Produção' }, { to: '/agenda', label: 'Agenda' },
+  ] },
+  { nome: 'Cardápio', admin: false, links: [
+    { to: '/consulta', label: 'Consulta rápida' }, { to: '/cardapio', label: 'Produtos e preços' }, { to: '/combos', label: 'Combos' },
+  ] },
+  { nome: 'Clientes', admin: false, links: [{ to: '/clientes', label: 'Clientes' }] },
+  { nome: 'Operação', admin: true, links: [
+    { to: '/insumos', label: 'Insumos e ficha' }, { to: '/estoque', label: 'Estoque' }, { to: '/bairros', label: 'Bairros e taxas' },
+  ] },
+  { nome: 'Financeiro', admin: true, links: [{ to: '/financeiro', label: 'Financeiro' }] },
+  { nome: 'Sistema', admin: true, links: [{ to: '/configuracoes', label: 'Configurações' }, { to: '/usuarios', label: 'Usuários' }] },
 ];
-const mais = [
-  { to: '/', label: 'Início', admin: false },
-  { to: '/cardapio', label: 'Cardápio', admin: false }, { to: '/combos', label: 'Combos', admin: false }, { to: '/clientes', label: 'Clientes', admin: false },
-  { to: '/insumos', label: 'Insumos e ficha', admin: true }, { to: '/estoque', label: 'Estoque', admin: true }, { to: '/bairros', label: 'Bairros e taxas', admin: true },
-  { to: '/financeiro', label: 'Financeiro', admin: true }, { to: '/configuracoes', label: 'Configurações', admin: true }, { to: '/usuarios', label: 'Usuários', admin: true },
-];
-
 function Link({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
-  return <NavLink to={to} end={to === '/'} onClick={onClick} className={({ isActive }) => `block px-3 py-2 rounded-md font-label font-bold uppercase tracking-wide ${isActive ? 'bg-primary text-cream' : 'text-gold hover:bg-surface'}`}>{label}</NavLink>;
+  return <NavLink to={to} onClick={onClick} className={({ isActive }) => `block px-3 py-1.5 rounded-md text-sm font-label font-bold uppercase tracking-wide ${isActive ? 'bg-primary text-cream' : 'text-gold hover:bg-surface'}`}>{label}</NavLink>;
+}
+/** Menu (grupo) + submenu (links) — ex.: "Pedidos" por cima de "Novo pedido"/"Lista de pedidos". */
+function Grupo({ nome, links, onClick }: { nome: string; links: { to: string; label: string }[]; onClick?: () => void }) {
+  return (
+    <div>
+      <p className="px-3 pt-2 text-xs text-cream/40 font-label uppercase tracking-wider">{nome}</p>
+      {links.map((l) => <Link key={l.to} {...l} onClick={onClick} />)}
+    </div>
+  );
 }
 
 export default function App() {
@@ -44,16 +60,16 @@ export default function App() {
   useEffect(() => { document.title = nome; }, [nome]);
   const [menu, setMenu] = useState(false);
   const admin = me.data?.papel === 'admin';
-  const links = [...main, ...mais].filter((l) => !l.admin || admin);
+  const grupos = GRUPOS.filter((g) => !g.admin || admin);
 
   return (
     <Routes>
       <Route path="/pedidos/:id/comanda" element={<Comanda />} />
       <Route path="*" element={
         <div className="md:flex min-h-screen">
-          <aside className="no-print hidden md:flex md:flex-col w-56 shrink-0 bg-surface/60 p-3 gap-1 border-r border-white/5">
+          <aside className="no-print hidden md:flex md:flex-col w-56 shrink-0 bg-surface/60 p-3 gap-1 border-r border-white/5 overflow-y-auto">
             <NavLink to="/" end className="flex items-center gap-2 px-3 py-2"><img src="/logo-192.png" alt="" className="w-9 h-9 rounded-full" /><h1 className="text-2xl text-primary-hover leading-none">{nome}</h1></NavLink>
-            {links.map((l) => <Link key={l.to} {...l} />)}
+            {grupos.map((g) => <Grupo key={g.nome} nome={g.nome} links={g.links} />)}
             <div className="mt-auto text-xs text-cream/60 px-3">
               {me.data && <p>{me.data.nome}</p>}
               {authEnabled && <button className="underline" onClick={sair}>sair</button>}
@@ -69,6 +85,7 @@ export default function App() {
               <Route path="/pedidos/:id" element={<PedidoDetalhe />} />
               <Route path="/producao" element={<Producao />} />
               <Route path="/agenda" element={<Agenda />} />
+              <Route path="/consulta" element={<Consulta />} />
               <Route path="/cardapio" element={<Cardapio admin={admin} />} />
               <Route path="/combos" element={<Combos admin={admin} />} />
               <Route path="/clientes" element={<Clientes />} />
@@ -81,15 +98,18 @@ export default function App() {
             </Routes>
           </main>
           <nav className="no-print md:hidden fixed bottom-0 inset-x-0 bg-surface border-t border-white/10 grid grid-cols-4 z-20 pb-[env(safe-area-inset-bottom)]">
-            {[main[0], main[1], main[2]].map((l) => (
+            {[{ to: '/novo', label: 'Novo pedido' }, { to: '/pedidos', label: 'Pedidos' }, { to: '/producao', label: 'Produção' }].map((l) => (
               <NavLink key={l.to} to={l.to} className={({ isActive }) => `min-h-[56px] flex items-center justify-center text-center text-sm font-label font-bold uppercase ${isActive ? 'text-primary-hover' : 'text-gold'}`}>{l.label}</NavLink>
             ))}
             <button onClick={() => setMenu(!menu)} className="min-h-[56px] text-sm font-label font-bold uppercase text-gold">Mais</button>
           </nav>
           {menu && (
             <div className="no-print md:hidden fixed inset-0 z-30 bg-black/70" onClick={() => setMenu(false)}>
-              <div className="absolute bottom-16 inset-x-2 card space-y-1" onClick={(e) => e.stopPropagation()}>
-                {links.filter((l) => !['/novo', '/pedidos', '/producao'].includes(l.to)).map((l) => <Link key={l.to} {...l} onClick={() => setMenu(false)} />)}
+              <div className="absolute bottom-16 inset-x-2 card space-y-1 max-h-[70vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <Link to="/" label="Início" onClick={() => setMenu(false)} />
+                {grupos.map((g) => (
+                  <Grupo key={g.nome} nome={g.nome} links={g.links.filter((l) => !['/novo', '/pedidos', '/producao'].includes(l.to))} onClick={() => setMenu(false)} />
+                ))}
               </div>
             </div>
           )}

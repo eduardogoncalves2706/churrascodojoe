@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { isAdmin, requireAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
 import { custosProdutos, custoVariante } from '../services/custos';
+import { estoqueSuficientePorProduto } from '../services/estoque';
 
 export const catalogo = new Hono<Env>();
 const db = () => getDb();
@@ -13,10 +14,12 @@ const money = z.number().min(0);
 
 /* ---------- Produtos ---------- */
 catalogo.get('/produtos', async (c) => {
-  const [rows, custos] = await Promise.all([db().select().from(s.produtos).orderBy(asc(s.produtos.ordem), asc(s.produtos.nome)), custosProdutos(db())]);
+  const [rows, custos, estoqueSuf] = await Promise.all([
+    db().select().from(s.produtos).orderBy(asc(s.produtos.ordem), asc(s.produtos.nome)), custosProdutos(db()), estoqueSuficientePorProduto(db()),
+  ]);
   const out = rows.map((p) => {
     const custoCents = custos.get(p.id) ?? null;
-    return { ...p, precoCents: toCents(p.precoVenda), custoCents, ...margem(toCents(p.precoVenda), custoCents) };
+    return { ...p, precoCents: toCents(p.precoVenda), custoCents, ...margem(toCents(p.precoVenda), custoCents), estoqueSuficiente: estoqueSuf.get(p.id) ?? true };
   });
   return c.json(isAdmin(c) ? out : stripCustos(out));
 });

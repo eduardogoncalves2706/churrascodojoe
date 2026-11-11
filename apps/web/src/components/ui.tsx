@@ -140,16 +140,31 @@ export function BotaoSalvar({ salvando, salvo, erro, onClick }: { salvando: bool
   );
 }
 
-/** Modal simples — substitui window.prompt()/confirm() nativos (destoam do resto do visual). */
-export function Modal({ titulo, children, onFechar }: { titulo: string; children: ReactNode; onFechar: () => void }) {
+/** Painel lateral (direita) — pra editar/ver algo sem perder o lugar na lista de trás (abre sempre
+ * fixo na tela, não importa até onde a lista por baixo tinha rolado) e sem navegar pra outra página. */
+export function Drawer({ titulo, children, onFechar, largura = 'max-w-md' }: { titulo?: string; children: ReactNode; onFechar: () => void; largura?: string }) {
+  const [visivel, setVisivel] = useState(false);
+  useEffect(() => { const t = requestAnimationFrame(() => setVisivel(true)); return () => cancelAnimationFrame(t); }, []);
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onFechar();
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [onFechar]);
   return (
-    <div className="fixed inset-0 z-40 bg-black/70 flex items-center justify-center p-4" onClick={onFechar}>
-      <div className="card w-full max-w-sm space-y-3" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-label font-bold uppercase text-gold">{titulo}</h3>
+    <div className="fixed inset-0 z-40 bg-black/70 flex justify-end" onClick={onFechar}>
+      <div className={`relative h-full w-full ${largura} bg-surface border-l border-gold/20 overflow-y-auto p-4 space-y-3 transition-transform duration-200 ${visivel ? 'translate-x-0' : 'translate-x-full'}`} onClick={(e) => e.stopPropagation()}>
+        <button type="button" aria-label="Fechar" className="absolute top-3 right-3 text-gold text-2xl leading-none" onClick={onFechar}>×</button>
+        {titulo && <h3 className="font-label font-bold uppercase text-gold pr-8">{titulo}</h3>}
         {children}
       </div>
     </div>
   );
+}
+
+/** Modal simples (confirmações curtas) — agora é um Drawer estreito, pra ficar consistente com o
+ * resto: tudo que abre em cima da tela (editar, confirmar, recusar) sai do mesmo lado. */
+export function Modal({ titulo, children, onFechar }: { titulo: string; children: ReactNode; onFechar: () => void }) {
+  return <Drawer titulo={titulo} onFechar={onFechar} largura="max-w-sm">{children}</Drawer>;
 }
 
 export const Titulo = ({ children, extra }: { children: ReactNode; extra?: ReactNode }) => (

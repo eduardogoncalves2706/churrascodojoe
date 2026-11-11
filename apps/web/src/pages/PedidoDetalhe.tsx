@@ -10,8 +10,11 @@ const BLOQUEADO = ['saiu_entrega', 'entregue', 'retirado', 'cancelado'];
 const MOTIVOS_RECUSA = ['Item esgotado', 'Fora da área de entrega', 'Fechados nesse horário', 'Pedido duplicado'];
 const MOTIVOS_CANCELAMENTO = ['Cliente desistiu', 'Pedido duplicado / erro de lançamento', 'Item esgotado', 'Problema no pagamento', 'Não conseguimos entregar'];
 
-export default function PedidoDetalhe() {
-  const { id } = useParams();
+// Também usado dentro de um Drawer (clique num card do kanban de Pedidos) — nesse caso recebe `id`
+// e `onFechar` direto por prop em vez de ler da URL, e "fechar" chama onFechar em vez de navegar.
+export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; onFechar?: () => void } = {}) {
+  const { id: idParam } = useParams();
+  const id = idProp ?? idParam;
   const qc = useQueryClient();
   const [forma, setForma] = useState('pix');
   const [valor, setValor] = useState('');
@@ -85,7 +88,8 @@ export default function PedidoDetalhe() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap"><h2 className="text-5xl text-gold">Pedido #{num(p.numeroDia)}</h2>
-        <span className={`chip ${p.status === 'cancelado' ? 'bg-brasa border-brasa' : 'chip-on'}`}>{STATUS_LABEL[p.status]}</span><Link to="/pedidos" className="ml-auto text-gold underline">voltar</Link></div>
+        <span className={`chip ${p.status === 'cancelado' ? 'bg-brasa border-brasa' : 'chip-on'}`}>{STATUS_LABEL[p.status]}</span>
+        {onFechar ? <button className="ml-auto text-gold underline" onClick={onFechar}>fechar</button> : <Link to="/pedidos" className="ml-auto text-gold underline">voltar</Link>}</div>
       <div className="card space-y-1">
         <p className="text-lg">{p.nomeClienteSnapshot ?? 'Balcão'} <span className="text-cream/60">{p.telefoneSnapshot}</span></p>
         {p.telefoneSnapshot && <MensagemWhats telefone={p.telefoneSnapshot} />}
@@ -134,7 +138,7 @@ export default function PedidoDetalhe() {
       ) : (
         <div className="card"><table className="w-full"><tbody>
           {p.itens.map((i: Row) => <tr key={i.id}><td className="td">{formatQtd(Number(i.quantidade))}× {i.descricaoSnapshot}{i.observacao && <span className="text-gold"> ({i.observacao})</span>}
-            {i.escolhas?.composicao && <p className="text-xs text-cream/60">{i.escolhas.composicao.map((c: Row) => `${formatQtd(c.quantidade)}× ${c.nome}`).join(' · ')}</p>}</td><td className="td text-right">{brl(i.subtotal)}</td></tr>)}
+            {i.escolhas?.composicao && <p className="text-xs text-cream/60">{i.escolhas.composicao.map((c: Row) => `${formatQtd(c.quantidade * Number(i.quantidade))}× ${c.nome}`).join(' · ')}</p>}</td><td className="td text-right">{brl(i.subtotal)}</td></tr>)}
           <tr><td className="td text-cream/70">Subtotal</td><td className="td text-right">{brl(p.subtotal)}</td></tr>
           {Number(p.desconto) > 0 && <tr><td className="td text-cream/70">Desconto</td><td className="td text-right">−{brl(p.desconto)}</td></tr>}
           {p.tipo === 'entrega' && <tr><td className="td text-cream/70">Taxa de entrega</td><td className="td text-right">{brl(p.taxaEntrega)}</td></tr>}
