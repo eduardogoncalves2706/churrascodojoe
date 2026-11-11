@@ -70,6 +70,7 @@ export default function Cardapio({ admin }: { admin: boolean }) {
   const [hist, setHist] = useState<Row[] | null>(null);
   const [form, setForm] = useState<FormProduto | null>(null);
   const [mostrarInativos, setMostrarInativos] = useState(false);
+  const [busca, setBusca] = useState('');
 
   const refresh = () => { qc.invalidateQueries({ queryKey: ['produtos'] }); qc.invalidateQueries({ queryKey: ['combos'] }); };
   const patch = useMutation({ mutationFn: ({ id, body }: { id: string; body: Row }) => api(`/produtos/${id}`, { method: 'PATCH', body }), onSuccess: () => { setEditandoPreco(null); refresh(); } });
@@ -97,10 +98,13 @@ export default function Cardapio({ admin }: { admin: boolean }) {
       {previa && <div className="card space-y-1"><h3 className="font-label font-bold uppercase text-gold">Prévia do reajuste</h3>{previa.itens.map((i: Row) => <p key={i.id}>{i.nome}: {brl(i.de)} → <b>{brl(i.para)}</b></p>)}
         <div className="flex gap-2 mt-2"><button className="btn" onClick={() => aplicar.mutate()}>Aplicar</button><button className="btn-ghost" onClick={() => setPrevia(null)}>Cancelar</button></div></div>}
       {hist && <div className="card"><div className="flex justify-between"><h3 className="font-label font-bold uppercase text-gold">Histórico de preço</h3><button className="underline text-gold" onClick={() => setHist(null)}>fechar</button></div>{hist.map((h) => <p key={h.id} className="text-sm">{h.vigenteDesde} — {brl(h.preco)} <span className="text-cream/60">{h.motivo}</span></p>)}</div>}
-      {admin && <label className="flex items-center gap-2 normal-case text-sm"><input type="checkbox" className="!w-5 !min-h-0" checked={mostrarInativos} onChange={(e) => setMostrarInativos(e.target.checked)} />Mostrar inativos</label>}
+      <div className="flex gap-2 items-center flex-wrap">
+        <input className="!w-auto flex-1 min-w-[160px]" placeholder="Buscar produto…" value={busca} onChange={(e) => setBusca(e.target.value)} />
+        {admin && <label className="flex items-center gap-2 normal-case text-sm whitespace-nowrap"><input type="checkbox" className="!w-5 !min-h-0" checked={mostrarInativos} onChange={(e) => setMostrarInativos(e.target.checked)} />Mostrar inativos</label>}
+      </div>
 
       <div className="card overflow-x-auto"><table className="w-full min-w-[640px]"><thead><tr>{admin && <th className="th w-8" />}<th className="th">Produto</th><th className="th">Un.</th><th className="th text-right">Preço</th>{admin && <><th className="th text-right">Custo</th><th className="th text-right">Margem direta</th></>}<th className="th">Hoje</th>{admin && <th className="th">Site</th>}{admin && <th className="th" />}</tr></thead>
-        <tbody>{q.data!.filter((p) => p.ativo || mostrarInativos).map((p) => {
+        <tbody>{q.data!.filter((p) => (p.ativo || mostrarInativos) && p.nome.toLowerCase().includes(busca.trim().toLowerCase())).map((p) => {
           const baixa = admin && !p.vendidoAPrecoDeCusto && p.margemPct != null && p.margemPct < min;
           return (<tr key={p.id} className={p.disponivelHoje && p.ativo ? '' : 'opacity-50'}>
             {admin && <td className="td"><input type="checkbox" className="!w-5 !min-h-0" checked={sel.has(p.id)} onChange={(e) => { const n = new Set(sel); e.target.checked ? n.add(p.id) : n.delete(p.id); setSel(n); }} /></td>}

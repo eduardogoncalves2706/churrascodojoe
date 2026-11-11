@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { isAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
 import { atualizarItens, cancelarPedido, confirmarPedidoSite, criarPedido, ErroNegocio, mudarStatus, recusarPedidoSite, registrarPagamento, resumoWhatsapp, STATUS_EDICAO_BLOQUEADA } from '../services/pedidos';
+import { necessidadeInsumos, produtosPedidos } from '../services/estoque';
 
 export const pedidos = new Hono<Env>();
 const db = () => getDb();
@@ -145,36 +146,20 @@ pedidos.get('/pedidos/:id/resumo-whatsapp', async (c) => {
 });
 
 /* ---------- Produção e Agenda ---------- */
+// "A preparar" e "insumos necessários" reaproveitam o mesmo cálculo do módulo Estoque (produto →
+// ficha técnica → insumo, resolvendo combo) — o estoque usado aqui é o de verdade (lotes
+// registrados), não mais um campo digitado na tela que se perdia ao recarregar.
 pedidos.get('/producao', async (c) => {
   const data = c.req.query('data') ?? dataOperacaoLocal();
   const ps = await db().select({ id: s.pedidos.id }).from(s.pedidos).where(and(eq(s.pedidos.dataOperacao, data), sql`${s.pedidos.status} not in ('cancelado','rascunho')`));
   if (!ps.length) return c.json({ data, pedidos: 0, produtos: [], insumos: [] });
-  const [itens, variantes, comboItens, prods, ficha, insumos] = await Promise.all([
-    db().select().from(s.pedidoItens).where(sql`${s.pedidoItens.pedidoId} in ${ps.map((p) => p.id)}`),
-    db().select().from(s.comboVariantes), db().select().from(s.comboItens), db().select().from(s.produtos), db().select().from(s.fichaTecnica), db().select().from(s.insumos),
-  ]);
-  const nec = new Map<string, number>();
-  const add = (id: string, q: number) => nec.set(id, (nec.get(id) ?? 0) + q);
-  for (const it of itens) {
-    const q = Number(it.quantidade);
-    if (it.produtoId) add(it.produtoId, q);
-    if (it.comboVarianteId) {
-      const v = variantes.find((x) => x.id === it.comboVarianteId)!;
-      const refri = (it.escolhas as { refrigeranteId?: string } | null)?.refrigeranteId;
-      for (const ci of comboItens.filter((x) => x.comboId === v.comboId)) {
-        const pid = ci.ehCarneEscolhida ? v.carneProdutoId : ci.grupoEscolha === 'refrigerante' && refri ? refri : ci.produtoId;
-        if (pid) add(pid, q * Number(ci.quantidade));
-      }
-    }
-  }
+
+  const [nec, prods, insumos] = await Promise.all([produtosPedidos(db(), data, data), db().select().from(s.produtos), necessidadeInsumos(db(), data, data)]);
   const nomeP = new Map(prods.map((p) => [p.id, p]));
   const produtos = [...nec].map(([id, quantidade]) => ({ produtoId: id, nome: nomeP.get(id)!.nome, categoria: nomeP.get(id)!.categoria, unidade: nomeP.get(id)!.unidadeVenda, quantidade }))
     .sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome));
-  // Necessidade de insumos pela ficha técnica (equivale a quantidade ÷ fator de rendimento).
-  const ins = new Map<string, number>();
-  for (const f of ficha) { const q = nec.get(f.produtoId); if (q) ins.set(f.insumoId, (ins.get(f.insumoId) ?? 0) + q * Number(f.quantidadeInsumo)); }
-  const nomeI = new Map(insumos.map((i) => [i.id, i]));
-  const insumosOut = [...ins].map(([id, quantidade]) => ({ insumoId: id, nome: nomeI.get(id)!.nome, unidade: nomeI.get(id)!.unidadeCompra, quantidade: Math.round(quantidade * 1000) / 1000 }))
+  const insumosOut = insumos.filter((i) => i.necessario > 0)
+    .map((i) => ({ insumoId: i.insumoId, nome: i.nome, unidade: i.unidadeCompra, quantidade: i.necessario, estoqueAtual: i.estoqueAtual, aComprar: i.aComprar }))
     .sort((a, b) => a.nome.localeCompare(b.nome));
   return c.json({ data, pedidos: ps.length, produtos, insumos: insumosOut });
 });

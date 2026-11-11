@@ -17,6 +17,15 @@ const carregarDraft = (): Draft => { try { return { ...VAZIO, ...JSON.parse(loca
 const ABAS = ['Combos', 'Carnes', 'Acompanhamentos', 'Bebidas', 'Doces & Geleias'] as const;
 const abaDe = (cat: string) => (cat === 'carne' ? 'Carnes' : cat === 'acompanhamento' ? 'Acompanhamentos' : cat === 'bebida' ? 'Bebidas' : 'Doces & Geleias');
 
+const SUGESTOES_OBS = ['Ao ponto', 'Bem passada', 'Mal passada', 'Sem cebola', 'Sem pimenta'];
+/** Chip clicado entra/sai da observação (lista separada por vírgula) — evita digitar sempre a mesma coisa. */
+function alternarObs(atual: string, token: string) {
+  const partes = atual.split(',').map((s) => s.trim()).filter(Boolean);
+  const i = partes.findIndex((p) => p.toLowerCase() === token.toLowerCase());
+  if (i >= 0) partes.splice(i, 1); else partes.push(token);
+  return partes.join(', ');
+}
+
 /** Aplica os dados de um cliente encontrado (por telefone ou por nome) ao rascunho do pedido. */
 function preencherCliente(c: Row, setD: (fn: (x: Draft) => Draft) => void) {
   const e = c.enderecos?.find((x: Row) => x.principal) ?? c.enderecos?.[0];
@@ -201,6 +210,9 @@ export default function NovoPedido() {
               {i.livre && <input aria-label="Preço" className="!w-24" inputMode="decimal" value={i.precoCents ? i.precoCents / 100 : ''} placeholder="R$" onChange={(e) => setItem(i.key, { precoCents: toCents(e.target.value || 0) })} />}
               <button className="btn-ghost !px-3" aria-label="menos" onClick={() => passo(i, -1)}>−</button><span className="w-10 text-center font-display text-2xl">{formatQtd(i.qtd)}</span><button className="btn-ghost !px-3" aria-label="mais" onClick={() => passo(i, 1)}>+</button></div>
             <input placeholder="Observação (ex.: ao ponto)" value={i.obs} onChange={(e) => setItem(i.key, { obs: e.target.value })} />
+            <div className="flex gap-1 flex-wrap">{SUGESTOES_OBS.map((s) => (
+              <button key={s} type="button" className={`chip !min-h-[28px] !px-2 !text-xs ${i.obs.toLowerCase().includes(s.toLowerCase()) ? 'chip-on' : ''}`} onClick={() => setItem(i.key, { obs: alternarObs(i.obs, s) })}>{s}</button>
+            ))}</div>
           </li>))}</ul>}
       </section>
 

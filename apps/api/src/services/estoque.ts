@@ -19,8 +19,9 @@ export async function validadeMaisProxima(db: Pick<Db, 'select'>): Promise<Map<s
 /**
  * Quantidade de cada produto "de verdade" pedida num período (resolve combo → carne escolhida +
  * refrigerante escolhido, igual ao cálculo de custo em services/custos.ts — mesma fonte da verdade).
+ * Exportada também pra rota de Produção (routes/pedidos.ts), que usa isso pro "a preparar do dia".
  */
-async function produtosPedidos(db: Pick<Db, 'select'>, de: string, ate: string): Promise<Map<string, number>> {
+export async function produtosPedidos(db: Pick<Db, 'select'>, de: string, ate: string): Promise<Map<string, number>> {
   const pedidosDoPeriodo = await db.select({ id: s.pedidos.id }).from(s.pedidos)
     .where(and(gte(s.pedidos.dataOperacao, de), lte(s.pedidos.dataOperacao, ate), sql`${s.pedidos.status} not in ('cancelado', 'recusado', 'rascunho')`));
   if (!pedidosDoPeriodo.length) return new Map();

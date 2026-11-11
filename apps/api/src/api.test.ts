@@ -89,7 +89,12 @@ describe('fluxo de novo pedido', () => {
 
     const prod = await json(await call('/producao'));
     expect(prod.produtos.find((x: any) => x.nome === 'Picanha').quantidade).toBeGreaterThanOrEqual(4);
-    expect(prod.insumos.find((x: any) => x.nome === 'Picanha')).toBeTruthy();
+    const picanhaInsumo = prod.insumos.find((x: any) => x.nome === 'Picanha');
+    expect(picanhaInsumo).toBeTruthy();
+    // Produção reaproveita o estoque de verdade do módulo Estoque, não mais um campo digitado e
+    // perdido ao recarregar a página — "em estoque" e "a comprar" vêm junto na resposta.
+    expect(typeof picanhaInsumo.estoqueAtual).toBe('number');
+    expect(picanhaInsumo.aComprar).toBeGreaterThanOrEqual(0);
 
     expect((await call(`/pedidos/${p.id}/cancelar`, { method: 'POST', body: JSON.stringify({ motivo: '' }) })).status).toBe(400);
     expect((await call(`/pedidos/${p.id}/cancelar`, { method: 'POST', body: JSON.stringify({ motivo: 'teste' }) })).status).toBe(200);

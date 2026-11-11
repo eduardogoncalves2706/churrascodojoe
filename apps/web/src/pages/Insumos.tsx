@@ -32,13 +32,15 @@ export default function Insumos() {
   const q = useQuery({ queryKey: ['insumos'], queryFn: () => api<Row[]>('/insumos') });
   const forn = useQuery({ queryKey: ['fornecedores'], queryFn: () => api<Row[]>('/fornecedores') });
   const [novoCusto, setNovoCusto] = useState<Record<string, string>>({});
+  const [busca, setBusca] = useState('');
   const custo = useMutation({ mutationFn: ({ id, valor }: { id: string; valor: number }) => api(`/insumos/${id}/custo`, { method: 'POST', body: { custo: valor } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['insumos'] }); qc.invalidateQueries({ queryKey: ['produtos'] }); qc.invalidateQueries({ queryKey: ['combos'] }); } });
   if (q.isLoading) return <Carregando />;
   return (
     <div className="space-y-4"><Titulo>Insumos, fornecedores e ficha</Titulo>
+      <input placeholder="Buscar insumo…" value={busca} onChange={(e) => setBusca(e.target.value)} />
       <div className="card overflow-x-auto"><table className="w-full min-w-[560px]"><thead><tr><th className="th">Insumo</th><th className="th">Unidade</th><th className="th text-right">Custo atual</th><th className="th text-right">Variação</th><th className="th">Novo custo</th></tr></thead><tbody>
-        {q.data?.map((i) => { const v = i.custoAnteriorCents ? ((i.custoCents - i.custoAnteriorCents) / i.custoAnteriorCents) * 100 : null;
+        {q.data?.filter((i) => i.nome.toLowerCase().includes(busca.trim().toLowerCase())).map((i) => { const v = i.custoAnteriorCents ? ((i.custoCents - i.custoAnteriorCents) / i.custoAnteriorCents) * 100 : null;
           return (<tr key={i.id}><td className="td">{i.nome}</td><td className="td text-cream/60">{i.unidadeCompra}</td><td className="td text-right text-gold">{brl(i.custoAtual)}</td>
             <td className={`td text-right ${v && v > 0 ? 'text-primary-hover' : ''}`}>{v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`}</td>
             <td className="td"><input className="!w-24" inputMode="decimal" value={novoCusto[i.id] ?? ''} placeholder="R$" onChange={(e) => setNovoCusto({ ...novoCusto, [i.id]: e.target.value })}
