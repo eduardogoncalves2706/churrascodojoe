@@ -98,6 +98,24 @@ export function SeletorPeriodo({ de, ate, onChange }: { de: string; ate: string;
   );
 }
 
+/** Select com motivos comuns + "Outro…" (digita livre) — evita texto solto de motivo divergir
+ * sem querer (erro de digitação) e padroniza o dado pra futuro relatório de motivo. */
+export function SeletorMotivo({ opcoes, value, onChange, placeholder = 'Descreva o motivo' }: { opcoes: readonly string[]; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const [modoOutro, setModoOutro] = useState(() => value !== '' && !opcoes.includes(value));
+  return (
+    <div className="flex-1 min-w-[180px] space-y-1">
+      <select value={modoOutro ? 'outro' : value} onChange={(e) => {
+        if (e.target.value === 'outro') { setModoOutro(true); onChange(''); } else { setModoOutro(false); onChange(e.target.value); }
+      }}>
+        <option value="">Escolha o motivo…</option>
+        {opcoes.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value="outro">Outro…</option>
+      </select>
+      {modoOutro && <input autoFocus placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />}
+    </div>
+  );
+}
+
 /** Modal simples — substitui window.prompt()/confirm() nativos (destoam do resto do visual). */
 export function Modal({ titulo, children, onFechar }: { titulo: string; children: ReactNode; onFechar: () => void }) {
   return (

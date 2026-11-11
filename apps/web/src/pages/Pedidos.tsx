@@ -3,9 +3,10 @@ import { proximoStatus, type StatusPedido } from '@joe/shared';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, brl, hoje, hora, num, STATUS_LABEL, type Row } from '../api';
-import { Carregando, Erro, Modal, SeletorData, Titulo, Vazio } from '../components/ui';
+import { Carregando, Erro, Modal, SeletorData, SeletorMotivo, Titulo, Vazio } from '../components/ui';
 
 const COLUNAS: StatusPedido[] = ['confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue'];
+const MOTIVOS_RECUSA = ['Item esgotado', 'Fora da área de entrega', 'Fechados nesse horário', 'Pedido duplicado'];
 
 function espera(p: Row) {
   if (['entregue', 'retirado', 'cancelado'].includes(p.status)) return { min: 0, cls: '' };
@@ -61,7 +62,7 @@ export default function Pedidos() {
       {recusando && (
         <Modal titulo={`Recusar pedido #${num(recusando.numeroDia)}`} onFechar={() => { setRecusando(null); setMotivoRecusa(''); }}>
           <p className="text-sm text-cream/70">O cliente não é notificado automaticamente — avise pelo WhatsApp se precisar.</p>
-          <textarea className="w-full min-h-[80px]" autoFocus placeholder="Motivo da recusa (obrigatório)" value={motivoRecusa} onChange={(e) => setMotivoRecusa(e.target.value)} />
+          <SeletorMotivo opcoes={MOTIVOS_RECUSA} value={motivoRecusa} onChange={setMotivoRecusa} />
           <div className="flex gap-2">
             <button className="btn-danger flex-1" disabled={!motivoRecusa.trim() || recusarSite.isPending} onClick={() => recusarSite.mutate(recusando.id)}>{recusarSite.isPending ? 'Recusando…' : 'Confirmar recusa'}</button>
             <button className="btn-ghost" onClick={() => { setRecusando(null); setMotivoRecusa(''); }}>Cancelar</button>

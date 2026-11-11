@@ -7,11 +7,16 @@ const CATEGORIAS = ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia', 
 interface FormProduto {
   id?: string; nome: string; categoria: string; unidadeVenda: string; precoVenda: string;
   permiteFracionado: boolean; parceiro: string; vendidoAPrecoDeCusto: boolean; ativo: boolean;
+  visivelSite: boolean; descricaoCurta: string;
 }
-const FORM_VAZIO: FormProduto = { nome: '', categoria: 'carne', unidadeVenda: 'unidade', precoVenda: '', permiteFracionado: false, parceiro: '', vendidoAPrecoDeCusto: false, ativo: true };
+const FORM_VAZIO: FormProduto = {
+  nome: '', categoria: 'carne', unidadeVenda: 'unidade', precoVenda: '', permiteFracionado: false, parceiro: '', vendidoAPrecoDeCusto: false, ativo: true,
+  visivelSite: true, descricaoCurta: '',
+};
 const paraForm = (p: Row): FormProduto => ({
   id: p.id, nome: p.nome, categoria: p.categoria, unidadeVenda: p.unidadeVenda, precoVenda: String(p.precoVenda),
   permiteFracionado: p.permiteFracionado, parceiro: p.parceiro ?? '', vendidoAPrecoDeCusto: p.vendidoAPrecoDeCusto, ativo: p.ativo,
+  visivelSite: p.visivelSite ?? true, descricaoCurta: p.descricaoCurta ?? '',
 });
 
 function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProduto; onSalvo: () => void; onCancelar: () => void }) {
@@ -19,7 +24,10 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
   const up = (p: Partial<FormProduto>) => setF((x) => ({ ...x, ...p }));
   const salvar = useMutation({
     mutationFn: () => {
-      const body = { nome: f.nome, categoria: f.categoria, unidadeVenda: f.unidadeVenda, precoVenda: Number(f.precoVenda.replace(',', '.') || 0), permiteFracionado: f.permiteFracionado, parceiro: f.parceiro || null, vendidoAPrecoDeCusto: f.vendidoAPrecoDeCusto, ativo: f.ativo };
+      const body = {
+        nome: f.nome, categoria: f.categoria, unidadeVenda: f.unidadeVenda, precoVenda: Number(f.precoVenda.replace(',', '.') || 0), permiteFracionado: f.permiteFracionado,
+        parceiro: f.parceiro || null, vendidoAPrecoDeCusto: f.vendidoAPrecoDeCusto, ativo: f.ativo, visivelSite: f.visivelSite, descricaoCurta: f.descricaoCurta || null,
+      };
       return f.id ? api(`/produtos/${f.id}`, { method: 'PATCH', body }) : api('/produtos', { method: 'POST', body });
     },
     onSuccess: onSalvo,
@@ -33,10 +41,12 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
         <div><label>Unidade de venda</label><input value={f.unidadeVenda} onChange={(e) => up({ unidadeVenda: e.target.value })} placeholder="espeto, kg, unidade…" /></div>
         <div><label>Preço de venda (R$)</label><input inputMode="decimal" value={f.precoVenda} onChange={(e) => up({ precoVenda: e.target.value })} disabled={f.vendidoAPrecoDeCusto} /></div>
         <div><label>Parceiro (opcional)</label><input value={f.parceiro} onChange={(e) => up({ parceiro: e.target.value })} placeholder="ex.: Doces by Nick" /></div>
+        <div><label>Descrição curta (site)</label><input value={f.descricaoCurta} onChange={(e) => up({ descricaoCurta: e.target.value })} placeholder="aparece no cardápio do site" /></div>
       </div>
       <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.permiteFracionado} onChange={(e) => up({ permiteFracionado: e.target.checked })} />Permite fracionado (ex.: 1/2)</label>
         <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.vendidoAPrecoDeCusto} onChange={(e) => up({ vendidoAPrecoDeCusto: e.target.checked, precoVenda: e.target.checked ? '0' : f.precoVenda })} />Vendido a preço de custo (parceiro)</label>
+        <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.visivelSite} onChange={(e) => up({ visivelSite: e.target.checked })} />Aparece no site</label>
         {f.id && <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.ativo} onChange={(e) => up({ ativo: e.target.checked })} />Ativo</label>}
       </div>
       <div className="flex gap-2">
@@ -89,7 +99,7 @@ export default function Cardapio({ admin }: { admin: boolean }) {
       {hist && <div className="card"><div className="flex justify-between"><h3 className="font-label font-bold uppercase text-gold">Histórico de preço</h3><button className="underline text-gold" onClick={() => setHist(null)}>fechar</button></div>{hist.map((h) => <p key={h.id} className="text-sm">{h.vigenteDesde} — {brl(h.preco)} <span className="text-cream/60">{h.motivo}</span></p>)}</div>}
       {admin && <label className="flex items-center gap-2 normal-case text-sm"><input type="checkbox" className="!w-5 !min-h-0" checked={mostrarInativos} onChange={(e) => setMostrarInativos(e.target.checked)} />Mostrar inativos</label>}
 
-      <div className="card overflow-x-auto"><table className="w-full min-w-[640px]"><thead><tr>{admin && <th className="th w-8" />}<th className="th">Produto</th><th className="th">Un.</th><th className="th text-right">Preço</th>{admin && <><th className="th text-right">Custo</th><th className="th text-right">Margem direta</th></>}<th className="th">Hoje</th>{admin && <th className="th" />}</tr></thead>
+      <div className="card overflow-x-auto"><table className="w-full min-w-[640px]"><thead><tr>{admin && <th className="th w-8" />}<th className="th">Produto</th><th className="th">Un.</th><th className="th text-right">Preço</th>{admin && <><th className="th text-right">Custo</th><th className="th text-right">Margem direta</th></>}<th className="th">Hoje</th>{admin && <th className="th">Site</th>}{admin && <th className="th" />}</tr></thead>
         <tbody>{q.data!.filter((p) => p.ativo || mostrarInativos).map((p) => {
           const baixa = admin && !p.vendidoAPrecoDeCusto && p.margemPct != null && p.margemPct < min;
           return (<tr key={p.id} className={p.disponivelHoje && p.ativo ? '' : 'opacity-50'}>
@@ -102,6 +112,7 @@ export default function Cardapio({ admin }: { admin: boolean }) {
             {admin && <><td className="td text-right">{p.custoCents == null ? <span className="text-cream/50" title="Sem ficha técnica">sem ficha</span> : brlC(p.custoCents)}</td>
               <td className={`td text-right ${baixa ? 'text-brasa font-bold' : ''}`}>{p.margemCents == null ? '—' : `${brlC(p.margemCents)} · ${pct(p.margemPct)}`}{baixa && ' ⚠'}</td></>}
             <td className="td"><input type="checkbox" className="!w-6 !min-h-0" aria-label="Disponível hoje" checked={p.disponivelHoje} onChange={(e) => patch.mutate({ id: p.id, body: { disponivelHoje: e.target.checked } })} /></td>
+            {admin && <td className="td"><input type="checkbox" className="!w-6 !min-h-0" aria-label="Aparece no site" checked={p.visivelSite} onChange={(e) => patch.mutate({ id: p.id, body: { visivelSite: e.target.checked } })} /></td>}
             {admin && <td className="td"><button className="text-gold underline text-sm" onClick={() => setForm(paraForm(p))}>editar</button></td>}</tr>);
         })}</tbody></table></div></div>
   );

@@ -9,12 +9,18 @@ interface VarianteLinha { carneProdutoId: string; preco: string; ativo: boolean;
 function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) {
   const qc = useQueryClient();
   const produtos = useQuery({ queryKey: ['produtos'], queryFn: () => api<Row[]>('/produtos') });
-  const [meta, setMeta] = useState({ nome: combo.nome, descricao: combo.descricao ?? '', pessoas: String(combo.pessoas), ativo: combo.ativo });
+  const [meta, setMeta] = useState({
+    nome: combo.nome, descricao: combo.descricao ?? '', pessoas: String(combo.pessoas), ativo: combo.ativo,
+    visivelSite: combo.visivelSite ?? true, descricaoCurta: combo.descricaoCurta ?? '',
+  });
   const [itens, setItens] = useState<ItemLinha[]>(combo.itens.map((i: Row) => ({ produtoId: i.produtoId ?? '', ehCarneEscolhida: i.ehCarneEscolhida, quantidade: String(Number(i.quantidade)), grupoEscolha: i.grupoEscolha ?? '' })));
   const [variantes, setVariantes] = useState<VarianteLinha[]>(combo.variantes.map((v: Row) => ({ carneProdutoId: v.carneProdutoId, preco: String(v.precoCents / 100), ativo: v.ativo, persistida: true })));
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['combos'] });
-  const salvarMeta = useMutation({ mutationFn: () => api(`/combos/${combo.id}`, { method: 'PATCH', body: { nome: meta.nome, descricao: meta.descricao || null, pessoas: Number(meta.pessoas), ativo: meta.ativo } }), onSuccess: refresh });
+  const salvarMeta = useMutation({ mutationFn: () => api(`/combos/${combo.id}`, { method: 'PATCH', body: {
+    nome: meta.nome, descricao: meta.descricao || null, pessoas: Number(meta.pessoas), ativo: meta.ativo,
+    visivelSite: meta.visivelSite, descricaoCurta: meta.descricaoCurta || null,
+  } }), onSuccess: refresh });
   const salvarItens = useMutation({
     mutationFn: () => api(`/combos/${combo.id}/itens`, { method: 'PUT', body: itens.map((i) => ({
       produtoId: i.ehCarneEscolhida ? null : i.produtoId || null, ehCarneEscolhida: i.ehCarneEscolhida, quantidade: Number(i.quantidade.replace(',', '.') || 0), grupoEscolha: i.grupoEscolha || null,
@@ -38,8 +44,12 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
           <div><label>Nome</label><input value={meta.nome} onChange={(e) => setMeta({ ...meta, nome: e.target.value })} /></div>
           <div><label>Pessoas</label><input inputMode="numeric" value={meta.pessoas} onChange={(e) => setMeta({ ...meta, pessoas: e.target.value })} /></div>
           <div><label>Descrição</label><input value={meta.descricao} onChange={(e) => setMeta({ ...meta, descricao: e.target.value })} /></div>
+          <div><label>Descrição curta (site)</label><input value={meta.descricaoCurta} onChange={(e) => setMeta({ ...meta, descricaoCurta: e.target.value })} placeholder="aparece no cardápio do site" /></div>
         </div>
-        <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={meta.ativo} onChange={(e) => setMeta({ ...meta, ativo: e.target.checked })} />Ativo</label>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={meta.ativo} onChange={(e) => setMeta({ ...meta, ativo: e.target.checked })} />Ativo</label>
+          <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={meta.visivelSite} onChange={(e) => setMeta({ ...meta, visivelSite: e.target.checked })} />Aparece no site</label>
+        </div>
         <button className="btn-ghost" disabled={salvarMeta.isPending} onClick={() => salvarMeta.mutate()}>Salvar dados</button>
         {salvarMeta.isError && <Erro e={salvarMeta.error} />}
       </div>
@@ -53,7 +63,10 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
               <option value="">Produto…</option>{produtos.data?.filter((p) => p.ativo).map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
             </select>}
             <input className="!w-20" inputMode="decimal" placeholder="qtd" value={i.quantidade} onChange={(e) => setItens(itens.map((x, j) => (j === idx ? { ...x, quantidade: e.target.value } : x)))} />
-            <input className="!w-32" placeholder="grupo (ex.: refrigerante)" value={i.grupoEscolha} onChange={(e) => setItens(itens.map((x, j) => (j === idx ? { ...x, grupoEscolha: e.target.value } : x)))} />
+            <select className="!w-44" value={i.grupoEscolha} onChange={(e) => setItens(itens.map((x, j) => (j === idx ? { ...x, grupoEscolha: e.target.value } : x)))}>
+              <option value="">Sem grupo de escolha</option>
+              <option value="refrigerante">Refrigerante (cliente escolhe o sabor)</option>
+            </select>
             <button className="btn-ghost !px-3" onClick={() => setItens(itens.filter((_, j) => j !== idx))}>×</button>
           </div>
         ))}
@@ -108,7 +121,7 @@ export default function Combos({ admin }: { admin: boolean }) {
         ? <EditorCombo key={c.id} combo={c} onFechar={() => setEditando(null)} />
         : (
           <section key={c.id} className={`card space-y-3 ${c.ativo ? '' : 'opacity-50'}`}>
-            <div className="flex justify-between items-center"><h3 className="font-display text-3xl text-gold">{c.nome}{!c.ativo && <span className="text-brasa text-base"> · inativo</span>}</h3>
+            <div className="flex justify-between items-center"><h3 className="font-display text-3xl text-gold">{c.nome}{!c.ativo && <span className="text-brasa text-base"> · inativo</span>}{admin && !c.visivelSite && <span className="text-cream/40 text-base"> · fora do site</span>}</h3>
               {admin && <button className="text-gold underline text-sm" onClick={() => setEditando(c.id)}>editar</button>}</div>
             <p className="text-sm text-cream/70">{c.itens.map((i: Row) => `${Number(i.quantidade)}× ${i.nome}`).join(' · ')}</p>
             <div className="overflow-x-auto"><table className="w-full min-w-[480px]"><thead><tr><th className="th">Carne</th><th className="th text-right">Preço</th>{admin && <><th className="th text-right">Custo</th><th className="th text-right">Margem direta</th></>}<th className="th text-right">Avulso</th><th className="th text-right">Desconto</th></tr></thead>

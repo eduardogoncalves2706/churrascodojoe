@@ -3,10 +3,12 @@ import { formatQtd, proximoStatus } from '@joe/shared';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, brl, hora, num, STATUS_LABEL, type Row } from '../api';
-import { Carregando, Erro, MensagemWhats, Modal } from '../components/ui';
+import { Carregando, Erro, MensagemWhats, Modal, SeletorMotivo } from '../components/ui';
 
 interface ItemEdit { key: string; produtoId?: string; comboVarianteId?: string; refrigeranteId?: string; nome: string; quantidade: number; observacao: string }
 const BLOQUEADO = ['saiu_entrega', 'entregue', 'retirado', 'cancelado'];
+const MOTIVOS_RECUSA = ['Item esgotado', 'Fora da área de entrega', 'Fechados nesse horário', 'Pedido duplicado'];
+const MOTIVOS_CANCELAMENTO = ['Cliente desistiu', 'Pedido duplicado / erro de lançamento', 'Item esgotado', 'Problema no pagamento', 'Não conseguimos entregar'];
 
 export default function PedidoDetalhe() {
   const { id } = useParams();
@@ -146,7 +148,7 @@ export default function PedidoDetalhe() {
           <p className="text-primary-hover font-label font-bold uppercase">🔔 Pedido feito pelo site — confirme ou recuse</p>
           <div className="flex gap-2 flex-wrap">
             <button className="btn" disabled={confirmarSite.isPending} onClick={() => confirmarSite.mutate()}>Confirmar pedido</button>
-            <input className="flex-1 min-w-[160px]" placeholder="Motivo se for recusar" value={motivoRecusa} onChange={(e) => setMotivoRecusa(e.target.value)} />
+            <SeletorMotivo opcoes={MOTIVOS_RECUSA} value={motivoRecusa} onChange={setMotivoRecusa} placeholder="Motivo se for recusar" />
             <button className="btn-danger" disabled={!motivoRecusa.trim() || recusarSite.isPending} onClick={() => recusarSite.mutate()}>Recusar</button>
           </div>
           {(confirmarSite.isError || recusarSite.isError) && <Erro e={confirmarSite.error ?? recusarSite.error} />}
@@ -169,7 +171,7 @@ export default function PedidoDetalhe() {
 
       <div className="card"><h3 className="font-label font-bold uppercase text-gold mb-1">Histórico</h3>{p.historico.map((h: Row) => <p key={h.id} className="text-sm text-cream/70">{hora(h.em)} — {h.de ? `${STATUS_LABEL[h.de] ?? h.de} → ` : ''}{STATUS_LABEL[h.para] ?? h.para}{h.nota && ` (${h.nota})`}</p>)}</div>
 
-      {!['cancelado', 'entregue', 'retirado'].includes(p.status) && <div className="card flex gap-2 flex-wrap"><input className="flex-1" placeholder="Motivo do cancelamento" value={motivoCancelamento} onChange={(e) => setMotivoCancelamento(e.target.value)} />
+      {!['cancelado', 'entregue', 'retirado'].includes(p.status) && <div className="card flex gap-2 flex-wrap items-start"><SeletorMotivo opcoes={MOTIVOS_CANCELAMENTO} value={motivoCancelamento} onChange={setMotivoCancelamento} placeholder="Motivo do cancelamento" />
         <button className="btn-danger" disabled={!motivoCancelamento.trim()} onClick={() => setConfirmandoCancelamento(true)}>Cancelar pedido</button></div>}
 
       {confirmandoCancelamento && (

@@ -77,7 +77,7 @@ clientes.post('/bairros', requireAdmin, zValidator('json', bairroBody), async (c
   const b = c.req.valid('json');
   return c.json((await db().insert(s.bairrosEntrega).values({ ...b, taxaEntrega: b.taxaEntrega.toFixed(2) }).returning())[0], 201);
 });
-clientes.patch('/bairros/:id', requireAdmin, zValidator('json', bairroBody.omit({ cidade: true, atende: true }).partial().extend({ cidade: z.string().optional(), atende: z.boolean().optional() })), async (c) => {
+clientes.patch('/bairros/:id', requireAdmin, zValidator('json', bairroBody.omit({ cidade: true, atende: true }).partial().extend({ cidade: z.string().optional(), atende: z.boolean().optional(), visivelSite: z.boolean().optional() })), async (c) => {
   const { taxaEntrega, ...b } = c.req.valid('json');
   return c.json((await db().update(s.bairrosEntrega).set({ ...b, ...(taxaEntrega !== undefined ? { taxaEntrega: taxaEntrega.toFixed(2) } : {}), updatedAt: new Date() }).where(and(eq(s.bairrosEntrega.id, c.req.param('id')))).returning())[0]);
 });

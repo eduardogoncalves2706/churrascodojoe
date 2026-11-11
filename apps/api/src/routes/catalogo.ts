@@ -35,7 +35,11 @@ catalogo.post('/produtos', requireAdmin, zValidator('json', produtoBody), async 
   return c.json(p, 201);
 });
 
-catalogo.patch('/produtos/:id', zValidator('json', produtoPatch.extend({ disponivelHoje: z.boolean().optional(), ativo: z.boolean().optional(), ordem: z.number().int().optional(), motivo: z.string().optional() })), async (c) => {
+catalogo.patch('/produtos/:id', zValidator('json', produtoPatch.extend({
+  disponivelHoje: z.boolean().optional(), ativo: z.boolean().optional(), ordem: z.number().int().optional(), motivo: z.string().optional(),
+  // Landing page pública (docs/SPEC_landing_page.md) — ver Cardápio e Preços.
+  visivelSite: z.boolean().optional(), destaqueSite: z.boolean().optional(), descricaoCurta: z.string().nullish(), ordemSite: z.number().int().optional(),
+})), async (c) => {
   const id = c.req.param('id');
   const { motivo, precoVenda, ...rest } = c.req.valid('json');
   const admin = isAdmin(c);
@@ -110,7 +114,10 @@ catalogo.post('/combos', requireAdmin, zValidator('json', z.object({ nome: z.str
   const [r] = await db().insert(s.combos).values(c.req.valid('json')).returning();
   return c.json(r, 201);
 });
-catalogo.patch('/combos/:id', requireAdmin, zValidator('json', z.object({ nome: z.string().optional(), descricao: z.string().nullish(), pessoas: z.number().int().optional(), ativo: z.boolean().optional() })), async (c) => {
+catalogo.patch('/combos/:id', requireAdmin, zValidator('json', z.object({
+  nome: z.string().optional(), descricao: z.string().nullish(), pessoas: z.number().int().optional(), ativo: z.boolean().optional(),
+  visivelSite: z.boolean().optional(), descricaoCurta: z.string().nullish(), ordemSite: z.number().int().optional(),
+})), async (c) => {
   const [r] = await db().update(s.combos).set({ ...c.req.valid('json'), updatedAt: new Date() }).where(eq(s.combos.id, c.req.param('id'))).returning();
   return c.json(r);
 });
