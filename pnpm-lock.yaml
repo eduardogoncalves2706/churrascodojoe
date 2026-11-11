@@ -227,6 +227,9 @@ importers:
       '@astrojs/tailwind':
         specifier: ^6.0.2
         version: 6.0.2(astro@5.18.2(@types/node@26.6.3)(jiti@1.21.7)(lightningcss@1.33.0)(rollup@4.63.5)(tsx@4.23.15)(typescript@5.9.3)(yaml@2.9.1))(tailwindcss@3.4.19(tsx@4.23.15)(yaml@2.9.1))
+      '@joe/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       astro:
         specifier: ^5.16.0
         version: 5.18.2(@types/node@26.6.3)(jiti@1.21.7)(lightningcss@1.33.0)(rollup@4.63.5)(tsx@4.23.15)(typescript@5.9.3)(yaml@2.9.1)
@@ -4276,13 +4279,13 @@ snapshots:
 
   '@aws-sdk/client-rds-data@3.1141.0':
     dependencies:
-      '@aws-sdk/core': 3.978.1
-      '@aws-sdk/credential-provider-node': 3.972.84
-      '@aws-sdk/types': 3.974.6
-      '@smithy/core': 3.35.0
+      '@aws-sdk/core': 3.980.0
+      '@aws-sdk/credential-provider-node': 3.972.93
+      '@aws-sdk/types': 3.975.0
+      '@smithy/core': 3.39.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.12.1
-      '@smithy/types': 4.19.0
+      '@smithy/node-http-handler': 4.14.2
+      '@smithy/types': 4.20.0
       tslib: 2.8.1
     optional: true
 

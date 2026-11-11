@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, getRole, setRole, type Row } from './api';
 import { authEnabled, sair } from './auth';
 import Agenda from './pages/Agenda';
@@ -37,6 +37,11 @@ function Link({ to, label, onClick }: { to: string; label: string; onClick?: () 
 
 export default function App() {
   const me = useQuery({ queryKey: ['me', getRole()], queryFn: () => api<Row>('/me') });
+  // Nome do negócio é white-label (vem de Configurações, não hardcoded) — cabeçalho e aba do navegador.
+  // Mesma queryKey que useConfig() usa em Configuracoes.tsx — salvar lá invalida o cache daqui também.
+  const negocio = useQuery({ queryKey: ['config', 'negocio_nome'], queryFn: () => api<string>('/configuracoes/negocio_nome'), retry: false });
+  const nome = negocio.data || 'Churrasco do Joe';
+  useEffect(() => { document.title = nome; }, [nome]);
   const [menu, setMenu] = useState(false);
   const admin = me.data?.papel === 'admin';
   const links = [...main, ...mais].filter((l) => !l.admin || admin);
@@ -47,7 +52,7 @@ export default function App() {
       <Route path="*" element={
         <div className="md:flex min-h-screen">
           <aside className="no-print hidden md:flex md:flex-col w-56 shrink-0 bg-surface/60 p-3 gap-1 border-r border-white/5">
-            <NavLink to="/" end className="flex items-center gap-2 px-3 py-2"><img src="/logo-192.png" alt="" className="w-9 h-9 rounded-full" /><h1 className="text-2xl text-primary-hover leading-none">Churrasco do Joe</h1></NavLink>
+            <NavLink to="/" end className="flex items-center gap-2 px-3 py-2"><img src="/logo-192.png" alt="" className="w-9 h-9 rounded-full" /><h1 className="text-2xl text-primary-hover leading-none">{nome}</h1></NavLink>
             {links.map((l) => <Link key={l.to} {...l} />)}
             <div className="mt-auto text-xs text-cream/60 px-3">
               {me.data && <p>{me.data.nome}</p>}

@@ -1,14 +1,17 @@
 ---
+import { MARCA } from '@joe/shared';
 import '../styles/global.css';
 
 interface Props {
+  nome?: string;
   title?: string;
   description?: string;
   whatsapp?: string;
   enderecoTexto?: string | null;
 }
 const {
-  title = 'Churrasco do Joe — Delivery de churrasco em Canoas',
+  nome = 'Churrasco do Joe',
+  title = `${nome} — Delivery de churrasco em Canoas`,
   description = 'Espeto no capricho, do jeito certo. Delivery e retirada de churrasco aos sábados, domingos e feriados em Canoas e região metropolitana. Peça pelo WhatsApp.',
   whatsapp = '5551998867190',
   enderecoTexto = null,
@@ -17,7 +20,7 @@ const {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Restaurant',
-  name: 'Churrasco do Joe',
+  name: nome,
   servesCuisine: 'Churrasco gaúcho',
   priceRange: 'R$50 - R$300',
   telephone: `+${whatsapp}`,
@@ -47,7 +50,7 @@ const jsonLd = {
     <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+    <link href={MARCA.googleFontsUrl} rel="stylesheet" />
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </head>

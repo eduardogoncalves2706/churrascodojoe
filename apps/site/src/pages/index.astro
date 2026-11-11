@@ -20,6 +20,7 @@ const [cardapio, site, status] = await Promise.all([buscarCardapio(), buscarSite
 
 // Fallback se a API estiver fora no momento do build — o site nunca fica em branco (ver SPEC §7).
 const dados = {
+  nome: site?.nome || 'Churrasco do Joe',
   produtos: cardapio?.produtos ?? [],
   combos: cardapio?.combos ?? [],
   whatsapp: site?.whatsapp || '5551998867190',
@@ -33,19 +34,19 @@ const dados = {
   parceiros: site?.parceiros ?? [],
 };
 ---
-<Base whatsapp={dados.whatsapp} enderecoTexto={dados.endereco.texto}>
-  <Header appUrl={APP_URL} />
-  <Hero status={status} whatsapp={dados.whatsapp} />
+<Base nome={dados.nome} whatsapp={dados.whatsapp} enderecoTexto={dados.endereco.texto}>
+  <Header nome={dados.nome} appUrl={APP_URL} />
+  <Hero nome={dados.nome} status={status} whatsapp={dados.whatsapp} />
   <Combos combos={dados.combos} whatsapp={dados.whatsapp} />
   <Cardapio produtos={dados.produtos} whatsapp={dados.whatsapp} />
   <ComoFunciona />
   <Entrega regiaoEntregaTexto={dados.regiaoEntregaTexto} whatsapp={dados.whatsapp} />
-  <OndeEstamos modo={dados.endereco.modo} texto={dados.endereco.texto} mapsUrl={dados.endereco.mapsUrl} horarioTexto={dados.horarioTexto} />
+  <OndeEstamos nome={dados.nome} modo={dados.endereco.modo} texto={dados.endereco.texto} mapsUrl={dados.endereco.mapsUrl} horarioTexto={dados.horarioTexto} />
   <Parceiros parceiros={dados.parceiros} />
   <Instagram instagram={dados.instagram} />
   {dados.faq.length > 0 && <Faq faq={dados.faq} />}
   <Footer
-    whatsapp={dados.whatsapp} instagram={dados.instagram} horarioTexto={dados.horarioTexto}
+    nome={dados.nome} whatsapp={dados.whatsapp} instagram={dados.instagram} horarioTexto={dados.horarioTexto}
     regiaoEntregaTexto={dados.regiaoEntregaTexto} cnpj={dados.cnpj} razaoSocial={dados.razaoSocial} appUrl={APP_URL}
   />
   <WhatsFloat whatsapp={dados.whatsapp} />

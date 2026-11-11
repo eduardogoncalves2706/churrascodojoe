@@ -15,7 +15,7 @@ export interface Bairro { id: string; nome: string; cidade: string; taxaCents: n
 export interface FaqItem { pergunta: string; resposta: string }
 export interface Parceiro { nome: string; instagram: string | null }
 export interface SiteConfig {
-  whatsapp: string; instagram: string; horarioTexto: string;
+  nome: string; whatsapp: string; instagram: string; horarioTexto: string;
   endereco: { modo: string; texto: string | null; mapsUrl: string | null };
   cnpj: string | null; razaoSocial: string | null; aceitaPedidosSite: boolean;
   regiaoEntregaTexto: string; faq: FaqItem[]; parceiros: Parceiro[];

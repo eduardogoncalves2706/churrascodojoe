@@ -1,16 +1,16 @@
 ---
 import { whatsappUrl } from '../lib/api';
 interface Props {
-  whatsapp: string; instagram: string; horarioTexto: string; regiaoEntregaTexto: string;
+  nome: string; whatsapp: string; instagram: string; horarioTexto: string; regiaoEntregaTexto: string;
   cnpj: string | null; razaoSocial: string | null; appUrl: string;
 }
-const { whatsapp, instagram, horarioTexto, regiaoEntregaTexto, cnpj, razaoSocial, appUrl } = Astro.props;
+const { nome, whatsapp, instagram, horarioTexto, regiaoEntregaTexto, cnpj, razaoSocial, appUrl } = Astro.props;
 const whatsFormatado = `(${whatsapp.slice(2, 4)}) ${whatsapp.slice(4, 9)}-${whatsapp.slice(9)}`;
 ---
 <footer id="contato" class="border-t border-white/5 bg-surface/30">
   <div class="max-w-6xl mx-auto px-4 py-12 grid gap-8 sm:grid-cols-2 md:grid-cols-4 text-sm">
     <div class="flex flex-col gap-3">
-      <img src="/logo.png" alt="Churrasco do Joe" class="h-14 w-14 rounded-full" />
+      <img src="/logo.png" alt={nome} class="h-14 w-14 rounded-full" />
       <p class="text-cream/60">Espeto no capricho, do jeito certo.</p>
     </div>
 
@@ -39,6 +39,6 @@ const whatsFormatado = `(${whatsapp.slice(2, 4)}) ${whatsapp.slice(4, 9)}-${what
     ) : (
       <p>Pedidos e negociação sempre pelo WhatsApp — {whatsFormatado}.</p>
     )}
-    <p class="mt-1">© {new Date().getFullYear()} Churrasco do Joe. Todos os direitos reservados.</p>
+    <p class="mt-1">© {new Date().getFullYear()} {nome}. Todos os direitos reservados.</p>
   </div>
 </footer>

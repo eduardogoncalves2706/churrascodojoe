@@ -102,6 +102,9 @@ export async function seed() {
   await db.insert(s.bairrosEntrega).values(BAIRROS_CANOAS.map((nome) => ({ nome, cidade: 'Canoas', taxaEntrega: '0.00' }))).onConflictDoNothing();
 
   const cfg: Record<string, unknown> = {
+    // Identidade do negócio (white label): usado tanto pelo sistema interno (cabeçalho, título da
+    // aba) quanto pelo site público — troca de cliente = editar essa chave em Configurações, não o código.
+    negocio_nome: 'Churrasco do Joe',
     taxas_maquininha: { pix: 0.49, debito: 1.43, credito: 3.36, dinheiro: 0 }, horario_pico: { inicio: 11, fim: 14 }, dias_operacao: ['sab', 'dom'],
     mensagem_whatsapp_confirmacao: 'Pedido confirmado! Já estamos preparando.', margem_minima_pct: 40, comanda_formato: 'termica80', base_rateio: 'receita',
     // Landing page pública (docs/SPEC_landing_page.md) — editável depois em Configurações → Site.

@@ -23,6 +23,13 @@ function Login({ onDone }: { onDone: () => void }) {
   const [codigo, setCodigo] = useState('');
   const [erro, setErro] = useState('');
   const [busy, setBusy] = useState(false);
+  // Tela de login é pré-autenticação — não dá pra usar api() (exige token), busca direto na rota
+  // pública (não importa de ./api pra não criar import circular: api.ts já importa deste arquivo).
+  const [nome, setNome] = useState('Churrasco do Joe');
+  useEffect(() => {
+    const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+    fetch(`${base}/v1/public/site`).then((r) => (r.ok ? r.json() : null)).then((d) => d?.nome && setNome(d.nome)).catch(() => { /* fica no padrão */ });
+  }, []);
 
   const run = async (fn: () => Promise<void>) => { setBusy(true); setErro(''); try { await fn(); } catch (e) { setErro(e instanceof Error ? e.message : 'Erro'); } finally { setBusy(false); } };
   const enviar = (e: FormEvent) => { e.preventDefault(); void run(async () => {
@@ -39,8 +46,8 @@ function Login({ onDone }: { onDone: () => void }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(160deg,#0D0A07 0%,#2B1507 45%,#D4420A 100%)' }}>
       <form onSubmit={enviar} className="card w-full max-w-sm space-y-4 bg-bg/90">
-        <img src="/logo-192.png" alt="Churrasco do Joe" className="w-28 h-28 mx-auto rounded-full" />
-        <h1 className="text-6xl text-primary-hover text-center">Churrasco do Joe</h1>
+        <img src="/logo-192.png" alt={nome} className="w-28 h-28 mx-auto rounded-full" />
+        <h1 className="text-6xl text-primary-hover text-center">{nome}</h1>
         <p className="font-serif italic text-gold text-center">Fogo, carne e gente boa.</p>
         {(etapa === 'login' || etapa === 'esqueci' || etapa === 'codigo') && <div className="space-y-1"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>}
         {etapa === 'codigo' && <div className="space-y-1"><label htmlFor="cod">Código recebido por e-mail</label><input id="cod" required value={codigo} onChange={(e) => setCodigo(e.target.value)} /></div>}

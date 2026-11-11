@@ -44,6 +44,24 @@ function BotaoSalvar({ salvando, salvo, erro, onClick }: { salvando: boolean; sa
 
 const DIAS = [['dom', 'Dom'], ['seg', 'Seg'], ['ter', 'Ter'], ['qua', 'Qua'], ['qui', 'Qui'], ['sex', 'Sex'], ['sab', 'Sáb']] as const;
 
+/** White-label: nome do negócio usado no cabeçalho do sistema, aba do navegador e no site público
+ * (/v1/public/site). Primeiro campo a editar num cliente novo — ver docs/checklist-cliente-novo.md. */
+function SecaoIdentidade() {
+  const nome = useConfig('negocio_nome', 'Churrasco do Joe');
+  const [n, setN] = useState(nome.valor);
+  useEffect(() => { if (!nome.isLoading) setN(nome.valor); }, [nome.isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { salvar, ...estado } = useSalvarSecao(() => [nome.mutateAsync(n)]);
+  if (nome.isLoading) return <Carregando />;
+
+  return (
+    <Secao titulo="Identidade do negócio">
+      <p className="text-xs text-cream/60">Nome que aparece no cabeçalho do sistema, na aba do navegador e no site público.</p>
+      <Campo label="Nome do negócio"><input value={n} onChange={(e) => setN(e.target.value)} /></Campo>
+      <BotaoSalvar onClick={salvar} {...estado} />
+    </Secao>
+  );
+}
+
 function SecaoOperacao() {
   const horario = useConfig('horario_pico', { inicio: 11, fim: 14 });
   const dias = useConfig<string[]>('dias_operacao', ['sab', 'dom']);
@@ -192,6 +210,7 @@ export default function Configuracoes() {
   return (
     <div className="space-y-4">
       <Titulo>Configurações</Titulo>
+      <SecaoIdentidade />
       <SecaoOperacao />
       <SecaoPagamento />
       <SecaoSite />
