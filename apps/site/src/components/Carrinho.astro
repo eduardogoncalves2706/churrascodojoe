@@ -1,0 +1,183 @@
+---
+import type { Bairro } from '../lib/api';
+interface Props { whatsapp: string; bairros: Bairro[]; aceitaPedidosSite: boolean }
+const { bairros, aceitaPedidosSite } = Astro.props;
+---
+{aceitaPedidosSite && (
+  <>
+    <button
+      type="button" id="carrinho-abrir" aria-label="Ver carrinho"
+      class="fixed bottom-24 right-5 z-50 flex items-center justify-center h-14 w-14 rounded-full bg-primary text-2xl shadow-2xl hover:scale-105 transition-transform"
+    >
+      🛒
+      <span id="carrinho-badge" class="hidden absolute -top-1 -right-1 bg-gold text-bg text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+    </button>
+
+    <dialog id="carrinho-dialog" class="bg-surface text-cream rounded-lg p-0 w-full max-w-md m-auto backdrop:bg-black/70">
+      <div class="p-4 space-y-3 max-h-[85vh] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <h3 class="font-label font-bold uppercase text-gold text-lg">Seu pedido</h3>
+          <button type="button" id="carrinho-fechar" aria-label="Fechar" class="text-gold text-2xl leading-none">×</button>
+        </div>
+
+        <div id="carrinho-lista"></div>
+        <div class="flex justify-between items-baseline pt-2 border-t border-white/10">
+          <span class="text-cream/70 text-sm">Subtotal</span>
+          <span id="carrinho-subtotal" class="font-display text-2xl text-gold">R$ 0,00</span>
+        </div>
+
+        <form id="carrinho-form" class="space-y-2 pt-2 border-t border-white/10">
+          <input type="text" name="site" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;" />
+          <div class="space-y-1"><label for="ci-nome">Seu nome</label><input id="ci-nome" name="nome" required /></div>
+          <div class="space-y-1"><label for="ci-telefone">WhatsApp</label><input id="ci-telefone" name="telefone" inputmode="tel" placeholder="(51) 99999-9999" required /></div>
+
+          <div class="flex gap-2">
+            <label class="flex items-center gap-1 normal-case text-sm"><input type="radio" name="tipo" value="entrega" checked />Entrega</label>
+            <label class="flex items-center gap-1 normal-case text-sm"><input type="radio" name="tipo" value="retirada" />Retirada</label>
+          </div>
+
+          <div id="carrinho-entrega" class="space-y-2">
+            <div class="space-y-1"><label for="ci-bairro">Bairro</label>
+              <select id="ci-bairro" name="bairroId">
+                <option value="">Selecione…</option>
+                {bairros.map((b) => <option value={b.id}>{b.nome} — {b.cidade}</option>)}
+              </select>
+            </div>
+            <div class="space-y-1"><label for="ci-endereco">Endereço</label><input id="ci-endereco" name="enderecoTexto" placeholder="Rua, número" /></div>
+            <div class="space-y-1"><label for="ci-ref">Referência (opcional)</label><input id="ci-ref" name="referencia" /></div>
+          </div>
+
+          <div class="space-y-1"><label for="ci-obs">Observações (opcional)</label><input id="ci-obs" name="observacoes" /></div>
+
+          <p id="carrinho-erro" class="text-primary-hover text-sm" role="alert"></p>
+          <button type="submit" id="carrinho-finalizar" class="btn w-full !min-h-[48px]" disabled>Finalizar pedido</button>
+        </form>
+
+        <div id="carrinho-sucesso" class="hidden text-center space-y-3 py-4">
+          <p class="font-display text-3xl text-gold">Pedido enviado! 🔥</p>
+          <p id="carrinho-sucesso-texto" class="text-cream/80 text-sm"></p>
+          <a id="carrinho-sucesso-whats" href="#" target="_blank" rel="noopener" class="btn w-full !min-h-[48px]">Confirmar no WhatsApp</a>
+          <button type="button" id="carrinho-novo-pedido" class="btn-ghost w-full">Fechar</button>
+        </div>
+      </div>
+    </dialog>
+  </>
+)}
+
+<script>
+  import { brl, criarPedidoSite, type ItemCarrinhoPayload } from '../lib/api';
+
+  interface ItemCarrinho { chave: string; nome: string; precoCents: number; qtd: number; produtoId?: string; comboVarianteId?: string; refrigeranteId?: string }
+  const KEY = 'joe.carrinho';
+  const ler = (): ItemCarrinho[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? '[]'); } catch { return []; } };
+  const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+
+  function render() {
+    const itens = ler();
+    const qtdTotal = itens.reduce((a, i) => a + i.qtd, 0);
+    const badge = document.getElementById('carrinho-badge');
+    if (badge) { badge.textContent = String(qtdTotal); badge.classList.toggle('hidden', qtdTotal === 0); }
+    const lista = document.getElementById('carrinho-lista');
+    if (lista) {
+      lista.innerHTML = itens.length ? itens.map((i) => `
+        <div class="flex justify-between items-center gap-2 py-2 border-b border-white/10">
+          <div class="flex-1 min-w-0"><p class="text-sm leading-tight">${escapeHtml(i.nome)}</p><p class="text-gold text-xs">${brl(i.precoCents)}</p></div>
+          <button type="button" data-qtd="${i.chave}" data-delta="-1" class="btn-ghost !px-2 !min-h-0" aria-label="menos">−</button>
+          <span class="w-6 text-center">${i.qtd}</span>
+          <button type="button" data-qtd="${i.chave}" data-delta="1" class="btn-ghost !px-2 !min-h-0" aria-label="mais">+</button>
+          <button type="button" data-remover="${i.chave}" class="text-brasa text-lg leading-none px-1" aria-label="remover">×</button>
+        </div>`).join('') : '<p class="text-cream/50 text-sm py-4 text-center">Carrinho vazio.</p>';
+    }
+    const subtotal = document.getElementById('carrinho-subtotal');
+    if (subtotal) subtotal.textContent = brl(itens.reduce((a, i) => a + i.precoCents * i.qtd, 0));
+    const finalizar = document.getElementById('carrinho-finalizar') as HTMLButtonElement | null;
+    if (finalizar) finalizar.disabled = itens.length === 0;
+  }
+
+  function salvar(itens: ItemCarrinho[]) { try { localStorage.setItem(KEY, JSON.stringify(itens)); } catch { /* noop */ } render(); }
+  const chaveDe = (i: { produtoId?: string; comboVarianteId?: string; refrigeranteId?: string }) =>
+    i.comboVarianteId ? `combo:${i.comboVarianteId}:${i.refrigeranteId ?? ''}` : `produto:${i.produtoId}`;
+
+  function adicionar(item: { nome: string; precoCents: number; produtoId?: string; comboVarianteId?: string; refrigeranteId?: string }) {
+    const chave = chaveDe(item);
+    const itens = ler();
+    const existente = itens.find((i) => i.chave === chave);
+    if (existente) existente.qtd += 1; else itens.push({ ...item, chave, qtd: 1 });
+    salvar(itens);
+    dialog?.showModal();
+  }
+
+  const dialog = document.getElementById('carrinho-dialog') as HTMLDialogElement | null;
+  document.getElementById('carrinho-abrir')?.addEventListener('click', () => dialog?.showModal());
+  document.getElementById('carrinho-fechar')?.addEventListener('click', () => dialog?.close());
+  dialog?.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); }); // clique fora fecha
+
+  document.addEventListener('click', (e) => {
+    const alvo = e.target as HTMLElement;
+    const addProduto = alvo.closest<HTMLElement>('[data-add-produto]');
+    if (addProduto) { adicionar(JSON.parse(addProduto.dataset.item!)); return; }
+
+    const addCombo = alvo.closest<HTMLElement>('[data-add-combo]');
+    if (addCombo) {
+      const card = addCombo.closest<HTMLElement>('[data-combo-card]')!;
+      const varianteSel = card.querySelector<HTMLSelectElement>('[data-variante-select]')!;
+      const opt = varianteSel.selectedOptions[0];
+      if (!opt?.value) return;
+      const refriSel = card.querySelector<HTMLSelectElement>('[data-refri-select]');
+      const refriOpt = refriSel?.selectedOptions[0];
+      const nome = `${card.dataset.nome} – ${opt.textContent}${refriOpt?.value ? ` · ${refriOpt.textContent}` : ''}`;
+      adicionar({ nome, precoCents: Number(opt.dataset.preco), comboVarianteId: opt.value, refrigeranteId: refriOpt?.value || undefined });
+      return;
+    }
+
+    const qtdBtn = alvo.closest<HTMLElement>('[data-qtd]');
+    if (qtdBtn) {
+      const delta = Number(qtdBtn.dataset.delta);
+      const itens = ler().map((i) => (i.chave === qtdBtn.dataset.qtd ? { ...i, qtd: i.qtd + delta } : i)).filter((i) => i.qtd > 0);
+      salvar(itens);
+      return;
+    }
+    const remBtn = alvo.closest<HTMLElement>('[data-remover]');
+    if (remBtn) { salvar(ler().filter((i) => i.chave !== remBtn.dataset.remover)); return; }
+  });
+
+  // mostra/esconde os campos de endereço conforme entrega/retirada
+  document.querySelectorAll<HTMLInputElement>('input[name="tipo"]').forEach((r) => r.addEventListener('change', () => {
+    const entrega = (document.querySelector('input[name="tipo"]:checked') as HTMLInputElement)?.value === 'entrega';
+    document.getElementById('carrinho-entrega')?.classList.toggle('hidden', !entrega);
+  }));
+
+  const form = document.getElementById('carrinho-form') as HTMLFormElement | null;
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const erroEl = document.getElementById('carrinho-erro')!;
+    erroEl.textContent = '';
+    const itens = ler();
+    if (!itens.length) return;
+    const fd = new FormData(form);
+    const tipo = String(fd.get('tipo') ?? 'entrega') as 'entrega' | 'retirada';
+    const finalizar = document.getElementById('carrinho-finalizar') as HTMLButtonElement;
+    finalizar.disabled = true; finalizar.textContent = 'Enviando…';
+    const r = await criarPedidoSite({
+      nome: String(fd.get('nome') ?? ''), telefone: String(fd.get('telefone') ?? ''), tipo,
+      ...(tipo === 'entrega' ? { bairroId: String(fd.get('bairroId') ?? '') || undefined, enderecoTexto: String(fd.get('enderecoTexto') ?? '') || undefined, referencia: String(fd.get('referencia') ?? '') || undefined } : {}),
+      observacoes: String(fd.get('observacoes') ?? '') || undefined, site: String(fd.get('site') ?? ''),
+      itens: itens.map((i): ItemCarrinhoPayload => ({ ...(i.comboVarianteId ? { comboVarianteId: i.comboVarianteId, refrigeranteId: i.refrigeranteId } : { produtoId: i.produtoId }), quantidade: i.qtd })),
+    });
+    finalizar.disabled = false; finalizar.textContent = 'Finalizar pedido';
+    if (!r.ok) { erroEl.textContent = r.erro; return; }
+    salvar([]);
+    form.classList.add('hidden');
+    document.getElementById('carrinho-sucesso')?.classList.remove('hidden');
+    document.getElementById('carrinho-sucesso-texto')!.textContent = `Pedido #${String(r.dados.numero).padStart(3, '0')} · ${r.dados.totalFormatado} — aguardando confirmação da equipe.`;
+    const linkWhats = document.getElementById('carrinho-sucesso-whats') as HTMLAnchorElement;
+    if (r.dados.whatsappUrl) { linkWhats.href = r.dados.whatsappUrl; linkWhats.classList.remove('hidden'); } else linkWhats.classList.add('hidden');
+  });
+  document.getElementById('carrinho-novo-pedido')?.addEventListener('click', () => {
+    document.getElementById('carrinho-sucesso')?.classList.add('hidden');
+    form?.classList.remove('hidden');
+    dialog?.close();
+  });
+
+  render();
+</script>

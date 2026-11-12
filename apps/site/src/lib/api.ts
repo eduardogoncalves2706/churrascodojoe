@@ -43,3 +43,24 @@ export const whatsappUrl = (numero: string, texto = '') => {
   const alvo = digitos.startsWith('55') ? digitos : `55${digitos}`;
   return `https://wa.me/${alvo}${texto ? `?text=${encodeURIComponent(texto)}` : ''}`;
 };
+
+/* ---------- Carrinho (pré-pedido pelo site — Configurações → "Aceitar pré-pedidos pelo site") ---------- */
+export interface ItemCarrinhoPayload { produtoId?: string; comboVarianteId?: string; refrigeranteId?: string; quantidade: number }
+export interface PedidoSitePayload {
+  nome: string; telefone: string; tipo: 'entrega' | 'retirada'; bairroId?: string; enderecoTexto?: string;
+  referencia?: string; observacoes?: string; site?: string; itens: ItemCarrinhoPayload[];
+}
+export interface PedidoSiteResultado { numero: number; dataOperacao: string; totalCents: number; totalFormatado: string; textoWhatsapp: string; whatsappUrl: string | null }
+
+/** Cria o pré-pedido (POST /v1/public/pedidos) — vira "aguardando confirmação" no sistema interno;
+ * a equipe confirma ou recusa, pagamento continua combinado (sem gateway nessa fase). */
+export async function criarPedidoSite(payload: PedidoSitePayload): Promise<{ ok: true; dados: PedidoSiteResultado } | { ok: false; erro: string }> {
+  try {
+    const r = await fetch(`${API}/v1/public/pedidos`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await r.json();
+    if (!r.ok) return { ok: false, erro: data?.error?.message ?? 'Erro ao enviar pedido' };
+    return { ok: true, dados: data as PedidoSiteResultado };
+  } catch {
+    return { ok: false, erro: 'Falha de conexão — tenta de novo ou chama no WhatsApp' };
+  }
+}

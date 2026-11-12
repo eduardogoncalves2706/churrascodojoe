@@ -1,22 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, brl, brlC, pct, type Row } from '../api';
-import { Carregando, Drawer, Erro, Titulo } from '../components/ui';
+import { Carregando, Drawer, Erro, Titulo, UploadImagem } from '../components/ui';
 
 const CATEGORIAS = ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia', 'outros'];
 interface FormProduto {
   id?: string; nome: string; categoria: string; unidadeVenda: string; precoVenda: string;
   permiteFracionado: boolean; parceiro: string; vendidoAPrecoDeCusto: boolean; ativo: boolean;
-  visivelSite: boolean; descricaoCurta: string; controlaEstoque: boolean;
+  visivelSite: boolean; descricaoCurta: string; controlaEstoque: boolean; imagemKey: string | null;
 }
 const FORM_VAZIO: FormProduto = {
   nome: '', categoria: 'carne', unidadeVenda: 'unidade', precoVenda: '', permiteFracionado: false, parceiro: '', vendidoAPrecoDeCusto: false, ativo: true,
-  visivelSite: true, descricaoCurta: '', controlaEstoque: false,
+  visivelSite: true, descricaoCurta: '', controlaEstoque: false, imagemKey: null,
 };
 const paraForm = (p: Row): FormProduto => ({
   id: p.id, nome: p.nome, categoria: p.categoria, unidadeVenda: p.unidadeVenda, precoVenda: String(p.precoVenda),
   permiteFracionado: p.permiteFracionado, parceiro: p.parceiro ?? '', vendidoAPrecoDeCusto: p.vendidoAPrecoDeCusto, ativo: p.ativo,
-  visivelSite: p.visivelSite ?? true, descricaoCurta: p.descricaoCurta ?? '', controlaEstoque: p.controlaEstoque ?? false,
+  visivelSite: p.visivelSite ?? true, descricaoCurta: p.descricaoCurta ?? '', controlaEstoque: p.controlaEstoque ?? false, imagemKey: p.imagemKey ?? null,
 });
 
 function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProduto; onSalvo: () => void; onCancelar: () => void }) {
@@ -27,7 +27,7 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
       const body = {
         nome: f.nome, categoria: f.categoria, unidadeVenda: f.unidadeVenda, precoVenda: Number(f.precoVenda.replace(',', '.') || 0), permiteFracionado: f.permiteFracionado,
         parceiro: f.parceiro || null, vendidoAPrecoDeCusto: f.vendidoAPrecoDeCusto, ativo: f.ativo, visivelSite: f.visivelSite, descricaoCurta: f.descricaoCurta || null,
-        controlaEstoque: f.controlaEstoque,
+        controlaEstoque: f.controlaEstoque, imagemKey: f.imagemKey,
       };
       return f.id ? api(`/produtos/${f.id}`, { method: 'PATCH', body }) : api('/produtos', { method: 'POST', body });
     },
@@ -43,6 +43,7 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
         <div><label>Parceiro (opcional)</label><input value={f.parceiro} onChange={(e) => up({ parceiro: e.target.value })} placeholder="ex.: Doces by Nick" /></div>
         <div><label>Descrição curta (site)</label><input value={f.descricaoCurta} onChange={(e) => up({ descricaoCurta: e.target.value })} placeholder="aparece no cardápio do site" /></div>
       </div>
+      <UploadImagem pasta="produtos" value={f.imagemKey} onChange={(imagemKey) => up({ imagemKey })} />
       <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.permiteFracionado} onChange={(e) => up({ permiteFracionado: e.target.checked })} />Permite fracionado (ex.: 1/2)</label>
         <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.vendidoAPrecoDeCusto} onChange={(e) => up({ vendidoAPrecoDeCusto: e.target.checked, precoVenda: e.target.checked ? '0' : f.precoVenda })} />Vendido a preço de custo (parceiro)</label>

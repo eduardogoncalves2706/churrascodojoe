@@ -11,11 +11,15 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 interface Props extends cdk.StackProps {
   prefix: string; vpc: ec2.Vpc; lambdaSg: ec2.SecurityGroup; db: rds.DatabaseInstance; secret: sm.ISecret; dbName: string; dbUser: string; userPool: cognito.UserPool; client: cognito.UserPoolClient;
+  // Bucket do site público (SiteStack) — fotos de produto/combo sobem aqui (prefixo "uploads/"), a
+  // Lambda só precisa de permissão pra gerar URL pré-assinada de PUT, nunca lê/escreve direto.
+  imagensBucket: s3.IBucket; imagensBaseUrl: string;
 }
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -45,6 +49,7 @@ export class ApiStack extends cdk.Stack {
         DB_PASSWORD: props.secret.secretValueFromJson('password').unsafeUnwrap(),
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         CORS_ORIGIN_PUBLIC: 'https://www.churrascodojoe.com.br',
+        IMAGENS_BUCKET: props.imagensBucket.bucketName, IMAGENS_BASE_URL: props.imagensBaseUrl,
         NODE_OPTIONS: '--enable-source-maps',
       },
       bundling: { format: OutputFormat.ESM, minify: true, sourceMap: true, target: 'node24', mainFields: ['module', 'main'],
@@ -60,6 +65,7 @@ export class ApiStack extends cdk.Stack {
       ],
       resources: [props.userPool.userPoolArn],
     }));
+    props.imagensBucket.grantPut(fn, 'uploads/*');
 
     this.httpApi = new apigw.HttpApi(this, 'Http', { apiName: `${props.prefix}-api`, description: 'Churrasco do Joe — API' });
     const integration = new HttpLambdaIntegration('LambdaInt', fn);

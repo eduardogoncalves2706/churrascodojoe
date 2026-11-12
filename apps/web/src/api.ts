@@ -5,6 +5,9 @@ import { authEnabled, getIdToken } from './auth';
 export type Row = Record<string, any>;
 
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+// Fotos de produto/combo ficam no bucket do site público, não no da API — é onde o CloudFront serve.
+const SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) ?? 'https://www.churrascodojoe.com.br';
+export const urlImagem = (key: string | null | undefined) => (key ? `${SITE_URL}/${key}` : null);
 
 export const getRole = () => { try { return localStorage.getItem('joe.role') ?? 'admin'; } catch { return 'admin'; } };
 export const setRole = (r: string) => { try { localStorage.setItem('joe.role', r); } catch { /* noop */ } };

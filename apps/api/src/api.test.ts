@@ -137,7 +137,7 @@ describe('fluxo de novo pedido', () => {
   });
 
   it('estoque de produto pronto pra vender: desconta na venda, devolve ao cancelar/editar', async () => {
-    const prod = await json(await call('/produtos', { method: 'POST', body: JSON.stringify({ nome: 'Maionese teste', categoria: 'acompanhamento', precoVenda: 10, controlaEstoque: true }) }));
+    const prod = await json(await call('/produtos', { method: 'POST', body: JSON.stringify({ nome: `Maionese teste ${crypto.randomUUID()}`, categoria: 'acompanhamento', precoVenda: 10, controlaEstoque: true }) }));
     await call(`/produtos/${prod.id}`, { method: 'PATCH', body: JSON.stringify({ estoqueTotal: 20, estoqueVenda: 5 }) });
 
     const p1 = await json(await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'Estoque', canal: 'balcao', tipo: 'retirada', itens: [{ produtoId: prod.id, quantidade: 2 }] }) }));

@@ -6,10 +6,22 @@ import { z } from 'zod';
 import { isAdmin, requireAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
 import { custosProdutos, custoVariante } from '../services/custos';
+import { ErroImagem, urlDeUpload } from '../services/imagens';
 
 export const catalogo = new Hono<Env>();
 const db = () => getDb();
 const money = z.number().min(0);
+
+catalogo.onError((e, c) => {
+  if (e instanceof ErroImagem) return c.json({ error: { code: 'erro_imagem', message: e.message } }, e.status as never);
+  throw e;
+});
+
+/** URL pré-assinada pra subir foto de produto/combo direto pro bucket do site (sem passar pela
+ * Lambda) — o front faz o PUT nela e depois salva a `key` com um PATCH normal em imagemKey. */
+const uploadBody = z.object({ contentType: z.string() });
+catalogo.post('/produtos/imagem-upload-url', requireAdmin, zValidator('json', uploadBody), async (c) => c.json(await urlDeUpload(c.req.valid('json').contentType, 'produtos')));
+catalogo.post('/combos/imagem-upload-url', requireAdmin, zValidator('json', uploadBody), async (c) => c.json(await urlDeUpload(c.req.valid('json').contentType, 'combos')));
 
 /* ---------- Produtos ---------- */
 catalogo.get('/produtos', async (c) => {
@@ -27,7 +39,7 @@ const produtoCampos = {
   nome: z.string().min(1), categoria: z.enum(s.categoriaProdutoEnum.enumValues), precoVenda: money, parceiro: z.string().nullish(),
 };
 // defaults só na criação: em .partial() um default sobrescreveria campos não enviados no PATCH
-const produtoBody = z.object({ ...produtoCampos, unidadeVenda: z.string().default('unidade'), permiteFracionado: z.boolean().default(false), vendidoAPrecoDeCusto: z.boolean().default(false), controlaEstoque: z.boolean().default(false) });
+const produtoBody = z.object({ ...produtoCampos, unidadeVenda: z.string().default('unidade'), permiteFracionado: z.boolean().default(false), vendidoAPrecoDeCusto: z.boolean().default(false), controlaEstoque: z.boolean().default(false), imagemKey: z.string().nullish() });
 const produtoPatch = z.object({ ...produtoCampos, unidadeVenda: z.string(), permiteFracionado: z.boolean(), vendidoAPrecoDeCusto: z.boolean() }).partial();
 
 catalogo.post('/produtos', requireAdmin, zValidator('json', produtoBody), async (c) => {
@@ -41,6 +53,7 @@ catalogo.patch('/produtos/:id', zValidator('json', produtoPatch.extend({
   disponivelHoje: z.boolean().optional(), ativo: z.boolean().optional(), ordem: z.number().int().optional(), motivo: z.string().optional(),
   // Landing page pública (docs/SPEC_landing_page.md) — ver Cardápio e Preços.
   visivelSite: z.boolean().optional(), destaqueSite: z.boolean().optional(), descricaoCurta: z.string().nullish(), ordemSite: z.number().int().optional(),
+  imagemKey: z.string().nullish(),
   // Estoque de produto pronto pra vender (opt-in) — ver schema.ts.
   controlaEstoque: z.boolean().optional(), estoqueTotal: z.number().min(0).optional(), estoqueVenda: z.number().min(0).optional(),
 })), async (c) => {
@@ -122,7 +135,7 @@ catalogo.post('/combos', requireAdmin, zValidator('json', z.object({ nome: z.str
 });
 catalogo.patch('/combos/:id', requireAdmin, zValidator('json', z.object({
   nome: z.string().optional(), descricao: z.string().nullish(), pessoas: z.number().int().optional(), ativo: z.boolean().optional(),
-  visivelSite: z.boolean().optional(), descricaoCurta: z.string().nullish(), ordemSite: z.number().int().optional(),
+  visivelSite: z.boolean().optional(), descricaoCurta: z.string().nullish(), ordemSite: z.number().int().optional(), imagemKey: z.string().nullish(),
 })), async (c) => {
   const [r] = await db().update(s.combos).set({ ...c.req.valid('json'), updatedAt: new Date() }).where(eq(s.combos.id, c.req.param('id'))).returning();
   return c.json(r);

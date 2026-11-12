@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, brlC, pct, type Row } from '../api';
-import { BotaoSalvar, Carregando, Titulo, useSalvarSecao } from '../components/ui';
+import { BotaoSalvar, Carregando, Titulo, UploadImagem, useSalvarSecao } from '../components/ui';
 
 interface ItemLinha { produtoId: string; ehCarneEscolhida: boolean; quantidade: string; grupoEscolha: string }
 interface VarianteLinha { carneProdutoId: string; preco: string; ativo: boolean; persistida: boolean }
@@ -11,7 +11,7 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
   const produtos = useQuery({ queryKey: ['produtos'], queryFn: () => api<Row[]>('/produtos') });
   const [meta, setMeta] = useState({
     nome: combo.nome, descricao: combo.descricao ?? '', pessoas: String(combo.pessoas), ativo: combo.ativo,
-    visivelSite: combo.visivelSite ?? true, descricaoCurta: combo.descricaoCurta ?? '',
+    visivelSite: combo.visivelSite ?? true, descricaoCurta: combo.descricaoCurta ?? '', imagemKey: combo.imagemKey ?? null as string | null,
   });
   const [itens, setItens] = useState<ItemLinha[]>(combo.itens.map((i: Row) => ({ produtoId: i.produtoId ?? '', ehCarneEscolhida: i.ehCarneEscolhida, quantidade: String(Number(i.quantidade)), grupoEscolha: i.grupoEscolha ?? '' })));
   const [variantes, setVariantes] = useState<VarianteLinha[]>(combo.variantes.map((v: Row) => ({ carneProdutoId: v.carneProdutoId, preco: String(v.precoCents / 100), ativo: v.ativo, persistida: true })));
@@ -19,7 +19,7 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
   const refresh = () => qc.invalidateQueries({ queryKey: ['combos'] });
   const salvarMeta = useMutation({ mutationFn: () => api(`/combos/${combo.id}`, { method: 'PATCH', body: {
     nome: meta.nome, descricao: meta.descricao || null, pessoas: Number(meta.pessoas), ativo: meta.ativo,
-    visivelSite: meta.visivelSite, descricaoCurta: meta.descricaoCurta || null,
+    visivelSite: meta.visivelSite, descricaoCurta: meta.descricaoCurta || null, imagemKey: meta.imagemKey,
   } }), onSuccess: refresh });
   const salvarItens = useMutation({
     mutationFn: () => api(`/combos/${combo.id}/itens`, { method: 'PUT', body: itens.map((i) => ({
@@ -53,6 +53,7 @@ function EditorCombo({ combo, onFechar }: { combo: Row; onFechar: () => void }) 
           <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={meta.ativo} onChange={(e) => setMeta({ ...meta, ativo: e.target.checked })} />Ativo</label>
           <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={meta.visivelSite} onChange={(e) => setMeta({ ...meta, visivelSite: e.target.checked })} />Aparece no site</label>
         </div>
+        <UploadImagem pasta="combos" value={meta.imagemKey} onChange={(imagemKey) => setMeta({ ...meta, imagemKey })} />
       </div>
 
       <div className="space-y-2">

@@ -15,14 +15,23 @@ interface Props extends cdk.StackProps { prefix: string; prod: boolean; domainNa
 const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../apps/site/dist');
 
 export class SiteStack extends cdk.Stack {
+  // Exposto pra ApiStack poder dar permissão de PutObject (upload de foto de produto/combo direto
+  // do app interno) — some bucket, mesmo CloudFront: sem origem/distribuição nova, as fotos ficam
+  // só em "uploads/..." dentro do bucket do site, servidas pela mesma CDN que já serve o resto.
+  readonly bucket: s3.Bucket;
+
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id, props);
 
     const bucket = new s3.Bucket(this, 'Site', {
       bucketName: `${props.prefix}-site-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, encryption: s3.BucketEncryption.S3_MANAGED, enforceSSL: true,
+      // CORS só pra permitir o PUT direto do app interno (app.churrascodojoe.com.br) na hora de subir
+      // uma foto — GET público segue vindo todo pelo CloudFront, não precisa de CORS pra isso.
+      cors: [{ allowedMethods: [s3.HttpMethods.PUT], allowedOrigins: ['https://app.churrascodojoe.com.br', 'https://*.cloudfront.net', 'http://localhost:5173'], allowedHeaders: ['*'] }],
       removalPolicy: props.prod ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY, autoDeleteObjects: !props.prod,
     });
+    this.bucket = bucket;
 
     // "/pagina" → "/pagina/index.html" (Astro gera 1 index.html por rota, sem SPA fallback).
     const roteamento = new cf.Function(this, 'Roteamento', {

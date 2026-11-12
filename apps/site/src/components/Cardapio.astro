@@ -1,8 +1,8 @@
 ---
 import type { Produto } from '../lib/api';
 import { brl, whatsappUrl } from '../lib/api';
-interface Props { produtos: Produto[]; whatsapp: string }
-const { produtos, whatsapp } = Astro.props;
+interface Props { produtos: Produto[]; whatsapp: string; aceitaPedidosSite: boolean }
+const { produtos, whatsapp, aceitaPedidosSite } = Astro.props;
 
 const CATEGORIAS: Record<string, string> = { carne: 'Carnes', acompanhamento: 'Acompanhamentos', bebida: 'Bebidas', doces: 'Doces & Geleias' };
 const chaveCategoria = (p: Produto) => (p.categoria === 'sobremesa' || p.categoria === 'geleia' ? 'doces' : p.categoria);
@@ -10,6 +10,9 @@ const ordem = ['carne', 'acompanhamento', 'bebida', 'doces'];
 const grupos = ordem
   .map((cat) => ({ cat, label: CATEGORIAS[cat], itens: produtos.filter((p) => chaveCategoria(p) === cat).sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome)) }))
   .filter((g) => g.itens.length > 0);
+// Aviso "fotos em breve" só enquanto nenhum produto tiver foto cadastrada — some sozinho conforme
+// forem subindo fotos em Cardápio → editar produto (não precisa editar o texto do site à mão).
+const temFoto = produtos.some((p) => p.imagemKey);
 ---
 <section id="cardapio" class="max-w-6xl mx-auto px-4 py-16 sm:py-20">
   <p class="section-kicker">Direto da brasa</p>
@@ -32,6 +35,7 @@ const grupos = ordem
         const msg = `Olá! Vi o ${p.nome} no cardápio do site 🔥`;
         return (
           <div class:list={['card !p-4 flex flex-col gap-1', { 'opacity-40': !p.disponivelHoje }]}>
+            {p.imagemKey && <img src={`/${p.imagemKey}`} alt={p.nome} loading="lazy" class="w-full h-28 object-cover rounded-md -mt-1 mb-1" />}
             <div class="flex items-start justify-between gap-2">
               <h3 class="font-label font-bold uppercase text-cream leading-tight">{p.nome}</h3>
               {!p.disponivelHoje && <span class="chip !text-[10px] !min-h-0 !py-1 !px-2 !border-brasa !text-brasa shrink-0">Esgotado hoje</span>}
@@ -39,8 +43,14 @@ const grupos = ordem
             {p.descricaoCurta && <p class="text-cream/60 text-xs">{p.descricaoCurta}</p>}
             <p class="text-cream/50 text-xs font-label uppercase">{p.unidadeVenda}{p.parceiro ? ` · ${p.parceiro}` : ''}</p>
             <div class="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-              <span class="font-display text-2xl text-primary-hover">{brl(p.precoCents)}</span>
-              {p.disponivelHoje && (
+              <span class="font-display text-2xl text-primary-hover">{p.vendidoAPrecoDeCusto ? 'a combinar' : brl(p.precoCents)}</span>
+              {p.disponivelHoje && aceitaPedidosSite && !p.vendidoAPrecoDeCusto && (
+                <button
+                  type="button" aria-label={`Adicionar ${p.nome} ao carrinho`} class="btn !min-h-[36px] !w-9 !p-0 !px-0 text-lg leading-none"
+                  data-add-produto data-item={JSON.stringify({ produtoId: p.id, nome: p.nome, precoCents: p.precoCents })}
+                >+</button>
+              )}
+              {p.disponivelHoje && (!aceitaPedidosSite || p.vendidoAPrecoDeCusto) && (
                 <a href={whatsappUrl(whatsapp, msg)} target="_blank" rel="noopener" aria-label={`Pedir ${p.nome} no WhatsApp`} class="btn !min-h-[36px] !w-9 !p-0 !px-0 text-lg leading-none">+</a>
               )}
             </div>
@@ -50,7 +60,7 @@ const grupos = ordem
     </div>
   ))}
 
-  <p class="text-center text-cream/40 text-xs mt-8">Fotos dos pratos em breve. Preços e disponibilidade atualizados direto do nosso sistema.</p>
+  {!temFoto && <p class="text-center text-cream/40 text-xs mt-8">Fotos dos pratos em breve. Preços e disponibilidade atualizados direto do nosso sistema.</p>}
 </section>
 
 <script>

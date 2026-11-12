@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { hoje, whatsappUrl } from '../api';
+import { api, hoje, urlImagem, whatsappUrl } from '../api';
 
 /** Caixinha de texto + botão que abre o WhatsApp do cliente já com a mensagem digitada — sem API, sem automação. */
 export function MensagemWhats({ telefone }: { telefone: string }) {
@@ -9,6 +9,37 @@ export function MensagemWhats({ telefone }: { telefone: string }) {
     <div className="flex gap-2 items-center flex-wrap">
       <input className="flex-1 min-w-[160px]" placeholder="Mensagem (opcional)" value={texto} onChange={(e) => setTexto(e.target.value)} />
       <a href={whatsappUrl(telefone, texto)} target="_blank" rel="noopener" className="btn !min-h-[40px] !px-4 text-sm shrink-0">📱 Enviar</a>
+    </div>
+  );
+}
+
+/** Foto de produto/combo pra landing page — sobe direto pro bucket do site (URL pré-assinada,
+ * ver services/imagens.ts) e devolve a `key`; quem usa isso salva com o PATCH normal do form. */
+export function UploadImagem({ pasta, value, onChange }: { pasta: 'produtos' | 'combos'; value: string | null; onChange: (key: string | null) => void }) {
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const enviar = async (file: File) => {
+    setEnviando(true); setErro(null);
+    try {
+      const { uploadUrl, key } = await api<{ uploadUrl: string; key: string }>(`/${pasta}/imagem-upload-url`, { method: 'POST', body: { contentType: file.type } });
+      const r = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'content-type': file.type } });
+      if (!r.ok) throw new Error('Falha ao enviar a imagem');
+      onChange(key);
+    } catch (e) { setErro(e instanceof Error ? e.message : 'Erro ao enviar imagem'); }
+    finally { setEnviando(false); }
+  };
+  return (
+    <div className="space-y-1">
+      <label>Foto (JPEG, PNG ou WebP)</label>
+      <div className="flex items-center gap-3 flex-wrap">
+        {value && <img src={urlImagem(value) ?? undefined} alt="" className="w-20 h-20 object-cover rounded-md border border-white/10" />}
+        <div className="space-y-1">
+          <input type="file" accept="image/jpeg,image/png,image/webp" disabled={enviando} onChange={(e) => e.target.files?.[0] && enviar(e.target.files[0])} />
+          {enviando && <p className="text-xs text-cream/60">Enviando…</p>}
+          {value && !enviando && <button type="button" className="text-gold underline text-xs" onClick={() => onChange(null)}>remover foto</button>}
+        </div>
+      </div>
+      {erro && <p className="text-xs text-primary-hover">{erro}</p>}
     </div>
   );
 }
