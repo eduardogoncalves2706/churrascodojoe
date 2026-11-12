@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { api, ApiError, brl, brlC, num, type Row } from '../api';
 import { Campo, Carregando, Drawer, Erro } from '../components/ui';
 
-interface Item { key: string; produtoId?: string; varianteId?: string; refrigeranteId?: string; nome: string; precoCents: number; qtd: number; obs: string; fracionado: boolean; livre: boolean }
+interface Item { key: string; produtoId?: string; varianteId?: string; produtoVarianteId?: string; refrigeranteId?: string; nome: string; precoCents: number; qtd: number; obs: string; fracionado: boolean; livre: boolean }
 interface Draft {
   telefone: string; nome: string; clienteId?: string; semCadastro: boolean; canal: string; tipo: string; agendar: boolean; quando: string;
   itens: Item[]; semEndereco: boolean; enderecoTexto: string; bairroId: string; referencia: string; desconto: string; taxaManual: string; forma: string; trocoPara: string; pagarDepois: boolean; obs: string;
@@ -14,8 +14,11 @@ const VAZIO: Draft = { telefone: '', nome: '', semCadastro: false, canal: 'whats
 const KEY = 'joe.rascunho';
 const carregarDraft = (): Draft => { try { return { ...VAZIO, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') }; } catch { return VAZIO; } };
 
-const ABAS = ['Combos', 'Carnes', 'Acompanhamentos', 'Bebidas', 'Doces & Geleias'] as const;
-const abaDe = (cat: string) => (cat === 'carne' ? 'Carnes' : cat === 'acompanhamento' ? 'Acompanhamentos' : cat === 'bebida' ? 'Bebidas' : 'Doces & Geleias');
+const ABAS = ['Combos', 'Carnes', 'Acompanhamentos', 'Bebidas', 'Doces & Geleias', 'Outros'] as const;
+// Catálogo genérico: categoria fora do que o churrasco usa cai em "Outros" em vez de se misturar
+// com doces/geleias por engano (importante quando categoria virar configurável por cliente).
+const CATEGORIAS_CHURRASCO = ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia'];
+const abaDe = (cat: string) => (cat === 'carne' ? 'Carnes' : cat === 'acompanhamento' ? 'Acompanhamentos' : cat === 'bebida' ? 'Bebidas' : CATEGORIAS_CHURRASCO.includes(cat) ? 'Doces & Geleias' : 'Outros');
 /** Produto que não controla estoque (maioria) sempre pode vender; quem controla, só se tiver sobrado
  * algo liberado pra venda hoje (ver Estoque — "estoque de produto pronto"). */
 const temEstoque = (p: Row) => !p.controlaEstoque || Number(p.estoqueVenda) > 0;
@@ -82,6 +85,7 @@ export default function NovoPedido() {
   const { d, setD, up, digitos, sugestoes, erroBusca, selecionarSugestao } = useNovoPedidoState();
   const [aba, setAba] = useState<(typeof ABAS)[number]>('Combos');
   const [combo, setCombo] = useState<{ combo: Row; variante?: Row } | null>(null);
+  const [produtoVar, setProdutoVar] = useState<Row | null>(null);
   const [feito, setFeito] = useState<Row | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [revisando, setRevisando] = useState(false);
@@ -99,7 +103,7 @@ export default function NovoPedido() {
   const total = Math.max(0, subtotal - desconto + taxa);
 
   const add = (i: Omit<Item, 'key' | 'qtd' | 'obs'>) => setD((x) => {
-    const ex = x.itens.find((y) => y.produtoId === i.produtoId && y.varianteId === i.varianteId && y.refrigeranteId === i.refrigeranteId && !y.obs);
+    const ex = x.itens.find((y) => y.produtoId === i.produtoId && y.varianteId === i.varianteId && y.produtoVarianteId === i.produtoVarianteId && y.refrigeranteId === i.refrigeranteId && !y.obs);
     if (ex) return { ...x, itens: x.itens.map((y) => (y === ex ? { ...y, qtd: y.qtd + 1 } : y)) };
     return { ...x, itens: [...x.itens, { ...i, key: crypto.randomUUID(), qtd: 1, obs: '' }] };
   });
@@ -114,7 +118,10 @@ export default function NovoPedido() {
       // Telefone não é obrigatório: com o nome já dá pra cadastrar o cliente (edita e completa o telefone depois).
       ...(d.clienteId ? { clienteId: d.clienteId } : !d.semCadastro && d.nome.trim() ? { novoCliente: { nome: d.nome, telefone: digitos.length >= 8 ? d.telefone : undefined } } : { nomeCliente: d.nome || 'Balcão' }),
       canal: d.canal, tipo: d.tipo, ...(d.agendar && d.quando ? { agendadoPara: new Date(d.quando).toISOString() } : {}),
-      itens: d.itens.map((i) => ({ ...(i.varianteId ? { comboVarianteId: i.varianteId, refrigeranteId: i.refrigeranteId } : { produtoId: i.produtoId }), quantidade: i.qtd, observacao: i.obs || undefined, ...(i.livre ? { precoUnitario: i.precoCents / 100 } : {}) })),
+      itens: d.itens.map((i) => ({
+        ...(i.varianteId ? { comboVarianteId: i.varianteId, refrigeranteId: i.refrigeranteId } : i.produtoVarianteId ? { produtoVarianteId: i.produtoVarianteId } : { produtoId: i.produtoId }),
+        quantidade: i.qtd, observacao: i.obs || undefined, ...(i.livre ? { precoUnitario: i.precoCents / 100 } : {}),
+      })),
       desconto: desconto / 100, ...(d.tipo === 'entrega' ? { taxaEntrega: taxa / 100, bairroId: d.bairroId || undefined, enderecoTexto: d.enderecoTexto, referencia: d.referencia } : {}),
       trocoPara: d.forma === 'dinheiro' && d.trocoPara ? Number(d.trocoPara) : undefined, observacoes: d.obs || undefined,
       pagamentos: d.pagarDepois ? [] : [{ forma: d.forma, valor: total / 100 }],
@@ -141,6 +148,11 @@ export default function NovoPedido() {
           const refrigeranteId = i.escolhas?.refrigeranteId as string | undefined;
           const refri = refrigeranteId ? produtos.data?.find((p) => p.id === refrigeranteId) : undefined;
           novos.push({ key: crypto.randomUUID(), varianteId: variante.id, refrigeranteId, nome: `${combo.nome} – ${variante.carne}${refri ? ` · ${refri.nome}` : ''}`, precoCents: variante.precoCents, qtd, obs: i.observacao ?? '', fracionado: false, livre: false });
+        } else if (i.produtoVarianteId) {
+          const prod = produtos.data?.find((p) => p.variantes?.some((v: Row) => v.id === i.produtoVarianteId));
+          const variante = prod?.variantes.find((v: Row) => v.id === i.produtoVarianteId);
+          if (!prod || !variante || !variante.ativo) { ignorados++; continue; }
+          novos.push({ key: crypto.randomUUID(), produtoVarianteId: variante.id, nome: `${prod.nome} – ${variante.nome}`, precoCents: variante.precoCents, qtd, obs: i.observacao ?? '', fracionado: false, livre: false });
         } else if (i.produtoId) {
           const prod = produtos.data?.find((p) => p.id === i.produtoId);
           if (!prod || !prod.ativo) { ignorados++; continue; }
@@ -228,7 +240,7 @@ export default function NovoPedido() {
 
       <section className="card space-y-3">
         <h3 className="font-label font-bold uppercase text-gold">3 · Itens</h3>
-        <div className="flex gap-2 overflow-x-auto pb-1">{ABAS.map((a) => <button key={a} className={`chip whitespace-nowrap ${aba === a ? 'chip-on' : ''}`} onClick={() => { setAba(a); setCombo(null); }}>{a}</button>)}</div>
+        <div className="flex gap-2 overflow-x-auto pb-1">{ABAS.map((a) => <button key={a} className={`chip whitespace-nowrap ${aba === a ? 'chip-on' : ''}`} onClick={() => { setAba(a); setCombo(null); setProdutoVar(null); }}>{a}</button>)}</div>
 
         {aba === 'Combos' && !combo && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {combos.data?.filter((c) => c.ativo).map((c) => <button key={c.id} className="card text-left min-h-[72px] hover:border-primary" onClick={() => setCombo({ combo: c })}>
@@ -244,9 +256,22 @@ export default function NovoPedido() {
               <button key={p.id} className="chip" onClick={() => { add({ varianteId: combo.variante!.id, refrigeranteId: p.id, nome: `${combo.combo.nome} – ${combo.variante!.carne} · ${p.nome}`, precoCents: combo.variante!.precoCents, fracionado: false, livre: false }); setCombo(null); }}>{p.nome}</button>))}</div>
           </>}
         </div>}
-        {aba !== 'Combos' && <div className="grid grid-cols-2 gap-2">{lista.map((p) => (
-          <button key={p.id} className="card text-left min-h-[72px] hover:border-primary" onClick={() => add({ produtoId: p.id, nome: p.nome, precoCents: p.precoCents, fracionado: p.permiteFracionado, livre: p.vendidoAPrecoDeCusto })}>
-            <p className="font-label font-bold uppercase leading-tight">{p.nome}</p><p className="text-gold">{p.vendidoAPrecoDeCusto ? 'preço a informar' : brlC(p.precoCents)}</p></button>))}</div>}
+        {/* Catálogo genérico: produto com variantes (ex.: Certificado — 1 ano/2 anos) pede a opção
+            antes de adicionar, em vez de ir direto pro carrinho com o preço errado. */}
+        {aba !== 'Combos' && !produtoVar && <div className="grid grid-cols-2 gap-2">{lista.map((p) => (
+          <button key={p.id} className="card text-left min-h-[72px] hover:border-primary" onClick={() => (p.variantes?.length > 0 ? setProdutoVar(p) : add({ produtoId: p.id, nome: p.nome, precoCents: p.precoCents, fracionado: p.permiteFracionado, livre: p.vendidoAPrecoDeCusto }))}>
+            <p className="font-label font-bold uppercase leading-tight">{p.nome}</p>
+            <p className="text-gold">{p.variantes?.length > 0 ? `a partir de ${brlC(Math.min(...p.variantes.map((v: Row) => v.precoCents)))}` : p.vendidoAPrecoDeCusto ? 'preço a informar' : brlC(p.precoCents)}</p>
+          </button>))}</div>}
+        {aba !== 'Combos' && produtoVar && <div className="space-y-3">
+          <div className="flex justify-between"><p className="font-label font-bold uppercase text-lg">{produtoVar.nome}</p><button className="text-gold underline" onClick={() => setProdutoVar(null)}>voltar</button></div>
+          <p className="text-xs text-gold font-label uppercase">Escolha a opção</p>
+          <div className="grid grid-cols-2 gap-2">{produtoVar.variantes.filter((v: Row) => v.ativo).map((v: Row) => (
+            <button key={v.id} className="card text-left min-h-[56px]" onClick={() => { add({ produtoVarianteId: v.id, nome: `${produtoVar.nome} – ${v.nome}`, precoCents: v.precoCents, fracionado: false, livre: false }); setProdutoVar(null); }}>
+              <span className="font-label font-bold uppercase">{v.nome}</span><br /><span className="text-gold">{brlC(v.precoCents)}</span>
+            </button>
+          ))}</div>
+        </div>}
 
         {d.itens.length > 0 && <ul className="divide-y divide-white/10">{d.itens.map((i) => (
           <li key={i.key} className="py-2 space-y-1">

@@ -63,11 +63,11 @@ publicRoutes.get('/site', async (c) => {
 });
 
 publicRoutes.get('/cardapio', async (c) => {
-  const [produtos, custos, combos, comboItensRows, comboVariantesRows] = await Promise.all([
+  const [produtos, custos, combos, comboItensRows, comboVariantesRows, produtoVariantesRows] = await Promise.all([
     db().select().from(s.produtos).where(and(eq(s.produtos.ativo, true), eq(s.produtos.visivelSite, true))),
     custosProdutos(db()),
     db().select().from(s.combos).where(and(eq(s.combos.ativo, true), eq(s.combos.visivelSite, true))),
-    db().select().from(s.comboItens), db().select().from(s.comboVariantes),
+    db().select().from(s.comboItens), db().select().from(s.comboVariantes), db().select().from(s.produtoVariantes),
   ]);
   void custos; // custo nunca sai numa rota pública — só usado internamente, nunca no payload
   const nomeProd = new Map(produtos.map((p) => [p.id, p.nome]));
@@ -75,6 +75,8 @@ publicRoutes.get('/cardapio', async (c) => {
     id: p.id, categoria: p.categoria, nome: p.nome, descricaoCurta: p.descricaoCurta, unidadeVenda: p.unidadeVenda,
     precoCents: toCents(p.precoVenda), imagemKey: p.imagemKey, disponivelHoje: p.disponivelHoje, permiteFracionado: p.permiteFracionado,
     parceiro: p.parceiro, vendidoAPrecoDeCusto: p.vendidoAPrecoDeCusto, destaque: p.destaqueSite, ordem: p.ordemSite,
+    // Variantes genéricas (catálogo genérico — ex.: Certificado "1 ano"/"2 anos"); vazio pra quem não usa.
+    variantes: produtoVariantesRows.filter((v) => v.produtoId === p.id && v.ativo).sort((a, b) => a.ordem - b.ordem).map((v) => ({ id: v.id, nome: v.nome, precoCents: toCents(v.precoVenda) })),
   })).sort((a, b) => a.ordem - b.ordem);
   const combosPublicos = combos.map((cb) => {
     const itens = comboItensRows.filter((i) => i.comboId === cb.id);
@@ -94,7 +96,7 @@ publicRoutes.get('/bairros', async (c) => {
 });
 
 /* ---------- Antispam simples: honeypot + limite por telefone ---------- */
-const itemSchema = z.object({ produtoId: z.uuid().optional(), comboVarianteId: z.uuid().optional(), quantidade: z.number().positive(), observacao: z.string().max(200).optional(), refrigeranteId: z.uuid().optional() });
+const itemSchema = z.object({ produtoId: z.uuid().optional(), comboVarianteId: z.uuid().optional(), produtoVarianteId: z.uuid().optional(), quantidade: z.number().positive(), observacao: z.string().max(200).optional(), refrigeranteId: z.uuid().optional() });
 const pedidoPublicoSchema = z.object({
   nome: z.string().min(1).max(120), telefone: z.string().min(10).max(20), site: z.string().max(0).optional(), // "site" = honeypot, deve vir vazio
   tipo: z.enum(['entrega', 'retirada']), bairroId: z.uuid().optional(), enderecoTexto: z.string().max(300).optional(), referencia: z.string().max(200).optional(),

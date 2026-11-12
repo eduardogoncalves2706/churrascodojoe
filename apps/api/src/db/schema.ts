@@ -29,6 +29,10 @@ export const grupoDreEnum = pgEnum('grupo_dre', [
 ]);
 export const tipoLancamentoEnum = pgEnum('tipo_lancamento', ['entrada', 'saida', 'transferencia']);
 export const statusLancamentoEnum = pgEnum('status_lancamento', ['previsto', 'realizado', 'cancelado']);
+export const tipoComissaoEnum = pgEnum('tipo_comissao', ['percentual', 'fixo']);
+// "cancelada" = admin zerou/anulou (pedido cancelado ou atribuição errada) — nunca apaga a linha,
+// só muda o status, pra manter o histórico de quem vendeu o quê.
+export const statusComissaoEnum = pgEnum('status_comissao', ['pendente', 'paga', 'cancelada']);
 
 export const usuarios = pgTable('usuarios', {
   id: id(), cognitoSub: text('cognito_sub').unique(), nome: text('nome').notNull(), email: text('email').notNull(),
@@ -93,8 +97,23 @@ export const produtos = pgTable('produtos', {
   // semana) — só estoqueVenda desconta com as vendas e controla o que aparece em Novo pedido.
   controlaEstoque: boolean('controla_estoque').notNull().default(false),
   estoqueTotal: qty('estoque_total').notNull().default('0'), estoqueVenda: qty('estoque_venda').notNull().default('0'),
+  // Campo livre pro cliente guardar o que for específico do ramo dele sem precisar de migration
+  // (ex.: lote/validade numa farmácia, tamanho/cor numa loja de roupa) — catálogo genérico: os
+  // campos fixos acima servem pra qualquer negócio, isso aqui é a parte que varia por cliente.
+  // Formato: array de {chave, valor}, não objeto — preserva ordem de edição, mais previsível na UI.
+  atributosExtra: jsonb('atributos_extra').$type<{ chave: string; valor: string }[]>().notNull().default([]),
   ...audit,
 });
+
+/**
+ * Variantes GENÉRICAS de produto — "mesmo produto, preços diferentes por opção" (ex.: Certificado
+ * digital: 1 ano / 2 anos; blusa: P/M/G). Diferente de comboVariantes (que é especificamente "carne
+ * escolhida" dentro de um combo) — essa aqui não depende de combo nem de categoria nenhuma.
+ */
+export const produtoVariantes = pgTable('produto_variantes', {
+  id: id(), produtoId: uuid('produto_id').notNull().references(() => produtos.id), nome: text('nome').notNull(),
+  precoVenda: money('preco_venda').notNull(), ordem: integer('ordem').notNull().default(0), ativo: boolean('ativo').notNull().default(true), ...audit,
+}, (t) => [unique().on(t.produtoId, t.nome)]);
 
 export const produtoCustoHistorico = pgTable('produto_custo_historico', {
   id: id(), produtoId: uuid('produto_id').notNull().references(() => produtos.id), custo: money('custo').notNull(),
@@ -156,6 +175,17 @@ export const colaboradores = pgTable('colaboradores', {
   valorPorEntrega: money('valor_por_entrega').notNull().default('0'), chavePix: text('chave_pix'), ativo: boolean('ativo').notNull().default(true), ...audit,
 });
 
+/**
+ * Vendedor com código próprio — "marketplace" pequeno: alguém vende com o código dele, ganha uma
+ * comissão. `valorComissao` significa % (ex.: 5.00 = 5%) se tipoComissao="percentual", ou um valor
+ * fixo em R$ por venda se tipoComissao="fixo". Pode (opcional) estar ligado a um usuário do sistema.
+ */
+export const vendedores = pgTable('vendedores', {
+  id: id(), nome: text('nome').notNull(), codigo: text('codigo').notNull().unique(),
+  tipoComissao: tipoComissaoEnum('tipo_comissao').notNull().default('percentual'), valorComissao: money('valor_comissao').notNull().default('0'),
+  usuarioEmail: text('usuario_email'), ativo: boolean('ativo').notNull().default(true), ...audit,
+});
+
 export const pedidos = pgTable('pedidos', {
   id: id(), numeroDia: integer('numero_dia').notNull(), dataOperacao: date('data_operacao').notNull(),
   clienteId: uuid('cliente_id').references(() => clientes.id), nomeClienteSnapshot: text('nome_cliente_snapshot'), telefoneSnapshot: text('telefone_snapshot'),
@@ -165,12 +195,16 @@ export const pedidos = pgTable('pedidos', {
   subtotal: money('subtotal').notNull().default('0'), desconto: money('desconto').notNull().default('0'), taxaEntrega: money('taxa_entrega').notNull().default('0'),
   total: money('total').notNull().default('0'), custoTotal: money('custo_total'), statusPagamento: statusPagamentoEnum('status_pagamento').notNull().default('pendente'),
   trocoPara: money('troco_para'), motoboyId: uuid('motoboy_id').references(() => colaboradores.id), observacoes: text('observacoes'), motivoCancelamento: text('motivo_cancelamento'),
+  // Vendedor com código próprio (marketplace de comissão) — quem vendeu esse pedido, se foi vendido
+  // "com código" de alguém. Opcional; maioria dos pedidos não tem.
+  vendedorId: uuid('vendedor_id').references(() => vendedores.id),
   createdBy: text('created_by'), ...audit,
 }, (t) => [unique().on(t.dataOperacao, t.numeroDia)]);
 
 export const pedidoItens = pgTable('pedido_itens', {
   id: id(), pedidoId: uuid('pedido_id').notNull().references(() => pedidos.id), produtoId: uuid('produto_id').references(() => produtos.id),
-  comboVarianteId: uuid('combo_variante_id').references(() => comboVariantes.id), descricaoSnapshot: text('descricao_snapshot').notNull(),
+  comboVarianteId: uuid('combo_variante_id').references(() => comboVariantes.id),
+  produtoVarianteId: uuid('produto_variante_id').references(() => produtoVariantes.id), descricaoSnapshot: text('descricao_snapshot').notNull(),
   quantidade: qty('quantidade').notNull(), precoUnitarioSnapshot: money('preco_unitario_snapshot').notNull(), custoUnitarioSnapshot: money('custo_unitario_snapshot'),
   subtotal: money('subtotal').notNull(), escolhas: jsonb('escolhas'), observacao: text('observacao'), ...audit,
 });
@@ -215,4 +249,18 @@ export const pagamentos = pgTable('pagamentos', {
   // Id da order/pagamento no gateway (ex.: Mercado Pago) — só pra idempotência do webhook (não
   // credita duas vezes se ele reenviar a notificação); null pra pagamento registrado manualmente.
   referenciaExterna: text('referencia_externa'), ...audit,
+});
+
+/**
+ * Uma linha por pedido vendido com código de vendedor — calculada sozinha quando o pedido é
+ * confirmado (nunca em pedido recusado/cancelado). `valorCalculado` nunca muda (é o que o sistema
+ * calculou na hora); `valorFinal` é o ajuste manual do admin (null = usa o calculado). O "fechamento"
+ * (marcar como paga) também é manual — o sistema nunca marca paga sozinho.
+ */
+export const comissoes = pgTable('comissoes', {
+  id: id(), pedidoId: uuid('pedido_id').notNull().references(() => pedidos.id).unique(), vendedorId: uuid('vendedor_id').notNull().references(() => vendedores.id),
+  valorBase: money('valor_base').notNull(), // subtotal - desconto do pedido no momento do cálculo (sem taxa de entrega)
+  tipoComissao: tipoComissaoEnum('tipo_comissao').notNull(), percentualOuValor: money('percentual_ou_valor').notNull(), // snapshot do vendedor na hora
+  valorCalculado: money('valor_calculado').notNull(), valorFinal: money('valor_final'), status: statusComissaoEnum('status').notNull().default('pendente'),
+  motivoAjuste: text('motivo_ajuste'), ...audit,
 });

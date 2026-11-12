@@ -67,7 +67,7 @@ const { bairros, aceitaPedidosSite } = Astro.props;
 <script>
   import { brl, criarPedidoSite, type ItemCarrinhoPayload } from '../lib/api';
 
-  interface ItemCarrinho { chave: string; nome: string; precoCents: number; qtd: number; produtoId?: string; comboVarianteId?: string; refrigeranteId?: string }
+  interface ItemCarrinho { chave: string; nome: string; precoCents: number; qtd: number; produtoId?: string; comboVarianteId?: string; produtoVarianteId?: string; refrigeranteId?: string }
   const KEY = 'joe.carrinho';
   const ler = (): ItemCarrinho[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? '[]'); } catch { return []; } };
   const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -95,10 +95,10 @@ const { bairros, aceitaPedidosSite } = Astro.props;
   }
 
   function salvar(itens: ItemCarrinho[]) { try { localStorage.setItem(KEY, JSON.stringify(itens)); } catch { /* noop */ } render(); }
-  const chaveDe = (i: { produtoId?: string; comboVarianteId?: string; refrigeranteId?: string }) =>
-    i.comboVarianteId ? `combo:${i.comboVarianteId}:${i.refrigeranteId ?? ''}` : `produto:${i.produtoId}`;
+  const chaveDe = (i: { produtoId?: string; comboVarianteId?: string; produtoVarianteId?: string; refrigeranteId?: string }) =>
+    i.comboVarianteId ? `combo:${i.comboVarianteId}:${i.refrigeranteId ?? ''}` : i.produtoVarianteId ? `prodvar:${i.produtoVarianteId}` : `produto:${i.produtoId}`;
 
-  function adicionar(item: { nome: string; precoCents: number; produtoId?: string; comboVarianteId?: string; refrigeranteId?: string }) {
+  function adicionar(item: { nome: string; precoCents: number; produtoId?: string; comboVarianteId?: string; produtoVarianteId?: string; refrigeranteId?: string }) {
     const chave = chaveDe(item);
     const itens = ler();
     const existente = itens.find((i) => i.chave === chave);
@@ -127,6 +127,17 @@ const { bairros, aceitaPedidosSite } = Astro.props;
       const refriOpt = refriSel?.selectedOptions[0];
       const nome = `${card.dataset.nome} – ${opt.textContent}${refriOpt?.value ? ` · ${refriOpt.textContent}` : ''}`;
       adicionar({ nome, precoCents: Number(opt.dataset.preco), comboVarianteId: opt.value, refrigeranteId: refriOpt?.value || undefined });
+      return;
+    }
+
+    // Catálogo genérico: produto com opções de preço (ex.: Certificado — 1 ano/2 anos), sem carne/refri.
+    const addProdVar = alvo.closest<HTMLElement>('[data-add-produto-variante]');
+    if (addProdVar) {
+      const card = addProdVar.closest<HTMLElement>('[data-produto-card]')!;
+      const sel = card.querySelector<HTMLSelectElement>('[data-produto-variante-select]')!;
+      const opt = sel.selectedOptions[0];
+      if (!opt?.value) return;
+      adicionar({ nome: `${card.dataset.nome} – ${opt.textContent}`, precoCents: Number(opt.dataset.preco), produtoVarianteId: opt.value });
       return;
     }
 
@@ -162,7 +173,10 @@ const { bairros, aceitaPedidosSite } = Astro.props;
       nome: String(fd.get('nome') ?? ''), telefone: String(fd.get('telefone') ?? ''), tipo,
       ...(tipo === 'entrega' ? { bairroId: String(fd.get('bairroId') ?? '') || undefined, enderecoTexto: String(fd.get('enderecoTexto') ?? '') || undefined, referencia: String(fd.get('referencia') ?? '') || undefined } : {}),
       observacoes: String(fd.get('observacoes') ?? '') || undefined, site: String(fd.get('site') ?? ''),
-      itens: itens.map((i): ItemCarrinhoPayload => ({ ...(i.comboVarianteId ? { comboVarianteId: i.comboVarianteId, refrigeranteId: i.refrigeranteId } : { produtoId: i.produtoId }), quantidade: i.qtd })),
+      itens: itens.map((i): ItemCarrinhoPayload => ({
+        ...(i.comboVarianteId ? { comboVarianteId: i.comboVarianteId, refrigeranteId: i.refrigeranteId } : i.produtoVarianteId ? { produtoVarianteId: i.produtoVarianteId } : { produtoId: i.produtoId }),
+        quantidade: i.qtd,
+      })),
     });
     finalizar.disabled = false; finalizar.textContent = 'Finalizar pedido';
     if (!r.ok) { erroEl.textContent = r.erro; return; }

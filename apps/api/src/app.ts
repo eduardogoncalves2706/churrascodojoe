@@ -9,6 +9,7 @@ import { financeiro } from './routes/financeiro';
 import { pedidos } from './routes/pedidos';
 import { publicRoutes } from './routes/public';
 import { usuarios } from './routes/usuarios';
+import { vendedores } from './routes/vendedores';
 
 export const app = new Hono<Env>();
 // CORS_ORIGIN = app interno; CORS_ORIGIN_PUBLIC = site público (origens diferentes).
@@ -25,6 +26,10 @@ v1.route('/', config);
 v1.route('/', catalogo);
 v1.route('/', clientes);
 v1.route('/', pedidos);
+// vendedores tem uma rota aberta a qualquer papel (GET /vendedores, pra escolher vendedor num pedido)
+// — precisa vir antes de usuarios/financeiro/estoque: o `.use('*', requireAdmin)` deles, depois do
+// .route(), vira middleware "pega tudo" no router do v1 e bloquearia rotas montadas depois.
+v1.route('/', vendedores);
 v1.route('/', usuarios);
 v1.route('/', financeiro);
 v1.route('/', estoque);

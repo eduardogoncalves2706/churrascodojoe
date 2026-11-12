@@ -4,9 +4,12 @@ import { brl, whatsappUrl } from '../lib/api';
 interface Props { produtos: Produto[]; whatsapp: string; aceitaPedidosSite: boolean }
 const { produtos, whatsapp, aceitaPedidosSite } = Astro.props;
 
-const CATEGORIAS: Record<string, string> = { carne: 'Carnes', acompanhamento: 'Acompanhamentos', bebida: 'Bebidas', doces: 'Doces & Geleias' };
-const chaveCategoria = (p: Produto) => (p.categoria === 'sobremesa' || p.categoria === 'geleia' ? 'doces' : p.categoria);
-const ordem = ['carne', 'acompanhamento', 'bebida', 'doces'];
+const CATEGORIAS: Record<string, string> = { carne: 'Carnes', acompanhamento: 'Acompanhamentos', bebida: 'Bebidas', doces: 'Doces & Geleias', outros: 'Outros' };
+const CATEGORIAS_CONHECIDAS = ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia'];
+// Catálogo genérico: categoria fora da lista conhecida (churrasco) cai em "Outros" em vez de
+// desaparecer do site — importante pra quando a categoria virar configurável por cliente.
+const chaveCategoria = (p: Produto) => (p.categoria === 'sobremesa' || p.categoria === 'geleia' ? 'doces' : CATEGORIAS_CONHECIDAS.includes(p.categoria) ? p.categoria : 'outros');
+const ordem = ['carne', 'acompanhamento', 'bebida', 'doces', 'outros'];
 const grupos = ordem
   .map((cat) => ({ cat, label: CATEGORIAS[cat], itens: produtos.filter((p) => chaveCategoria(p) === cat).sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome)) }))
   .filter((g) => g.itens.length > 0);
@@ -34,7 +37,7 @@ const temFoto = produtos.some((p) => p.imagemKey);
       {g.itens.map((p) => {
         const msg = `Olá! Vi o ${p.nome} no cardápio do site 🔥`;
         return (
-          <div class:list={['card !p-4 flex flex-col gap-1', { 'opacity-40': !p.disponivelHoje }]}>
+          <div class:list={['card !p-4 flex flex-col gap-1', { 'opacity-40': !p.disponivelHoje }]} data-produto-card data-nome={p.nome}>
             {p.imagemKey && <img src={`/${p.imagemKey}`} alt={p.nome} loading="lazy" class="w-full h-28 object-cover rounded-md -mt-1 mb-1" />}
             <div class="flex items-start justify-between gap-2">
               <h3 class="font-label font-bold uppercase text-cream leading-tight">{p.nome}</h3>
@@ -42,18 +45,34 @@ const temFoto = produtos.some((p) => p.imagemKey);
             </div>
             {p.descricaoCurta && <p class="text-cream/60 text-xs">{p.descricaoCurta}</p>}
             <p class="text-cream/50 text-xs font-label uppercase">{p.unidadeVenda}{p.parceiro ? ` · ${p.parceiro}` : ''}</p>
-            <div class="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-              <span class="font-display text-2xl text-primary-hover">{p.vendidoAPrecoDeCusto ? 'a combinar' : brl(p.precoCents)}</span>
-              {p.disponivelHoje && aceitaPedidosSite && !p.vendidoAPrecoDeCusto && (
-                <button
-                  type="button" aria-label={`Adicionar ${p.nome} ao carrinho`} class="btn !min-h-[36px] !w-9 !p-0 !px-0 text-lg leading-none"
-                  data-add-produto data-item={JSON.stringify({ produtoId: p.id, nome: p.nome, precoCents: p.precoCents })}
-                >+</button>
-              )}
-              {p.disponivelHoje && (!aceitaPedidosSite || p.vendidoAPrecoDeCusto) && (
-                <a href={whatsappUrl(whatsapp, msg)} target="_blank" rel="noopener" aria-label={`Pedir ${p.nome} no WhatsApp`} class="btn !min-h-[36px] !w-9 !p-0 !px-0 text-lg leading-none">+</a>
-              )}
-            </div>
+
+            {p.variantes.length > 0 ? (
+              // Catálogo genérico: produto com opções de preço (ex.: Certificado — 1 ano/2 anos).
+              <div class="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
+                <select data-produto-variante-select class="flex-1 !text-sm">
+                  {p.variantes.map((v) => <option value={v.id} data-preco={v.precoCents}>{v.nome} — {brl(v.precoCents)}</option>)}
+                </select>
+                {p.disponivelHoje && aceitaPedidosSite && (
+                  <button type="button" aria-label={`Adicionar ${p.nome} ao carrinho`} data-add-produto-variante class="btn !min-h-[36px] !px-3 text-lg leading-none">+</button>
+                )}
+                {p.disponivelHoje && !aceitaPedidosSite && (
+                  <a href={whatsappUrl(whatsapp, `Olá! Vi o ${p.nome} no site 🔥`)} target="_blank" rel="noopener" aria-label={`Pedir ${p.nome} no WhatsApp`} class="btn !min-h-[36px] !px-3 text-lg leading-none">+</a>
+                )}
+              </div>
+            ) : (
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                <span class="font-display text-2xl text-primary-hover">{p.vendidoAPrecoDeCusto ? 'a combinar' : brl(p.precoCents)}</span>
+                {p.disponivelHoje && aceitaPedidosSite && !p.vendidoAPrecoDeCusto && (
+                  <button
+                    type="button" aria-label={`Adicionar ${p.nome} ao carrinho`} class="btn !min-h-[36px] !w-9 !p-0 !px-0 text-lg leading-none"
+                    data-add-produto data-item={JSON.stringify({ produtoId: p.id, nome: p.nome, precoCents: p.precoCents })}
+                  >+</button>
+                )}
+                {p.disponivelHoje && (!aceitaPedidosSite || p.vendidoAPrecoDeCusto) && (
+                  <a href={whatsappUrl(whatsapp, msg)} target="_blank" rel="noopener" aria-label={`Pedir ${p.nome} no WhatsApp`} class="btn !min-h-[36px] !w-9 !p-0 !px-0 text-lg leading-none">+</a>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

@@ -50,6 +50,20 @@
       "when": 1794490533611,
       "tag": "0006_abandoned_wild_child",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794494932054,
+      "tag": "0007_quiet_jack_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794502786275,
+      "tag": "0008_daffy_pete_wisdom",
+      "breakpoints": true
     }
   ]
 }

@@ -3,10 +3,14 @@
 // atualizado no cliente porque muda com a hora, o resto não precisa.
 const API = import.meta.env.PUBLIC_API_URL ?? 'https://nai06jpd9k.execute-api.sa-east-1.amazonaws.com';
 
+export interface ProdutoVariante { id: string; nome: string; precoCents: number }
 export interface Produto {
   id: string; categoria: string; nome: string; descricaoCurta: string | null; unidadeVenda: string;
   precoCents: number; imagemKey: string | null; disponivelHoje: boolean; permiteFracionado: boolean;
   parceiro: string | null; vendidoAPrecoDeCusto: boolean; destaque: boolean; ordem: number;
+  // Catálogo genérico (ex.: Certificado digital — "1 ano"/"2 anos", cada um com seu preço); vazio
+  // pra produto simples (o caso comum do Churrasco do Joe).
+  variantes: ProdutoVariante[];
 }
 export interface ComboVariante { id: string; carne: string; precoCents: number }
 export interface ComboItem { nome: string; quantidade: number; grupoEscolha: string | null }
@@ -45,7 +49,7 @@ export const whatsappUrl = (numero: string, texto = '') => {
 };
 
 /* ---------- Carrinho (pré-pedido pelo site — Configurações → "Aceitar pré-pedidos pelo site") ---------- */
-export interface ItemCarrinhoPayload { produtoId?: string; comboVarianteId?: string; refrigeranteId?: string; quantidade: number }
+export interface ItemCarrinhoPayload { produtoId?: string; comboVarianteId?: string; produtoVarianteId?: string; refrigeranteId?: string; quantidade: number }
 export interface PedidoSitePayload {
   nome: string; telefone: string; tipo: 'entrega' | 'retirada'; bairroId?: string; enderecoTexto?: string;
   referencia?: string; observacoes?: string; site?: string; itens: ItemCarrinhoPayload[];

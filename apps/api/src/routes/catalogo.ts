@@ -25,12 +25,20 @@ catalogo.post('/combos/imagem-upload-url', requireAdmin, zValidator('json', uplo
 
 /* ---------- Produtos ---------- */
 catalogo.get('/produtos', async (c) => {
-  const [rows, custos] = await Promise.all([db().select().from(s.produtos).orderBy(asc(s.produtos.ordem), asc(s.produtos.nome)), custosProdutos(db())]);
+  const [rows, custos, variantes] = await Promise.all([
+    db().select().from(s.produtos).orderBy(asc(s.produtos.ordem), asc(s.produtos.nome)), custosProdutos(db()), db().select().from(s.produtoVariantes),
+  ]);
   const out = rows.map((p) => {
     const custoCents = custos.get(p.id) ?? null;
     // controlaEstoque/estoqueTotal/estoqueVenda já vêm na linha (colunas de produtos) — estoque de
     // produto PRONTO pra vender, não de insumo; ver schema.ts e o desconto em services/pedidos.ts.
-    return { ...p, precoCents: toCents(p.precoVenda), custoCents, ...margem(toCents(p.precoVenda), custoCents) };
+    // variantes: catálogo genérico (ex.: Certificado — 1 ano/2 anos), custo igual ao do produto-pai
+    // (ficha técnica não varia por variante nessa v1).
+    return {
+      ...p, precoCents: toCents(p.precoVenda), custoCents, ...margem(toCents(p.precoVenda), custoCents),
+      variantes: variantes.filter((v) => v.produtoId === p.id).sort((a, b) => a.ordem - b.ordem)
+        .map((v) => ({ ...v, precoCents: toCents(v.precoVenda), custoCents, ...margem(toCents(v.precoVenda), custoCents) })),
+    };
   });
   return c.json(isAdmin(c) ? out : stripCustos(out));
 });
@@ -39,7 +47,10 @@ const produtoCampos = {
   nome: z.string().min(1), categoria: z.enum(s.categoriaProdutoEnum.enumValues), precoVenda: money, parceiro: z.string().nullish(),
 };
 // defaults só na criação: em .partial() um default sobrescreveria campos não enviados no PATCH
-const produtoBody = z.object({ ...produtoCampos, unidadeVenda: z.string().default('unidade'), permiteFracionado: z.boolean().default(false), vendidoAPrecoDeCusto: z.boolean().default(false), controlaEstoque: z.boolean().default(false), imagemKey: z.string().nullish() });
+const produtoBody = z.object({
+  ...produtoCampos, unidadeVenda: z.string().default('unidade'), permiteFracionado: z.boolean().default(false), vendidoAPrecoDeCusto: z.boolean().default(false),
+  controlaEstoque: z.boolean().default(false), imagemKey: z.string().nullish(), atributosExtra: z.array(z.object({ chave: z.string().min(1), valor: z.string() })).default([]),
+});
 const produtoPatch = z.object({ ...produtoCampos, unidadeVenda: z.string(), permiteFracionado: z.boolean(), vendidoAPrecoDeCusto: z.boolean() }).partial();
 
 catalogo.post('/produtos', requireAdmin, zValidator('json', produtoBody), async (c) => {
@@ -56,6 +67,8 @@ catalogo.patch('/produtos/:id', zValidator('json', produtoPatch.extend({
   imagemKey: z.string().nullish(),
   // Estoque de produto pronto pra vender (opt-in) — ver schema.ts.
   controlaEstoque: z.boolean().optional(), estoqueTotal: z.number().min(0).optional(), estoqueVenda: z.number().min(0).optional(),
+  // Catálogo genérico: campo livre pro que for específico do ramo do cliente — ver schema.ts.
+  atributosExtra: z.array(z.object({ chave: z.string().min(1), valor: z.string() })).optional(),
 })), async (c) => {
   const id = c.req.param('id');
   const { motivo, precoVenda, estoqueTotal, estoqueVenda, ...rest } = c.req.valid('json');
@@ -74,6 +87,19 @@ catalogo.patch('/produtos/:id', zValidator('json', produtoPatch.extend({
   if (!Object.keys(patch).length) return c.json({ error: { code: 'forbidden', message: 'Sem permissão para esta alteração' } }, 403);
   const [p] = await db().update(s.produtos).set({ ...patch, updatedAt: new Date() }).where(eq(s.produtos.id, id)).returning();
   return c.json(p);
+});
+
+/** Variantes genéricas (ex.: Certificado — 1 ano/2 anos) — nunca apaga, só desativa (igual combo
+ * variantes): pedido antigo referencia a variante, apagar quebraria o histórico. */
+catalogo.put('/produtos/:id/variantes', requireAdmin, zValidator('json', z.array(z.object({
+  nome: z.string().min(1), precoVenda: money, ativo: z.boolean().default(true), ordem: z.number().int().default(0),
+}))), async (c) => {
+  const id = c.req.param('id');
+  for (const v of c.req.valid('json')) {
+    await db().insert(s.produtoVariantes).values({ produtoId: id, nome: v.nome, precoVenda: v.precoVenda.toFixed(2), ativo: v.ativo, ordem: v.ordem })
+      .onConflictDoUpdate({ target: [s.produtoVariantes.produtoId, s.produtoVariantes.nome], set: { precoVenda: v.precoVenda.toFixed(2), ativo: v.ativo, ordem: v.ordem, updatedAt: new Date() } });
+  }
+  return c.json({ ok: true });
 });
 
 catalogo.get('/produtos/:id/historico', requireAdmin, async (c) =>

@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { api, getRole, setRole, type Row } from './api';
 import { authEnabled, sair } from './auth';
+import { Carregando } from './components/ui';
 import Agenda from './pages/Agenda';
 import Cardapio from './pages/Cardapio';
 import Clientes from './pages/Clientes';
@@ -20,6 +21,7 @@ import Pedidos from './pages/Pedidos';
 import Producao from './pages/Producao';
 import Bairros from './pages/Bairros';
 import Usuarios from './pages/Usuarios';
+import Vendedores from './pages/Vendedores';
 
 // Agrupado por assunto (menu/submenu) em vez de uma lista única — mais fácil de achar numa tela
 // com 11 destinos. Os 3 primeiros de "Pedidos" também abastecem a barra inferior no mobile.
@@ -35,7 +37,7 @@ const GRUPOS = [
   { nome: 'Operação', admin: true, links: [
     { to: '/insumos', label: 'Insumos e ficha' }, { to: '/estoque', label: 'Estoque' }, { to: '/bairros', label: 'Bairros e taxas' },
   ] },
-  { nome: 'Financeiro', admin: true, links: [{ to: '/financeiro', label: 'Financeiro' }] },
+  { nome: 'Financeiro', admin: true, links: [{ to: '/financeiro', label: 'Financeiro' }, { to: '/vendedores', label: 'Vendedores e comissão' }] },
   { nome: 'Sistema', admin: true, links: [{ to: '/configuracoes', label: 'Configurações' }, { to: '/usuarios', label: 'Usuários' }] },
 ];
 function Link({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
@@ -61,6 +63,10 @@ export default function App() {
   const [menu, setMenu] = useState(false);
   const admin = me.data?.papel === 'admin';
   const grupos = GRUPOS.filter((g) => !g.admin || admin);
+  // Enquanto /me ainda não respondeu, `admin` é false por padrão — redirecionar nessa hora bate de
+  // volta pro Dashboard mesmo pra quem é admin (acontece em link direto ou F5 numa rota admin).
+  // Só decide "não é admin, manda pra Home" depois que a consulta realmente resolveu.
+  const rotaAdmin = (el: ReactNode) => (admin ? el : me.isLoading ? <Carregando /> : <Navigate to="/" />);
 
   return (
     <Routes>
@@ -89,12 +95,13 @@ export default function App() {
               <Route path="/cardapio" element={<Cardapio admin={admin} />} />
               <Route path="/combos" element={<Combos admin={admin} />} />
               <Route path="/clientes" element={<Clientes />} />
-              <Route path="/insumos" element={admin ? <Insumos /> : <Navigate to="/" />} />
-              <Route path="/estoque" element={admin ? <Estoque /> : <Navigate to="/" />} />
-              <Route path="/bairros" element={admin ? <Bairros /> : <Navigate to="/" />} />
-              <Route path="/financeiro" element={admin ? <Financeiro /> : <Navigate to="/" />} />
-              <Route path="/configuracoes" element={admin ? <Configuracoes /> : <Navigate to="/" />} />
-              <Route path="/usuarios" element={admin ? <Usuarios /> : <Navigate to="/" />} />
+              <Route path="/insumos" element={rotaAdmin(<Insumos />)} />
+              <Route path="/estoque" element={rotaAdmin(<Estoque />)} />
+              <Route path="/bairros" element={rotaAdmin(<Bairros />)} />
+              <Route path="/financeiro" element={rotaAdmin(<Financeiro />)} />
+              <Route path="/vendedores" element={rotaAdmin(<Vendedores />)} />
+              <Route path="/configuracoes" element={rotaAdmin(<Configuracoes />)} />
+              <Route path="/usuarios" element={rotaAdmin(<Usuarios />)} />
             </Routes>
           </main>
           <nav className="no-print md:hidden fixed bottom-0 inset-x-0 bg-surface border-t border-white/10 grid grid-cols-4 z-20 pb-[env(safe-area-inset-bottom)]">

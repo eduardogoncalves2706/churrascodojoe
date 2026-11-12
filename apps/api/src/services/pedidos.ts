@@ -4,16 +4,17 @@ import type { Db } from '../db/client';
 import { schema as s } from '../db/client';
 import { encontrarOuCriarCliente } from './clientes';
 import { custoVariante, custosProdutos } from './custos';
+import { sincronizarComissao } from './comissoes';
 
 export interface ItemInput {
-  produtoId?: string; comboVarianteId?: string; quantidade: number; observacao?: string;
+  produtoId?: string; comboVarianteId?: string; produtoVarianteId?: string; quantidade: number; observacao?: string;
   refrigeranteId?: string; precoUnitario?: number;
 }
 export interface PedidoInput {
   clienteId?: string; novoCliente?: { nome: string; telefone?: string }; nomeCliente?: string;
   canal: Canal; tipo: 'entrega' | 'retirada';
   agendadoPara?: string; itens: ItemInput[]; desconto?: number; taxaEntrega?: number; bairroId?: string;
-  enderecoTexto?: string; referencia?: string; trocoPara?: number; observacoes?: string;
+  enderecoTexto?: string; referencia?: string; trocoPara?: number; observacoes?: string; vendedorId?: string;
   pagamentos?: { forma: 'pix' | 'dinheiro' | 'credito' | 'debito' | 'outro'; valor: number }[];
 }
 
@@ -66,6 +67,17 @@ async function construirLinhas(tx: Tx, custos: Map<string, number | null>, itens
         return { produtoId: alvo?.id, nome: alvo?.nome ?? '', unidade: alvo?.unidadeVenda ?? null, quantidade: Number(ci.quantidade) };
       });
       escolhas = { refrigeranteId: it.refrigeranteId, composicao };
+    } else if (it.produtoVarianteId) {
+      // Variante genérica de produto (catálogo genérico — ex.: Certificado "1 ano"/"2 anos"),
+      // diferente de comboVarianteId (carne escolhida dentro de um combo). Custo vem do produto-pai:
+      // ficha técnica/custo direto não variam por variante nessa v1.
+      const [v] = await tx.select().from(s.produtoVariantes).where(eq(s.produtoVariantes.id, it.produtoVarianteId));
+      if (!v || !v.ativo) throw new ErroNegocio('variante_invalida', 'Variante de produto inválida');
+      const [p] = await tx.select().from(s.produtos).where(eq(s.produtos.id, v.produtoId));
+      if (!p || !p.ativo) throw new ErroNegocio('produto_invalido', 'Produto inválido');
+      preco = toCents(v.precoVenda);
+      custo = custos.get(p.id) ?? null;
+      descricao = `${p.nome} – ${v.nome}`;
     } else if (it.produtoId) {
       const [p] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.produtoId));
       if (!p || !p.ativo) throw new ErroNegocio('produto_invalido', 'Produto inválido');
@@ -78,7 +90,7 @@ async function construirLinhas(tx: Tx, custos: Map<string, number | null>, itens
     subtotal += sub;
     if (custo == null) custoCompleto = false; else custoTotal += Math.round(custo * it.quantidade);
     linhas.push({
-      pedidoId: '', produtoId: it.produtoId ?? null, comboVarianteId: it.comboVarianteId ?? null, descricaoSnapshot: descricao,
+      pedidoId: '', produtoId: it.produtoId ?? null, comboVarianteId: it.comboVarianteId ?? null, produtoVarianteId: it.produtoVarianteId ?? null, descricaoSnapshot: descricao,
       quantidade: String(it.quantidade), precoUnitarioSnapshot: fromCents(preco), custoUnitarioSnapshot: custo == null ? null : fromCents(custo),
       subtotal: fromCents(sub), escolhas, observacao: it.observacao ?? null,
     });
@@ -87,14 +99,19 @@ async function construirLinhas(tx: Tx, custos: Map<string, number | null>, itens
 }
 
 /** Quanto cada produto precisa descontar/devolver do estoque de venda, a partir das linhas do
- * pedido — tanto item avulso (produtoId direto) quanto item de dentro de um combo (via composicao,
+ * pedido — item avulso (produtoId direto), item de variante genérica (produtoVarianteId — estoque
+ * é do produto-pai, não por variante, nessa v1) ou item de dentro de um combo (via composicao,
  * que já carrega produtoId pra isso). */
-function itensParaEstoque(linhas: LinhaPedido[]) {
+async function itensParaEstoque(tx: Tx, linhas: LinhaPedido[]) {
   const porProduto = new Map<string, number>();
   const soma = (produtoId: string, qtd: number) => porProduto.set(produtoId, (porProduto.get(produtoId) ?? 0) + qtd);
+  const varianteIds = [...new Set(linhas.map((l) => l.produtoVarianteId).filter((x): x is string => !!x))];
+  const variantes = varianteIds.length ? await tx.select().from(s.produtoVariantes).where(inArray(s.produtoVariantes.id, varianteIds)) : [];
+  const produtoDaVariante = new Map(variantes.map((v) => [v.id, v.produtoId]));
   for (const l of linhas) {
     const qtdPedida = Number(l.quantidade);
     if (l.produtoId) soma(l.produtoId, qtdPedida);
+    if (l.produtoVarianteId) { const pid = produtoDaVariante.get(l.produtoVarianteId); if (pid) soma(pid, qtdPedida); }
     const composicao = (l.escolhas as { composicao?: { produtoId?: string; quantidade: number }[] } | null)?.composicao;
     for (const c of composicao ?? []) if (c.produtoId) soma(c.produtoId, c.quantidade * qtdPedida);
   }
@@ -135,6 +152,11 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string, s
       nome = c.nome; telefone = c.telefone;
     }
 
+    if (input.vendedorId) {
+      const [v] = await tx.select().from(s.vendedores).where(eq(s.vendedores.id, input.vendedorId));
+      if (!v || !v.ativo) throw new ErroNegocio('vendedor_invalido', 'Vendedor inválido');
+    }
+
     let taxa = toCents(input.taxaEntrega ?? 0);
     if (input.tipo === 'entrega' && input.taxaEntrega == null && input.bairroId) {
       const [b] = await tx.select().from(s.bairrosEntrega).where(eq(s.bairrosEntrega.id, input.bairroId));
@@ -155,7 +177,7 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string, s
       agendadoPara: agendado, status: statusInicial, enderecoTexto: input.enderecoTexto, bairroId: input.bairroId, referencia: input.referencia,
       subtotal: fromCents(subtotal), desconto: fromCents(desconto), taxaEntrega: fromCents(taxa), total: fromCents(total),
       custoTotal: custoCompleto ? fromCents(custoTotal) : null, statusPagamento: statusPagamentoDe(total, pagos),
-      trocoPara: input.trocoPara != null ? fromCents(toCents(input.trocoPara)) : null, observacoes: input.observacoes, createdBy: usuario,
+      trocoPara: input.trocoPara != null ? fromCents(toCents(input.trocoPara)) : null, observacoes: input.observacoes, vendedorId: input.vendedorId ?? null, createdBy: usuario,
     }).returning();
     await tx.insert(s.pedidoItens).values(linhas.map((l) => ({ ...l, pedidoId: pedido.id })));
     await tx.insert(s.pedidoStatusHistorico).values({ pedidoId: pedido.id, de: null, para: statusInicial, usuario });
@@ -164,7 +186,8 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string, s
     }
     // Já desconta no pré-pedido do site (aguardando_confirmacao), não só quando confirmado — se for
     // recusado depois, recusarPedidoSite devolve.
-    await ajustarEstoqueVenda(tx, itensParaEstoque(linhas), -1);
+    await ajustarEstoqueVenda(tx, await itensParaEstoque(tx, linhas), -1);
+    await sincronizarComissao(tx, pedido.id);
     return pedido;
   });
 }
@@ -186,15 +209,16 @@ export async function atualizarItens(db: Db, pedidoId: string, itens: ItemInput[
 
     // Estoque de venda: devolve os itens antigos e desconta os novos — equivalente a "desfaz e refaz".
     const antigos = await tx.select().from(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
-    await ajustarEstoqueVenda(tx, itensParaEstoque(antigos), 1);
+    await ajustarEstoqueVenda(tx, await itensParaEstoque(tx, antigos), 1);
     await tx.delete(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
     await tx.insert(s.pedidoItens).values(linhas.map((l) => ({ ...l, pedidoId })));
-    await ajustarEstoqueVenda(tx, itensParaEstoque(linhas), -1);
+    await ajustarEstoqueVenda(tx, await itensParaEstoque(tx, linhas), -1);
     await tx.update(s.pedidos).set({
       subtotal: fromCents(subtotal), total: fromCents(total), custoTotal: custoCompleto ? fromCents(custoTotal) : null,
       statusPagamento: statusPagamentoDe(total, toCents(pagos[0].v)), updatedAt: new Date(),
     }).where(eq(s.pedidos.id, pedidoId));
     await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: p.status, usuario, nota: 'Itens do pedido alterados' });
+    await sincronizarComissao(tx, pedidoId);
   });
 }
 
@@ -247,8 +271,9 @@ export async function cancelarPedido(db: Db, pedidoId: string, motivo: string, u
     // "recusado" já devolveu o estoque de venda em recusarPedidoSite — não devolve de novo aqui.
     if (p.status !== 'recusado') {
       const itens = await tx.select().from(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
-      await ajustarEstoqueVenda(tx, itensParaEstoque(itens), 1);
+      await ajustarEstoqueVenda(tx, await itensParaEstoque(tx, itens), 1);
     }
+    await sincronizarComissao(tx, pedidoId);
   });
 }
 
@@ -260,6 +285,7 @@ export async function confirmarPedidoSite(db: Db, pedidoId: string, usuario: str
     if (p.status !== 'aguardando_confirmacao') throw new ErroNegocio('status_invalido', 'Pedido não está aguardando confirmação');
     await tx.update(s.pedidos).set({ status: 'confirmado', updatedAt: new Date() }).where(eq(s.pedidos.id, pedidoId));
     await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: 'confirmado', usuario });
+    await sincronizarComissao(tx, pedidoId);
   });
 }
 
@@ -274,7 +300,8 @@ export async function recusarPedidoSite(db: Db, pedidoId: string, motivo: string
     await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: 'recusado', usuario, nota: motivo });
     // O pré-pedido já tinha descontado o estoque de venda na criação (criarPedido) — devolve.
     const itens = await tx.select().from(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
-    await ajustarEstoqueVenda(tx, itensParaEstoque(itens), 1);
+    await ajustarEstoqueVenda(tx, await itensParaEstoque(tx, itens), 1);
+    await sincronizarComissao(tx, pedidoId);
   });
 }
 

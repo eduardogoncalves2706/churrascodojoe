@@ -5,7 +5,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api, brl, hora, num, STATUS_LABEL, type Row } from '../api';
 import { Carregando, Erro, MensagemWhats, Modal, SeletorMotivo } from '../components/ui';
 
-interface ItemEdit { key: string; produtoId?: string; comboVarianteId?: string; refrigeranteId?: string; nome: string; quantidade: number; observacao: string }
+interface ItemEdit { key: string; produtoId?: string; comboVarianteId?: string; produtoVarianteId?: string; refrigeranteId?: string; nome: string; quantidade: number; observacao: string }
 const BLOQUEADO = ['saiu_entrega', 'entregue', 'retirado', 'cancelado'];
 const MOTIVOS_RECUSA = ['Item esgotado', 'Fora da área de entrega', 'Fechados nesse horário', 'Pedido duplicado'];
 const MOTIVOS_CANCELAMENTO = ['Cliente desistiu', 'Pedido duplicado / erro de lançamento', 'Item esgotado', 'Problema no pagamento', 'Não conseguimos entregar'];
@@ -28,6 +28,7 @@ export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; o
   const [comboSel, setComboSel] = useState({ comboId: '', varianteId: '', refrigeranteId: '' });
   const q = useQuery({ queryKey: ['pedido', id], queryFn: () => api<Row>(`/pedidos/${id}`) });
   const cols = useQuery({ queryKey: ['colaboradores'], queryFn: () => api<Row[]>('/colaboradores') });
+  const vends = useQuery({ queryKey: ['vendedores'], queryFn: () => api<Row[]>('/vendedores') });
   const prods = useQuery({ queryKey: ['produtos'], queryFn: () => api<Row[]>('/produtos'), enabled: editandoItens });
   const combos = useQuery({ queryKey: ['combos'], queryFn: () => api<Row[]>('/combos'), enabled: editandoItens });
   const refresh = () => { qc.invalidateQueries({ queryKey: ['pedido', id] }); qc.invalidateQueries({ queryKey: ['pedidos'] }); };
@@ -37,6 +38,7 @@ export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; o
   const confirmarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/confirmar-site`, { method: 'POST' }), onSuccess: refresh });
   const recusarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/recusar-site`, { method: 'POST', body: { motivo: motivoRecusa } }), onSuccess: refresh });
   const motoboy = useMutation({ mutationFn: (motoboyId: string) => api(`/pedidos/${id}`, { method: 'PATCH', body: { motoboyId: motoboyId || null } }), onSuccess: refresh });
+  const vendedor = useMutation({ mutationFn: (vendedorId: string) => api(`/pedidos/${id}`, { method: 'PATCH', body: { vendedorId: vendedorId || null } }), onSuccess: refresh });
   const [copiadoPix, setCopiadoPix] = useState(false);
   const gerarPix = useMutation({ mutationFn: () => api<{ qrCode: string; qrCodeBase64: string; ticketUrl: string | null }>(`/pedidos/${id}/pagamento-pix`, { method: 'POST' }) });
   const copiarPix = async () => { if (!gerarPix.data) return; await navigator.clipboard.writeText(gerarPix.data.qrCode); setCopiadoPix(true); setTimeout(() => setCopiadoPix(false), 2000); };
@@ -46,7 +48,7 @@ export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; o
   const religar = useMutation({ mutationFn: (clienteId: string) => api(`/pedidos/${id}`, { method: 'PATCH', body: { clienteId } }), onSuccess: () => { setBuscaCliente(''); setSugestoesCliente([]); refresh(); } });
   const salvarItens = useMutation({
     mutationFn: () => api(`/pedidos/${id}/itens`, { method: 'PUT', body: itensEdit.map((i) => ({
-      ...(i.comboVarianteId ? { comboVarianteId: i.comboVarianteId, refrigeranteId: i.refrigeranteId || undefined } : { produtoId: i.produtoId }),
+      ...(i.comboVarianteId ? { comboVarianteId: i.comboVarianteId, refrigeranteId: i.refrigeranteId || undefined } : i.produtoVarianteId ? { produtoVarianteId: i.produtoVarianteId } : { produtoId: i.produtoId }),
       quantidade: i.quantidade, observacao: i.observacao || undefined,
     })) }),
     onSuccess: () => { setEditandoItens(false); refresh(); },
@@ -62,7 +64,7 @@ export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; o
 
   const abrirEdicaoItens = () => {
     setItensEdit(p.itens.map((i: Row) => ({
-      key: crypto.randomUUID(), produtoId: i.produtoId ?? undefined, comboVarianteId: i.comboVarianteId ?? undefined,
+      key: crypto.randomUUID(), produtoId: i.produtoId ?? undefined, comboVarianteId: i.comboVarianteId ?? undefined, produtoVarianteId: i.produtoVarianteId ?? undefined,
       refrigeranteId: i.escolhas?.refrigeranteId ?? undefined, nome: i.descricaoSnapshot, quantidade: Number(i.quantidade), observacao: i.observacao ?? '',
     })));
     setEditandoItens(true);
@@ -168,6 +170,7 @@ export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; o
         <Link className="btn-ghost" to={`/pedidos/${id}/comanda`} target="_blank">Comanda</Link>
         <button className="btn-ghost" onClick={copiar}>{copiado ? 'Copiado!' : 'Resumo WhatsApp'}</button>
         {p.tipo === 'entrega' && <select className="!w-auto" value={p.motoboyId ?? ''} onChange={(e) => motoboy.mutate(e.target.value)}><option value="">Motoboy…</option>{cols.data?.filter((c) => c.tipo === 'motoboy').map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select>}
+        {!!vends.data?.length && <select className="!w-auto" value={p.vendedorId ?? ''} onChange={(e) => vendedor.mutate(e.target.value)}><option value="">Vendedor…</option>{vends.data.map((v) => <option key={v.id} value={v.id}>{v.nome} ({v.codigo})</option>)}</select>}
       </div>}
       {(status.isError || pagar.isError || cancelar.isError) && <Erro e={status.error ?? pagar.error ?? cancelar.error} />}
 

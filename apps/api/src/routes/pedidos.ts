@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { isAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
 import { atualizarItens, cancelarPedido, confirmarPedidoSite, criarPedido, ErroNegocio, mudarStatus, recusarPedidoSite, registrarPagamento, resumoWhatsapp, STATUS_EDICAO_BLOQUEADA } from '../services/pedidos';
+import { sincronizarComissao } from '../services/comissoes';
 import { lerConfig } from '../services/configuracoes';
 import { necessidadeInsumos, produtosPedidos } from '../services/estoque';
 import { criarCobrancaPix } from '../services/mercadoPago';
@@ -14,7 +15,7 @@ export const pedidos = new Hono<Env>();
 const db = () => getDb();
 
 const itemSchema = z.object({
-  produtoId: z.uuid().optional(), comboVarianteId: z.uuid().optional(), quantidade: z.number().positive(),
+  produtoId: z.uuid().optional(), comboVarianteId: z.uuid().optional(), produtoVarianteId: z.uuid().optional(), quantidade: z.number().positive(),
   observacao: z.string().optional(), refrigeranteId: z.uuid().optional(), precoUnitario: z.number().min(0).optional(),
 });
 const pedidoSchema = z.object({
@@ -22,7 +23,7 @@ const pedidoSchema = z.object({
   canal: z.enum(CANAIS).default('whatsapp'), tipo: z.enum(TIPOS_PEDIDO).default('retirada'), agendadoPara: z.iso.datetime({ offset: true }).optional(),
   itens: z.array(itemSchema).min(1), desconto: z.number().min(0).optional(), taxaEntrega: z.number().min(0).optional(), bairroId: z.uuid().optional(),
   enderecoTexto: z.string().optional(), referencia: z.string().optional(), trocoPara: z.number().min(0).optional(), observacoes: z.string().optional(),
-  pagamentos: z.array(z.object({ forma: z.enum(FORMAS_PAGAMENTO), valor: z.number().positive() })).optional(),
+  vendedorId: z.uuid().optional(), pagamentos: z.array(z.object({ forma: z.enum(FORMAS_PAGAMENTO), valor: z.number().positive() })).optional(),
 });
 
 /** Converte ErroNegocio em resposta padronizada. */
@@ -77,10 +78,10 @@ pedidos.get('/pedidos/:id', async (c) => {
   return c.json(isAdmin(c) ? p : stripCustos(p));
 });
 
-const CAMPOS_LIVRES_MESMO_BLOQUEADO = ['motoboyId', 'clienteId'];
+const CAMPOS_LIVRES_MESMO_BLOQUEADO = ['motoboyId', 'clienteId', 'vendedorId'];
 pedidos.patch('/pedidos/:id', zValidator('json', z.object({
   observacoes: z.string().nullish(), enderecoTexto: z.string().nullish(), referencia: z.string().nullish(), bairroId: z.uuid().nullish(), motoboyId: z.uuid().nullish(),
-  clienteId: z.uuid().nullish(), taxaEntrega: z.number().min(0).optional(), desconto: z.number().min(0).optional(),
+  clienteId: z.uuid().nullish(), vendedorId: z.uuid().nullish(), taxaEntrega: z.number().min(0).optional(), desconto: z.number().min(0).optional(),
 })), async (c) => {
   const id = c.req.param('id');
   const atual = await carregar(id);
@@ -106,6 +107,7 @@ pedidos.patch('/pedidos/:id', zValidator('json', z.object({
     await db().insert(s.pedidoStatusHistorico).values({ pedidoId: id, de: atual.status, para: atual.status, usuario: c.get('user').nome, nota: `Ajuste manual: taxa ${nTaxa.toFixed(2)}, desconto ${nDesc.toFixed(2)}` });
   }
   await db().update(s.pedidos).set(set).where(eq(s.pedidos.id, id));
+  if (b.vendedorId !== undefined || taxaEntrega !== undefined || desconto !== undefined) await db().transaction((tx) => sincronizarComissao(tx, id));
   return c.json(await carregar(id));
 });
 

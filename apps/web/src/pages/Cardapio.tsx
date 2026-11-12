@@ -4,22 +4,59 @@ import { api, brl, brlC, pct, type Row } from '../api';
 import { Carregando, Drawer, Erro, Titulo, UploadImagem } from '../components/ui';
 
 const CATEGORIAS = ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia', 'outros'];
+interface Atributo { chave: string; valor: string }
 interface FormProduto {
   id?: string; nome: string; categoria: string; unidadeVenda: string; precoVenda: string;
   permiteFracionado: boolean; parceiro: string; vendidoAPrecoDeCusto: boolean; ativo: boolean;
   visivelSite: boolean; descricaoCurta: string; controlaEstoque: boolean; imagemKey: string | null;
+  atributosExtra: Atributo[];
 }
 const FORM_VAZIO: FormProduto = {
   nome: '', categoria: 'carne', unidadeVenda: 'unidade', precoVenda: '', permiteFracionado: false, parceiro: '', vendidoAPrecoDeCusto: false, ativo: true,
-  visivelSite: true, descricaoCurta: '', controlaEstoque: false, imagemKey: null,
+  visivelSite: true, descricaoCurta: '', controlaEstoque: false, imagemKey: null, atributosExtra: [],
 };
 const paraForm = (p: Row): FormProduto => ({
   id: p.id, nome: p.nome, categoria: p.categoria, unidadeVenda: p.unidadeVenda, precoVenda: String(p.precoVenda),
   permiteFracionado: p.permiteFracionado, parceiro: p.parceiro ?? '', vendidoAPrecoDeCusto: p.vendidoAPrecoDeCusto, ativo: p.ativo,
   visivelSite: p.visivelSite ?? true, descricaoCurta: p.descricaoCurta ?? '', controlaEstoque: p.controlaEstoque ?? false, imagemKey: p.imagemKey ?? null,
+  atributosExtra: p.atributosExtra ?? [],
 });
 
-function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProduto; onSalvo: () => void; onCancelar: () => void }) {
+interface VarianteLinha { id?: string; nome: string; precoVenda: string; ativo: boolean }
+
+/** Variações genéricas de preço do produto (catálogo genérico — ex.: Certificado "1 ano"/"2 anos").
+ * Só existe depois do produto já salvo (precisa do id) — igual ficha técnica/variantes de combo.
+ * Salva por conta própria (não fecha o drawer, só atualiza a lista) — diferente do botão "Salvar"
+ * principal, pra não precisar fechar/reabrir o produto só pra ajustar uma variação. */
+function VariantesProduto({ produtoId, iniciais }: { produtoId: string; iniciais: Row[] }) {
+  const qc = useQueryClient();
+  const [linhas, setLinhas] = useState<VarianteLinha[]>(iniciais.map((v) => ({ id: v.id, nome: v.nome, precoVenda: String(v.precoVenda ?? v.precoCents / 100), ativo: v.ativo })));
+  const salvar = useMutation({
+    mutationFn: () => api(`/produtos/${produtoId}/variantes`, { method: 'PUT', body: linhas.filter((l) => l.nome.trim()).map((l, i) => ({ nome: l.nome, precoVenda: Number(l.precoVenda.replace(',', '.') || 0), ativo: l.ativo, ordem: i })) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['produtos'] }),
+  });
+  return (
+    <div className="space-y-2 pt-2 border-t border-white/10">
+      <p className="text-xs font-label font-bold uppercase text-cream/60">Variações (opcional — ex.: "1 ano" / "2 anos", cada uma com seu preço)</p>
+      {linhas.map((l, i) => (
+        <div key={i} className="flex gap-2 items-center flex-wrap">
+          <input className="flex-1 min-w-[120px]" placeholder="Nome da opção" value={l.nome} onChange={(e) => setLinhas(linhas.map((x, j) => (j === i ? { ...x, nome: e.target.value } : x)))} />
+          <input className="!w-24" inputMode="decimal" placeholder="Preço" value={l.precoVenda} onChange={(e) => setLinhas(linhas.map((x, j) => (j === i ? { ...x, precoVenda: e.target.value } : x)))} />
+          <label className="flex items-center gap-1 normal-case text-sm"><input type="checkbox" className="!w-5 !min-h-0" checked={l.ativo} onChange={(e) => setLinhas(linhas.map((x, j) => (j === i ? { ...x, ativo: e.target.checked } : x)))} />Ativa</label>
+          {!l.id && <button className="btn-ghost !px-3" onClick={() => setLinhas(linhas.filter((_, j) => j !== i))}>×</button>}
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <button className="btn-ghost" onClick={() => setLinhas([...linhas, { nome: '', precoVenda: '', ativo: true }])}>+ variação</button>
+        <button className="btn-ghost" disabled={salvar.isPending} onClick={() => salvar.mutate()}>{salvar.isPending ? 'Salvando…' : 'Salvar variações'}</button>
+      </div>
+      {linhas.some((l) => l.id) && <p className="text-xs text-cream/50">Uma variação já usada num pedido nunca é apagada — pra tirar de venda, desmarque "Ativa".</p>}
+      {salvar.isError && <Erro e={salvar.error} />}
+    </div>
+  );
+}
+
+function FormProdutoCard({ inicial, variantesIniciais, onSalvo, onCancelar }: { inicial: FormProduto; variantesIniciais: Row[]; onSalvo: () => void; onCancelar: () => void }) {
   const [f, setF] = useState(inicial);
   const up = (p: Partial<FormProduto>) => setF((x) => ({ ...x, ...p }));
   const salvar = useMutation({
@@ -27,7 +64,7 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
       const body = {
         nome: f.nome, categoria: f.categoria, unidadeVenda: f.unidadeVenda, precoVenda: Number(f.precoVenda.replace(',', '.') || 0), permiteFracionado: f.permiteFracionado,
         parceiro: f.parceiro || null, vendidoAPrecoDeCusto: f.vendidoAPrecoDeCusto, ativo: f.ativo, visivelSite: f.visivelSite, descricaoCurta: f.descricaoCurta || null,
-        controlaEstoque: f.controlaEstoque, imagemKey: f.imagemKey,
+        controlaEstoque: f.controlaEstoque, imagemKey: f.imagemKey, atributosExtra: f.atributosExtra.filter((a) => a.chave.trim()),
       };
       return f.id ? api(`/produtos/${f.id}`, { method: 'PATCH', body }) : api('/produtos', { method: 'POST', body });
     },
@@ -52,11 +89,26 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
       </div>
       <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.controlaEstoque} onChange={(e) => up({ controlaEstoque: e.target.checked })} />Controlar estoque pra venda</label>
       {f.controlaEstoque && <p className="text-xs text-cream/60">Cadastra quantas unidades vão pra venda em Estoque → "Produtos prontos pra vender" — some sozinho de Novo pedido quando zerar.</p>}
+
+      <div className="space-y-2 pt-2 border-t border-white/10">
+        <p className="text-xs font-label font-bold uppercase text-cream/60">Atributos extra (catálogo genérico — guarda o que for específico do seu negócio)</p>
+        {f.atributosExtra.map((a, i) => (
+          <div key={i} className="flex gap-2 items-start flex-wrap">
+            <input className="flex-1 min-w-[120px]" placeholder="Campo (ex.: validade)" value={a.chave} onChange={(e) => up({ atributosExtra: f.atributosExtra.map((x, j) => (j === i ? { ...x, chave: e.target.value } : x)) })} />
+            <input className="flex-[2] min-w-[160px]" placeholder="Valor" value={a.valor} onChange={(e) => up({ atributosExtra: f.atributosExtra.map((x, j) => (j === i ? { ...x, valor: e.target.value } : x)) })} />
+            <button className="btn-ghost !px-3" onClick={() => up({ atributosExtra: f.atributosExtra.filter((_, j) => j !== i) })}>×</button>
+          </div>
+        ))}
+        <button className="btn-ghost" onClick={() => up({ atributosExtra: [...f.atributosExtra, { chave: '', valor: '' }] })}>+ atributo</button>
+      </div>
+
       <div className="flex gap-2">
         <button className="btn" disabled={!f.nome || salvar.isPending} onClick={() => salvar.mutate()}>{salvar.isPending ? 'Salvando…' : 'Salvar'}</button>
         <button className="btn-ghost" onClick={onCancelar}>Cancelar</button>
       </div>
       {salvar.isError && <Erro e={salvar.error} />}
+
+      {f.id && <VariantesProduto produtoId={f.id} iniciais={variantesIniciais} />}
     </div>
   );
 }
@@ -72,6 +124,7 @@ export default function Cardapio({ admin }: { admin: boolean }) {
   const [previa, setPrevia] = useState<Row | null>(null);
   const [hist, setHist] = useState<Row[] | null>(null);
   const [form, setForm] = useState<FormProduto | null>(null);
+  const [formVariantes, setFormVariantes] = useState<Row[]>([]);
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [busca, setBusca] = useState('');
 
@@ -93,10 +146,10 @@ export default function Cardapio({ admin }: { admin: boolean }) {
   const fechar = () => { setForm(null); refresh(); };
 
   return (
-    <div className="space-y-4"><Titulo extra={<div className="flex gap-2">{admin && <button className="btn" onClick={() => setForm(FORM_VAZIO)}>+ Novo produto</button>}<button className="btn-ghost" onClick={csv}>Exportar CSV</button></div>}>Cardápio e preços</Titulo>
+    <div className="space-y-4"><Titulo extra={<div className="flex gap-2">{admin && <button className="btn" onClick={() => { setForm(FORM_VAZIO); setFormVariantes([]); }}>+ Novo produto</button>}<button className="btn-ghost" onClick={csv}>Exportar CSV</button></div>}>Cardápio e preços</Titulo>
       {admin && form && (
         <Drawer titulo={form.id ? `Editar — ${form.nome}` : 'Novo produto'} onFechar={() => setForm(null)}>
-          <FormProdutoCard inicial={form} onSalvo={fechar} onCancelar={() => setForm(null)} />
+          <FormProdutoCard inicial={form} variantesIniciais={formVariantes} onSalvo={fechar} onCancelar={() => setForm(null)} />
         </Drawer>
       )}
       {admin && sel.size > 0 && <div className="card flex flex-wrap items-end gap-2"><div><label>Reajuste %</label><input className="!w-24" value={reaj.percentual} onChange={(e) => setReaj({ ...reaj, percentual: e.target.value })} /></div>
@@ -124,7 +177,7 @@ export default function Cardapio({ admin }: { admin: boolean }) {
               <td className={`td text-right ${baixa ? 'text-brasa font-bold' : ''}`}>{p.margemCents == null ? '—' : `${brlC(p.margemCents)} · ${pct(p.margemPct)}`}{baixa && ' ⚠'}</td></>}
             <td className="td"><input type="checkbox" className="!w-6 !min-h-0" aria-label="Disponível hoje" checked={p.disponivelHoje} onChange={(e) => patch.mutate({ id: p.id, body: { disponivelHoje: e.target.checked } })} /></td>
             {admin && <td className="td"><input type="checkbox" className="!w-6 !min-h-0" aria-label="Aparece no site" checked={p.visivelSite} onChange={(e) => patch.mutate({ id: p.id, body: { visivelSite: e.target.checked } })} /></td>}
-            {admin && <td className="td"><button className="text-gold underline text-sm" onClick={() => setForm(paraForm(p))}>editar</button></td>}</tr>);
+            {admin && <td className="td"><button className="text-gold underline text-sm" onClick={() => { setForm(paraForm(p)); setFormVariantes(p.variantes ?? []); }}>editar</button></td>}</tr>);
         })}</tbody></table></div></div>
   );
 }

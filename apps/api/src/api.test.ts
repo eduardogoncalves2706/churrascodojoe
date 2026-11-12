@@ -176,6 +176,90 @@ describe('fluxo de novo pedido', () => {
     expect(Number(zerado.estoqueVenda)).toBe(0);
     expect(zerado.controlaEstoque).toBe(true);
   });
+
+  it('catálogo genérico: produto com variantes vende pelo preço da variante, não do produto-pai, e desconta o estoque do pai', async () => {
+    const prod = await json(await call('/produtos', { method: 'POST', body: JSON.stringify({
+      nome: `Certificado teste ${crypto.randomUUID()}`, categoria: 'outros', precoVenda: 0, controlaEstoque: true,
+      atributosExtra: [{ chave: 'tipo', valor: 'e-CPF A1' }],
+    }) }));
+    await call(`/produtos/${prod.id}`, { method: 'PATCH', body: JSON.stringify({ estoqueTotal: 10, estoqueVenda: 10 }) });
+    await call(`/produtos/${prod.id}/variantes`, { method: 'PUT', body: JSON.stringify([
+      { nome: '1 ano', precoVenda: 120, ativo: true, ordem: 0 }, { nome: '2 anos', precoVenda: 200, ativo: true, ordem: 1 },
+    ]) });
+
+    const comVariantes = (await json(await call('/produtos'))).find((x: any) => x.id === prod.id);
+    expect(comVariantes.variantes).toHaveLength(2);
+    expect(comVariantes.atributosExtra).toEqual([{ chave: 'tipo', valor: 'e-CPF A1' }]);
+    const variante2anos = comVariantes.variantes.find((v: any) => v.nome === '2 anos');
+    expect(variante2anos.precoCents).toBe(20000);
+
+    const pedido = await json(await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'Certificado', canal: 'balcao', tipo: 'retirada', itens: [{ produtoVarianteId: variante2anos.id, quantidade: 1 }] }) }));
+    expect(Number(pedido.total)).toBe(200); // preço da variante, não o precoVenda=0 do produto-pai
+    const detalhe = await json(await call(`/pedidos/${pedido.id}`));
+    expect(detalhe.itens[0].descricaoSnapshot).toContain('2 anos');
+
+    const depoisVenda = (await json(await call('/produtos'))).find((x: any) => x.id === prod.id);
+    expect(Number(depoisVenda.estoqueVenda)).toBe(9); // estoque é do produto, não da variante
+
+    // reajuste de preço do produto-pai não altera a variante (preço fixo por variante)
+    await call(`/produtos/${prod.id}`, { method: 'PATCH', body: JSON.stringify({ precoVenda: 999 }) });
+    const varianteInalterada = (await json(await call('/produtos'))).find((x: any) => x.id === prod.id).variantes.find((v: any) => v.nome === '2 anos');
+    expect(varianteInalterada.precoCents).toBe(20000);
+  });
+
+  it('comissão de vendedor: calcula automático (% e fixo), admin ajusta manual, cancelar anula', async () => {
+    const coca = (await json(await call('/produtos'))).find((p: any) => p.nome === 'Coca');
+
+    const vPct = await json(await call('/vendedores', { method: 'POST', body: JSON.stringify({ nome: `Vendedor % ${crypto.randomUUID()}`, codigo: `PCT${crypto.randomUUID().slice(0, 8)}`, tipoComissao: 'percentual', valorComissao: 10 }) }));
+    const vFixo = await json(await call('/vendedores', { method: 'POST', body: JSON.stringify({ nome: `Vendedor fixo ${crypto.randomUUID()}`, codigo: `FIX${crypto.randomUUID().slice(0, 8)}`, tipoComissao: 'fixo', valorComissao: 5 }) }));
+    expect(vPct.ativo).toBe(true);
+
+    // 10% de 2 cocas (R$ 30) = R$ 3,00
+    const pedidoPct = await json(await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'Comissão %', canal: 'balcao', tipo: 'retirada', vendedorId: vPct.id, itens: [{ produtoId: coca.id, quantidade: 2 }] }) }));
+    const comissoesPct = await json(await call(`/comissoes?vendedorId=${vPct.id}`));
+    const comPct = comissoesPct.find((x: any) => x.pedidoId === pedidoPct.id);
+    expect(Number(comPct.valorCalculado)).toBeCloseTo(3.0, 2);
+    expect(comPct.status).toBe('pendente');
+    expect(comPct.valorFinal).toBeNull();
+
+    // fixo: sempre R$5, independente do total do pedido
+    const pedidoFixo = await json(await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'Comissão fixa', canal: 'balcao', tipo: 'retirada', vendedorId: vFixo.id, itens: [{ produtoId: coca.id, quantidade: 1 }] }) }));
+    const comissoesFixo = await json(await call(`/comissoes?vendedorId=${vFixo.id}`));
+    const comFixo = comissoesFixo.find((x: any) => x.pedidoId === pedidoFixo.id);
+    expect(Number(comFixo.valorCalculado)).toBe(5);
+    expect(comFixo.vendedorNome).toBe(vFixo.nome);
+    expect(comFixo.numeroDia).toBe(pedidoFixo.numeroDia);
+
+    // editar itens recalcula o valor "do sistema" sem derrubar um ajuste manual já feito
+    await call(`/comissoes/${comPct.id}`, { method: 'PATCH', body: JSON.stringify({ valorFinal: 1, motivoAjuste: 'atribuição incorreta, corrigido' }) });
+    await call(`/pedidos/${pedidoPct.id}/itens`, { method: 'PUT', body: JSON.stringify([{ produtoId: coca.id, quantidade: 4 }]) });
+    const comPctDepois = (await json(await call(`/comissoes?vendedorId=${vPct.id}`))).find((x: any) => x.pedidoId === pedidoPct.id);
+    expect(Number(comPctDepois.valorCalculado)).toBeCloseTo(6.0, 2); // 10% de 4 cocas recalculado
+    expect(Number(comPctDepois.valorFinal)).toBe(1); // ajuste manual preservado
+
+    // cancelar o pedido anula a comissão (nunca apaga, só muda status)
+    await call(`/pedidos/${pedidoFixo.id}/cancelar`, { method: 'POST', body: JSON.stringify({ motivo: 'teste' }) });
+    const comFixoDepois = (await json(await call(`/comissoes?vendedorId=${vFixo.id}`))).find((x: any) => x.pedidoId === pedidoFixo.id);
+    expect(comFixoDepois.status).toBe('cancelada');
+
+    // operador escolhe vendedor ao criar pedido (lista aberta, sem o valor da comissão) mas não
+    // acessa cadastro/acompanhamento (dado financeiro)
+    const listaOperador = await json(await call('/vendedores', { role: 'operador' }));
+    expect(listaOperador[0]).not.toHaveProperty('valorComissao');
+    expect((await call('/vendedores', { method: 'POST', role: 'operador', body: JSON.stringify({ nome: 'X', codigo: `X${crypto.randomUUID().slice(0, 8)}` }) })).status).toBe(403);
+    expect((await call('/comissoes', { role: 'operador' })).status).toBe(403);
+  });
+
+  it('vendedor inválido/inativo não pode ser atribuído a um pedido novo', async () => {
+    const coca = (await json(await call('/produtos'))).find((p: any) => p.nome === 'Coca');
+    const r1 = await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'X', canal: 'balcao', tipo: 'retirada', vendedorId: crypto.randomUUID(), itens: [{ produtoId: coca.id, quantidade: 1 }] }) });
+    expect(r1.status).toBe(400);
+
+    const v = await json(await call('/vendedores', { method: 'POST', body: JSON.stringify({ nome: `Inativo ${crypto.randomUUID()}`, codigo: `INA${crypto.randomUUID().slice(0, 8)}` }) }));
+    await call(`/vendedores/${v.id}`, { method: 'PATCH', body: JSON.stringify({ ativo: false }) });
+    const r2 = await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'X', canal: 'balcao', tipo: 'retirada', vendedorId: v.id, itens: [{ produtoId: coca.id, quantidade: 1 }] }) });
+    expect(r2.status).toBe(400);
+  });
 });
 
 describe('clientes', () => {
