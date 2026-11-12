@@ -1,5 +1,5 @@
-import { toCents, fromCents, formatQtd, STATUS_PEDIDO, dataOperacaoLocal, type Canal, type StatusPedido } from '@joe/shared';
-import { and, eq, sql } from 'drizzle-orm';
+import { toCents, fromCents, formatComposicaoLinha, STATUS_PEDIDO, dataOperacaoLocal, type Canal, type StatusPedido } from '@joe/shared';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { schema as s } from '../db/client';
 import { encontrarOuCriarCliente } from './clientes';
@@ -54,13 +54,17 @@ async function construirLinhas(tx: Tx, custos: Map<string, number | null>, itens
         [refri] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.refrigeranteId));
         if (refri) descricao += ` · Refri: ${refri.nome}`;
       }
-      // Composição snapshot (para a comanda mostrar o detalhe do combo): resolve carne e refrigerante escolhidos.
-      const nomesInsumo = await tx.select().from(s.produtos);
-      const nome = (id: string) => nomesInsumo.find((p) => p.id === id)?.nome ?? '';
-      const composicao = itensCombo.map((ci) => ({
-        nome: ci.ehCarneEscolhida ? carne.nome : ci.grupoEscolha === 'refrigerante' && refri ? refri.nome : nome(ci.produtoId!),
-        quantidade: Number(ci.quantidade),
-      }));
+      // Composição snapshot (pra comanda/resumo mostrarem o detalhe completo do combo, com unidade
+      // de cada item — "1 espeto de Costela", "1/2 espeto de Coração" — não só o nome): resolve
+      // carne e refrigerante escolhidos; os demais itens vêm da própria tabela de produtos.
+      const todosProdutos = await tx.select().from(s.produtos);
+      const porId = (id: string) => todosProdutos.find((p) => p.id === id);
+      // produtoId vai junto (não só pra exibir) — é o que permite descontar do estoque de produto
+      // pronto o item certo (ex.: maionese) quando ele faz parte de um combo, não só quando vendido avulso.
+      const composicao = itensCombo.map((ci) => {
+        const alvo = ci.ehCarneEscolhida ? carne : ci.grupoEscolha === 'refrigerante' && refri ? refri : ci.produtoId ? porId(ci.produtoId) : undefined;
+        return { produtoId: alvo?.id, nome: alvo?.nome ?? '', unidade: alvo?.unidadeVenda ?? null, quantidade: Number(ci.quantidade) };
+      });
       escolhas = { refrigeranteId: it.refrigeranteId, composicao };
     } else if (it.produtoId) {
       const [p] = await tx.select().from(s.produtos).where(eq(s.produtos.id, it.produtoId));
@@ -80,6 +84,35 @@ async function construirLinhas(tx: Tx, custos: Map<string, number | null>, itens
     });
   }
   return { linhas, subtotal, custoTotal, custoCompleto };
+}
+
+/** Quanto cada produto precisa descontar/devolver do estoque de venda, a partir das linhas do
+ * pedido — tanto item avulso (produtoId direto) quanto item de dentro de um combo (via composicao,
+ * que já carrega produtoId pra isso). */
+function itensParaEstoque(linhas: LinhaPedido[]) {
+  const porProduto = new Map<string, number>();
+  const soma = (produtoId: string, qtd: number) => porProduto.set(produtoId, (porProduto.get(produtoId) ?? 0) + qtd);
+  for (const l of linhas) {
+    const qtdPedida = Number(l.quantidade);
+    if (l.produtoId) soma(l.produtoId, qtdPedida);
+    const composicao = (l.escolhas as { composicao?: { produtoId?: string; quantidade: number }[] } | null)?.composicao;
+    for (const c of composicao ?? []) if (c.produtoId) soma(c.produtoId, c.quantidade * qtdPedida);
+  }
+  return porProduto;
+}
+
+/** Desconta (sinal -1) ou devolve (sinal +1) do estoque de VENDA — só produto com controlaEstoque
+ * ligado; os outros nem entram na conta. estoqueTotal (quanto temos no geral) nunca é tocado aqui,
+ * é só informativo e ajustado à mão em Cardápio. */
+async function ajustarEstoqueVenda(tx: Tx, porProduto: Map<string, number>, sinal: 1 | -1) {
+  if (!porProduto.size) return;
+  const ids = [...porProduto.keys()];
+  const prods = await tx.select({ id: s.produtos.id, controlaEstoque: s.produtos.controlaEstoque }).from(s.produtos).where(inArray(s.produtos.id, ids));
+  for (const p of prods) {
+    if (!p.controlaEstoque) continue;
+    const delta = sinal * (porProduto.get(p.id) ?? 0);
+    if (delta !== 0) await tx.update(s.produtos).set({ estoqueVenda: sql`${s.produtos.estoqueVenda} + ${delta}` }).where(eq(s.produtos.id, p.id));
+  }
 }
 
 export async function criarPedido(db: Db, input: PedidoInput, usuario: string, statusInicial: StatusPedido = 'confirmado') {
@@ -129,6 +162,9 @@ export async function criarPedido(db: Db, input: PedidoInput, usuario: string, s
     for (const p of input.pagamentos ?? []) {
       await tx.insert(s.pagamentos).values({ pedidoId: pedido.id, forma: p.forma, valor: fromCents(toCents(p.valor)) });
     }
+    // Já desconta no pré-pedido do site (aguardando_confirmacao), não só quando confirmado — se for
+    // recusado depois, recusarPedidoSite devolve.
+    await ajustarEstoqueVenda(tx, itensParaEstoque(linhas), -1);
     return pedido;
   });
 }
@@ -148,8 +184,12 @@ export async function atualizarItens(db: Db, pedidoId: string, itens: ItemInput[
     const total = Math.max(0, subtotal - toCents(p.desconto) + toCents(p.taxaEntrega));
     const pagos = await tx.select({ v: sql<string>`coalesce(sum(valor),0)` }).from(s.pagamentos).where(eq(s.pagamentos.pedidoId, pedidoId));
 
+    // Estoque de venda: devolve os itens antigos e desconta os novos — equivalente a "desfaz e refaz".
+    const antigos = await tx.select().from(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
+    await ajustarEstoqueVenda(tx, itensParaEstoque(antigos), 1);
     await tx.delete(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
     await tx.insert(s.pedidoItens).values(linhas.map((l) => ({ ...l, pedidoId })));
+    await ajustarEstoqueVenda(tx, itensParaEstoque(linhas), -1);
     await tx.update(s.pedidos).set({
       subtotal: fromCents(subtotal), total: fromCents(total), custoTotal: custoCompleto ? fromCents(custoTotal) : null,
       statusPagamento: statusPagamentoDe(total, toCents(pagos[0].v)), updatedAt: new Date(),
@@ -196,6 +236,11 @@ export async function cancelarPedido(db: Db, pedidoId: string, motivo: string, u
     }).where(and(eq(s.pedidos.id, pedidoId)));
     await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: 'cancelado', usuario, nota: motivo });
     // TODO(fase 4): estornar lançamentos financeiros dos pagamentos.
+    // "recusado" já devolveu o estoque de venda em recusarPedidoSite — não devolve de novo aqui.
+    if (p.status !== 'recusado') {
+      const itens = await tx.select().from(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
+      await ajustarEstoqueVenda(tx, itensParaEstoque(itens), 1);
+    }
   });
 }
 
@@ -219,6 +264,9 @@ export async function recusarPedidoSite(db: Db, pedidoId: string, motivo: string
     if (p.status !== 'aguardando_confirmacao') throw new ErroNegocio('status_invalido', 'Pedido não está aguardando confirmação');
     await tx.update(s.pedidos).set({ status: 'recusado', motivoCancelamento: motivo, updatedAt: new Date() }).where(eq(s.pedidos.id, pedidoId));
     await tx.insert(s.pedidoStatusHistorico).values({ pedidoId, de: p.status, para: 'recusado', usuario, nota: motivo });
+    // O pré-pedido já tinha descontado o estoque de venda na criação (criarPedido) — devolve.
+    const itens = await tx.select().from(s.pedidoItens).where(eq(s.pedidoItens.pedidoId, pedidoId));
+    await ajustarEstoqueVenda(tx, itensParaEstoque(itens), 1);
   });
 }
 
@@ -241,9 +289,9 @@ export function resumoWhatsapp(p: typeof s.pedidos.$inferSelect, itens: (typeof 
   for (const i of itens) {
     const qtdPedida = Number(i.quantidade);
     linhas.push(`${qtdPedida}x ${i.descricaoSnapshot} — ${brl(i.subtotal)}${i.observacao ? ` (${i.observacao})` : ''}`);
-    const composicao = (i.escolhas as { composicao?: { nome: string; quantidade: number }[] } | null)?.composicao;
+    const composicao = (i.escolhas as { composicao?: { nome: string; unidade?: string | null; quantidade: number }[] } | null)?.composicao;
     // composicao.quantidade é por 1 combo — multiplica pela quantidade pedida (2 combos = o dobro de cada item).
-    for (const c of composicao ?? []) linhas.push(`   • ${formatQtd(c.quantidade * qtdPedida)}x ${c.nome}`);
+    for (const c of composicao ?? []) linhas.push(`   • ${formatComposicaoLinha(c, qtdPedida)}`);
   }
   linhas.push('');
   if (Number(p.desconto) > 0) linhas.push(`Desconto: -${brl(p.desconto)}`);

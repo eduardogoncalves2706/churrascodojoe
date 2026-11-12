@@ -86,6 +86,13 @@ export const produtos = pgTable('produtos', {
   // Landing page pública (docs/SPEC_landing_page.md)
   descricaoCurta: text('descricao_curta'), imagemKey: text('imagem_key'), visivelSite: boolean('visivel_site').notNull().default(true),
   destaqueSite: boolean('destaque_site').notNull().default(false), ordemSite: integer('ordem_site').notNull().default(0),
+  // Estoque de produto PRONTO pra vender (ex.: porções de maionese já temperada) — não confundir
+  // com ficha técnica/insumo, que é só pra custo. Opt-in (controlaEstoque): maioria dos produtos não
+  // usa isso. Dois números porque "quanto temos" e "quanto vamos vender agora" são coisas
+  // diferentes (ex.: 50 espetos de vazio no freezer, mas só 10 liberados pra venda nesse fim de
+  // semana) — só estoqueVenda desconta com as vendas e controla o que aparece em Novo pedido.
+  controlaEstoque: boolean('controla_estoque').notNull().default(false),
+  estoqueTotal: qty('estoque_total').notNull().default('0'), estoqueVenda: qty('estoque_venda').notNull().default('0'),
   ...audit,
 });
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { formatQtd, proximoStatus } from '@joe/shared';
+import { formatComposicaoLinha, formatQtd, proximoStatus } from '@joe/shared';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, brl, hora, num, STATUS_LABEL, type Row } from '../api';
@@ -138,7 +138,7 @@ export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; o
       ) : (
         <div className="card"><table className="w-full"><tbody>
           {p.itens.map((i: Row) => <tr key={i.id}><td className="td">{formatQtd(Number(i.quantidade))}× {i.descricaoSnapshot}{i.observacao && <span className="text-gold"> ({i.observacao})</span>}
-            {i.escolhas?.composicao && <p className="text-xs text-cream/60">{i.escolhas.composicao.map((c: Row) => `${formatQtd(c.quantidade * Number(i.quantidade))}× ${c.nome}`).join(' · ')}</p>}</td><td className="td text-right">{brl(i.subtotal)}</td></tr>)}
+            {i.escolhas?.composicao && <p className="text-xs text-cream/60">{i.escolhas.composicao.map((c: { nome: string; unidade?: string | null; quantidade: number }) => formatComposicaoLinha(c, Number(i.quantidade))).join(' · ')}</p>}</td><td className="td text-right">{brl(i.subtotal)}</td></tr>)}
           <tr><td className="td text-cream/70">Subtotal</td><td className="td text-right">{brl(p.subtotal)}</td></tr>
           {Number(p.desconto) > 0 && <tr><td className="td text-cream/70">Desconto</td><td className="td text-right">−{brl(p.desconto)}</td></tr>}
           {p.tipo === 'entrega' && <tr><td className="td text-cream/70">Taxa de entrega</td><td className="td text-right">{brl(p.taxaEntrega)}</td></tr>}

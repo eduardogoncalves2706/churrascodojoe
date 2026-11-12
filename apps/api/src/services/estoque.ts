@@ -54,26 +54,6 @@ export async function produtosPedidos(db: Pick<Db, 'select'>, de: string, ate: s
   return total;
 }
 
-/** Produto tem estoque pra pelo menos 1 unidade — usado pra tirar da tela de Novo pedido o que não
- * tem como fazer. Só considera insumo que tem pelo menos 1 lote JÁ REGISTRADO alguma vez (ou seja,
- * que esse negócio de fato controla no módulo Estoque): ficha técnica existe em quase todo produto
- * (é a base do cálculo de custo/margem), então "zero lote nunca lançado" não pode significar "sem
- * estoque" — significaria esconder o cardápio inteiro em quem nunca usou "Registrar compra". */
-export async function estoqueSuficientePorProduto(db: Pick<Db, 'select'>): Promise<Map<string, boolean>> {
-  const [ficha, atual, comHistorico] = await Promise.all([
-    db.select().from(s.fichaTecnica), estoqueAtualPorInsumo(db),
-    db.select({ insumoId: s.estoqueLotes.insumoId }).from(s.estoqueLotes).groupBy(s.estoqueLotes.insumoId),
-  ]);
-  const rastreado = new Set(comHistorico.map((r) => r.insumoId));
-  const porProduto = new Map<string, boolean>();
-  for (const f of ficha) {
-    if (!rastreado.has(f.insumoId)) continue; // nunca lançado nesse insumo = sem controle, não bloqueia
-    const suficiente = (atual.get(f.insumoId) ?? 0) >= Number(f.quantidadeInsumo);
-    porProduto.set(f.produtoId, (porProduto.get(f.produtoId) ?? true) && suficiente);
-  }
-  return porProduto;
-}
-
 export interface NecessidadeInsumo {
   insumoId: string; nome: string; categoria: string; unidadeCompra: string;
   necessario: number; estoqueMinimo: number; estoqueAtual: number; aComprar: number; validadeMaisProxima: string | null;

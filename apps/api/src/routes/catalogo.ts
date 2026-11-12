@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { isAdmin, requireAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
 import { custosProdutos, custoVariante } from '../services/custos';
-import { estoqueSuficientePorProduto } from '../services/estoque';
 
 export const catalogo = new Hono<Env>();
 const db = () => getDb();
@@ -14,12 +13,12 @@ const money = z.number().min(0);
 
 /* ---------- Produtos ---------- */
 catalogo.get('/produtos', async (c) => {
-  const [rows, custos, estoqueSuf] = await Promise.all([
-    db().select().from(s.produtos).orderBy(asc(s.produtos.ordem), asc(s.produtos.nome)), custosProdutos(db()), estoqueSuficientePorProduto(db()),
-  ]);
+  const [rows, custos] = await Promise.all([db().select().from(s.produtos).orderBy(asc(s.produtos.ordem), asc(s.produtos.nome)), custosProdutos(db())]);
   const out = rows.map((p) => {
     const custoCents = custos.get(p.id) ?? null;
-    return { ...p, precoCents: toCents(p.precoVenda), custoCents, ...margem(toCents(p.precoVenda), custoCents), estoqueSuficiente: estoqueSuf.get(p.id) ?? true };
+    // controlaEstoque/estoqueTotal/estoqueVenda já vêm na linha (colunas de produtos) — estoque de
+    // produto PRONTO pra vender, não de insumo; ver schema.ts e o desconto em services/pedidos.ts.
+    return { ...p, precoCents: toCents(p.precoVenda), custoCents, ...margem(toCents(p.precoVenda), custoCents) };
   });
   return c.json(isAdmin(c) ? out : stripCustos(out));
 });
@@ -28,7 +27,7 @@ const produtoCampos = {
   nome: z.string().min(1), categoria: z.enum(s.categoriaProdutoEnum.enumValues), precoVenda: money, parceiro: z.string().nullish(),
 };
 // defaults só na criação: em .partial() um default sobrescreveria campos não enviados no PATCH
-const produtoBody = z.object({ ...produtoCampos, unidadeVenda: z.string().default('unidade'), permiteFracionado: z.boolean().default(false), vendidoAPrecoDeCusto: z.boolean().default(false) });
+const produtoBody = z.object({ ...produtoCampos, unidadeVenda: z.string().default('unidade'), permiteFracionado: z.boolean().default(false), vendidoAPrecoDeCusto: z.boolean().default(false), controlaEstoque: z.boolean().default(false) });
 const produtoPatch = z.object({ ...produtoCampos, unidadeVenda: z.string(), permiteFracionado: z.boolean(), vendidoAPrecoDeCusto: z.boolean() }).partial();
 
 catalogo.post('/produtos', requireAdmin, zValidator('json', produtoBody), async (c) => {
@@ -42,12 +41,16 @@ catalogo.patch('/produtos/:id', zValidator('json', produtoPatch.extend({
   disponivelHoje: z.boolean().optional(), ativo: z.boolean().optional(), ordem: z.number().int().optional(), motivo: z.string().optional(),
   // Landing page pública (docs/SPEC_landing_page.md) — ver Cardápio e Preços.
   visivelSite: z.boolean().optional(), destaqueSite: z.boolean().optional(), descricaoCurta: z.string().nullish(), ordemSite: z.number().int().optional(),
+  // Estoque de produto pronto pra vender (opt-in) — ver schema.ts.
+  controlaEstoque: z.boolean().optional(), estoqueTotal: z.number().min(0).optional(), estoqueVenda: z.number().min(0).optional(),
 })), async (c) => {
   const id = c.req.param('id');
-  const { motivo, precoVenda, ...rest } = c.req.valid('json');
+  const { motivo, precoVenda, estoqueTotal, estoqueVenda, ...rest } = c.req.valid('json');
   const admin = isAdmin(c);
   // operador só pode marcar "disponível hoje"
   const patch: Record<string, unknown> = admin ? rest : rest.disponivelHoje !== undefined ? { disponivelHoje: rest.disponivelHoje } : {};
+  if (admin && estoqueTotal !== undefined) patch.estoqueTotal = estoqueTotal.toFixed(3);
+  if (admin && estoqueVenda !== undefined) patch.estoqueVenda = estoqueVenda.toFixed(3);
   if (admin && precoVenda !== undefined) {
     const [atual] = await db().select().from(s.produtos).where(eq(s.produtos.id, id));
     if (atual && toCents(atual.precoVenda) !== toCents(precoVenda)) {

@@ -7,16 +7,16 @@ const CATEGORIAS = ['carne', 'acompanhamento', 'bebida', 'sobremesa', 'geleia', 
 interface FormProduto {
   id?: string; nome: string; categoria: string; unidadeVenda: string; precoVenda: string;
   permiteFracionado: boolean; parceiro: string; vendidoAPrecoDeCusto: boolean; ativo: boolean;
-  visivelSite: boolean; descricaoCurta: string;
+  visivelSite: boolean; descricaoCurta: string; controlaEstoque: boolean;
 }
 const FORM_VAZIO: FormProduto = {
   nome: '', categoria: 'carne', unidadeVenda: 'unidade', precoVenda: '', permiteFracionado: false, parceiro: '', vendidoAPrecoDeCusto: false, ativo: true,
-  visivelSite: true, descricaoCurta: '',
+  visivelSite: true, descricaoCurta: '', controlaEstoque: false,
 };
 const paraForm = (p: Row): FormProduto => ({
   id: p.id, nome: p.nome, categoria: p.categoria, unidadeVenda: p.unidadeVenda, precoVenda: String(p.precoVenda),
   permiteFracionado: p.permiteFracionado, parceiro: p.parceiro ?? '', vendidoAPrecoDeCusto: p.vendidoAPrecoDeCusto, ativo: p.ativo,
-  visivelSite: p.visivelSite ?? true, descricaoCurta: p.descricaoCurta ?? '',
+  visivelSite: p.visivelSite ?? true, descricaoCurta: p.descricaoCurta ?? '', controlaEstoque: p.controlaEstoque ?? false,
 });
 
 function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProduto; onSalvo: () => void; onCancelar: () => void }) {
@@ -27,6 +27,7 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
       const body = {
         nome: f.nome, categoria: f.categoria, unidadeVenda: f.unidadeVenda, precoVenda: Number(f.precoVenda.replace(',', '.') || 0), permiteFracionado: f.permiteFracionado,
         parceiro: f.parceiro || null, vendidoAPrecoDeCusto: f.vendidoAPrecoDeCusto, ativo: f.ativo, visivelSite: f.visivelSite, descricaoCurta: f.descricaoCurta || null,
+        controlaEstoque: f.controlaEstoque,
       };
       return f.id ? api(`/produtos/${f.id}`, { method: 'PATCH', body }) : api('/produtos', { method: 'POST', body });
     },
@@ -48,6 +49,8 @@ function FormProdutoCard({ inicial, onSalvo, onCancelar }: { inicial: FormProdut
         <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.visivelSite} onChange={(e) => up({ visivelSite: e.target.checked })} />Aparece no site</label>
         {f.id && <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.ativo} onChange={(e) => up({ ativo: e.target.checked })} />Ativo</label>}
       </div>
+      <label className="flex items-center gap-2 normal-case"><input type="checkbox" className="!w-5 !min-h-0" checked={f.controlaEstoque} onChange={(e) => up({ controlaEstoque: e.target.checked })} />Controlar estoque pra venda</label>
+      {f.controlaEstoque && <p className="text-xs text-cream/60">Cadastra quantas unidades vão pra venda em Estoque → "Produtos prontos pra vender" — some sozinho de Novo pedido quando zerar.</p>}
       <div className="flex gap-2">
         <button className="btn" disabled={!f.nome || salvar.isPending} onClick={() => salvar.mutate()}>{salvar.isPending ? 'Salvando…' : 'Salvar'}</button>
         <button className="btn-ghost" onClick={onCancelar}>Cancelar</button>
@@ -111,7 +114,7 @@ export default function Cardapio({ admin }: { admin: boolean }) {
           const baixa = admin && !p.vendidoAPrecoDeCusto && p.margemPct != null && p.margemPct < min;
           return (<tr key={p.id} className={p.disponivelHoje && p.ativo ? '' : 'opacity-50'}>
             {admin && <td className="td"><input type="checkbox" className="!w-5 !min-h-0" checked={sel.has(p.id)} onChange={(e) => { const n = new Set(sel); e.target.checked ? n.add(p.id) : n.delete(p.id); setSel(n); }} /></td>}
-            <td className="td">{p.nome}{!p.ativo && <span className="text-xs text-brasa"> · inativo</span>}{p.estoqueSuficiente === false && <span className="text-xs text-brasa" title="Sem estoque suficiente — não aparece em Novo pedido"> · sem estoque</span>}{p.parceiro && <span className="text-xs text-gold"> · {p.parceiro}</span>}</td><td className="td text-cream/60">{p.unidadeVenda}</td>
+            <td className="td">{p.nome}{!p.ativo && <span className="text-xs text-brasa"> · inativo</span>}{p.controlaEstoque && Number(p.estoqueVenda) <= 0 && <span className="text-xs text-brasa" title="Estoque pra venda zerado — não aparece em Novo pedido"> · esgotado</span>}{p.parceiro && <span className="text-xs text-gold"> · {p.parceiro}</span>}</td><td className="td text-cream/60">{p.unidadeVenda}</td>
             <td className="td text-right">{admin && editandoPreco === p.id
               ? <input autoFocus className="!w-24 text-right" inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} onBlur={() => Number(preco.replace(',', '.')) >= 0 && preco !== '' ? patch.mutate({ id: p.id, body: { precoVenda: Number(preco.replace(',', '.')) } }) : setEditandoPreco(null)} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
               : <button disabled={!admin} className="font-display text-2xl text-gold" onClick={() => { setEditandoPreco(p.id); setPreco(String(p.precoVenda)); }}>{p.vendidoAPrecoDeCusto ? 'custo' : brl(p.precoVenda)}</button>}

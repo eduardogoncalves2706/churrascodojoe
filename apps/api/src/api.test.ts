@@ -69,7 +69,7 @@ describe('fluxo de novo pedido', () => {
     const det = await json(await call(`/pedidos/${p.id}`));
     expect(det.itens[0].descricaoSnapshot).toBe('Combo 2 – 4 pessoas – Picanha · Refri: Coca');
     expect(det.itens[0].escolhas.composicao).toEqual(expect.arrayContaining([
-      { nome: 'Picanha', quantidade: 2 }, { nome: 'Coração', quantidade: 1 }, { nome: 'Coca', quantidade: 1 },
+      expect.objectContaining({ nome: 'Picanha', quantidade: 2 }), expect.objectContaining({ nome: 'Coração', quantidade: 1 }), expect.objectContaining({ nome: 'Coca', quantidade: 1 }),
     ]));
     expect(det.custoTotal).not.toBeNull();
     const detOp = await json(await call(`/pedidos/${p.id}`, { role: 'operador' }));
@@ -134,6 +134,32 @@ describe('fluxo de novo pedido', () => {
 
     const bloqueado = await call(`/pedidos/${p.id}/itens`, { method: 'PUT', body: JSON.stringify([{ produtoId: coca.id, quantidade: 1 }]) });
     expect(bloqueado.status).toBe(400);
+  });
+
+  it('estoque de produto pronto pra vender: desconta na venda, devolve ao cancelar/editar', async () => {
+    const prod = await json(await call('/produtos', { method: 'POST', body: JSON.stringify({ nome: 'Maionese teste', categoria: 'acompanhamento', precoVenda: 10, controlaEstoque: true }) }));
+    await call(`/produtos/${prod.id}`, { method: 'PATCH', body: JSON.stringify({ estoqueTotal: 20, estoqueVenda: 5 }) });
+
+    const p1 = await json(await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'Estoque', canal: 'balcao', tipo: 'retirada', itens: [{ produtoId: prod.id, quantidade: 2 }] }) }));
+    const depois1 = (await json(await call('/produtos'))).find((x: any) => x.id === prod.id);
+    expect(Number(depois1.estoqueVenda)).toBe(3); // 5 - 2
+    expect(Number(depois1.estoqueTotal)).toBe(20); // nunca muda com a venda
+
+    // editar itens: devolve os 2 antigos e desconta os 3 novos
+    await call(`/pedidos/${p1.id}/itens`, { method: 'PUT', body: JSON.stringify([{ produtoId: prod.id, quantidade: 3 }]) });
+    const depois2 = (await json(await call('/produtos'))).find((x: any) => x.id === prod.id);
+    expect(Number(depois2.estoqueVenda)).toBe(2); // 5 - 3
+
+    // cancelar: devolve os 3
+    await call(`/pedidos/${p1.id}/cancelar`, { method: 'POST', body: JSON.stringify({ motivo: 'teste' }) });
+    const depois3 = (await json(await call('/produtos'))).find((x: any) => x.id === prod.id);
+    expect(Number(depois3.estoqueVenda)).toBe(5);
+
+    // zerado: some da lista que Novo pedido usa (disponivelHoje por si só não garante mais isso)
+    await call(`/produtos/${prod.id}`, { method: 'PATCH', body: JSON.stringify({ estoqueVenda: 0 }) });
+    const zerado = (await json(await call('/produtos'))).find((x: any) => x.id === prod.id);
+    expect(Number(zerado.estoqueVenda)).toBe(0);
+    expect(zerado.controlaEstoque).toBe(true);
   });
 });
 

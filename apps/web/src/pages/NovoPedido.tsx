@@ -16,6 +16,9 @@ const carregarDraft = (): Draft => { try { return { ...VAZIO, ...JSON.parse(loca
 
 const ABAS = ['Combos', 'Carnes', 'Acompanhamentos', 'Bebidas', 'Doces & Geleias'] as const;
 const abaDe = (cat: string) => (cat === 'carne' ? 'Carnes' : cat === 'acompanhamento' ? 'Acompanhamentos' : cat === 'bebida' ? 'Bebidas' : 'Doces & Geleias');
+/** Produto que não controla estoque (maioria) sempre pode vender; quem controla, só se tiver sobrado
+ * algo liberado pra venda hoje (ver Estoque — "estoque de produto pronto"). */
+const temEstoque = (p: Row) => !p.controlaEstoque || Number(p.estoqueVenda) > 0;
 
 const SUGESTOES_OBS = ['Ao ponto', 'Bem passada', 'Mal passada', 'Sem cebola', 'Sem pimenta'];
 /** Chip clicado entra/sai da observação (lista separada por vírgula) — evita digitar sempre a mesma coisa. */
@@ -170,8 +173,7 @@ export default function NovoPedido() {
   if (produtos.isLoading || combos.isLoading) return <Carregando />;
   if (produtos.isError) return <Erro e={produtos.error} />;
 
-  // estoqueSuficiente === false: sem insumo pra fazer nem 1 unidade — não oferece o que não dá pra fazer.
-  const lista = (produtos.data ?? []).filter((p) => p.ativo && p.disponivelHoje && p.estoqueSuficiente !== false && abaDe(p.categoria) === aba);
+  const lista = (produtos.data ?? []).filter((p) => p.ativo && p.disponivelHoje && temEstoque(p) && abaDe(p.categoria) === aba);
   // Em vez de só desabilitar o botão, diz o que falta — evita o "por que não confirma?" na hora do rush.
   const faltando = d.itens.length === 0 ? 'Adicione pelo menos um item'
     : d.tipo === 'entrega' && !d.semEndereco && !(d.enderecoTexto && d.bairroId) ? 'Informe endereço e bairro (ou marque "Endereço depois")'
@@ -235,10 +237,10 @@ export default function NovoPedido() {
         {aba === 'Combos' && combo && <div className="space-y-3">
           <div className="flex justify-between"><p className="font-label font-bold uppercase text-lg">{combo.combo.nome}</p><button className="text-gold underline" onClick={() => setCombo(null)}>voltar</button></div>
           <p className="text-xs text-gold font-label uppercase">Escolha a carne</p>
-          <div className="grid grid-cols-2 gap-2">{combo.combo.variantes.filter((v: Row) => v.ativo && produtos.data?.find((p) => p.id === v.carneProdutoId)?.estoqueSuficiente !== false).map((v: Row) => <button key={v.id} className={`card text-left min-h-[56px] ${combo.variante?.id === v.id ? 'border-primary' : ''}`} onClick={() => setCombo({ ...combo, variante: v })}><span className="font-label font-bold uppercase">{v.carne}</span><br /><span className="text-gold">{brlC(v.precoCents)}</span></button>)}</div>
+          <div className="grid grid-cols-2 gap-2">{combo.combo.variantes.filter((v: Row) => { const carne = produtos.data?.find((p) => p.id === v.carneProdutoId); return v.ativo && (!carne || temEstoque(carne)); }).map((v: Row) => <button key={v.id} className={`card text-left min-h-[56px] ${combo.variante?.id === v.id ? 'border-primary' : ''}`} onClick={() => setCombo({ ...combo, variante: v })}><span className="font-label font-bold uppercase">{v.carne}</span><br /><span className="text-gold">{brlC(v.precoCents)}</span></button>)}</div>
           {combo.variante && <>
             <p className="text-xs text-gold font-label uppercase">Refrigerante</p>
-            <div className="flex gap-2 flex-wrap">{produtos.data?.filter((p) => p.categoria === 'bebida' && ['Coca', 'Guaraná', 'Pepsi'].includes(p.nome) && p.disponivelHoje && p.estoqueSuficiente !== false).map((p) => (
+            <div className="flex gap-2 flex-wrap">{produtos.data?.filter((p) => p.categoria === 'bebida' && ['Coca', 'Guaraná', 'Pepsi'].includes(p.nome) && p.disponivelHoje && temEstoque(p)).map((p) => (
               <button key={p.id} className="chip" onClick={() => { add({ varianteId: combo.variante!.id, refrigeranteId: p.id, nome: `${combo.combo.nome} – ${combo.variante!.carne} · ${p.nome}`, precoCents: combo.variante!.precoCents, fracionado: false, livre: false }); setCombo(null); }}>{p.nome}</button>))}</div>
           </>}
         </div>}

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { formatQtd } from '@joe/shared';
+import { formatComposicaoLinha, formatQtd } from '@joe/shared';
 import { useParams } from 'react-router-dom';
 import { api, brl, num, type Row } from '../api';
 
@@ -7,14 +7,17 @@ import { api, brl, num, type Row } from '../api';
 export default function Comanda() {
   const { id } = useParams();
   const q = useQuery({ queryKey: ['comanda', id], queryFn: () => api<Row>(`/pedidos/${id}/comanda`) });
+  // Nome do negócio é white-label (Configurações) — mesma chave que App.tsx usa pro cabeçalho.
+  const negocio = useQuery({ queryKey: ['config', 'negocio_nome'], queryFn: () => api<string>('/configuracoes/negocio_nome'), retry: false });
   if (!q.data) return <p className="p-4">Carregando…</p>;
   const p = q.data;
+  const nome = negocio.data || 'Churrasco do Joe';
   const dt = new Date(p.agendadoPara ?? p.createdAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' });
   return (
     <div className="bg-white min-h-screen">
       <div className="no-print p-3 flex gap-2 bg-bg"><button className="btn" onClick={() => window.print()}>Imprimir</button></div>
       <div className="comanda mx-auto p-3 text-black bg-white" style={{ width: '80mm', fontSize: '13px', lineHeight: 1.3 }}>
-        <p className="text-center font-bold text-lg tracking-widest">CHURRASCO DO JOE</p>
+        <p className="text-center font-bold text-lg tracking-widest">{nome.toUpperCase()}</p>
         <p className="text-center font-bold" style={{ fontSize: '44px', lineHeight: 1 }}>#{num(p.numeroDia)}</p>
         <p className="text-center">{dt}{p.agendadoPara ? ' (ENCOMENDA)' : ''}</p>
         <hr className="border-black my-2" />
@@ -22,9 +25,10 @@ export default function Comanda() {
         <p className="font-bold uppercase">{p.tipo}</p>
         {p.tipo === 'entrega' && <p>{p.enderecoTexto} — {p.bairro}{p.referencia ? ` (${p.referencia})` : ''}</p>}
         <hr className="border-black my-2" />
+        {/* composição é por 1 combo — multiplica pela quantidade pedida, senão 2 combos imprime só a carne de 1.
+            E vem com a unidade ("1 espeto de Costela"), não só o número, pra não ficar ambíguo na churrasqueira. */}
         {p.itens.map((i: Row) => <div key={i.id} className="mb-1"><p className="font-bold">{formatQtd(Number(i.quantidade))}× {i.descricaoSnapshot}</p>
-          {/* composição é por 1 combo — multiplica pela quantidade pedida, senão 2 combos imprime só a carne de 1 */}
-          {i.escolhas?.composicao?.map((c: Row, idx: number) => <p key={idx}>&nbsp;&nbsp;· {formatQtd(c.quantidade * Number(i.quantidade))}× {c.nome}</p>)}
+          {i.escolhas?.composicao?.map((c: { nome: string; unidade?: string | null; quantidade: number }, idx: number) => <p key={idx}>&nbsp;&nbsp;· {formatComposicaoLinha(c, Number(i.quantidade))}</p>)}
           {i.observacao && <p>&nbsp;&nbsp;» {i.observacao}</p>}</div>)}
         <hr className="border-black my-2" />
         {Number(p.desconto) > 0 && <p>Desconto: −{brl(p.desconto)}</p>}{p.tipo === 'entrega' && <p>Entrega: {brl(p.taxaEntrega)}</p>}

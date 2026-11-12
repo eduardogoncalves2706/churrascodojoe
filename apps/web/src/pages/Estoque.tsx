@@ -41,6 +41,52 @@ function NovaEntrada({ insumos, onSalvo }: { insumos: Row[]; onSalvo: () => void
   );
 }
 
+/** Estoque de produto PRONTO pra vender (porções já prontas, ex.: maionese temperada) — diferente do
+ * estoque de insumo acima: aqui não importa o que entra na receita, só "quanto temos pra vender".
+ * estoqueTotal é só informativo (quanto existe no geral); estoqueVenda é o que fica liberado agora
+ * pra vender — some de Novo pedido sozinho quando chega a zero, e volta se cancelar/editar pedido. */
+function ProdutosProntos() {
+  const qc = useQueryClient();
+  const produtos = useQuery({ queryKey: ['produtos'], queryFn: () => api<Row[]>('/produtos') });
+  const [edit, setEdit] = useState<Record<string, { total?: string; venda?: string }>>({});
+  const salvar = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Row }) => api(`/produtos/${id}`, { method: 'PATCH', body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['produtos'] }),
+  });
+  const controlados = (produtos.data ?? []).filter((p) => p.controlaEstoque);
+
+  if (produtos.isLoading) return <Carregando />;
+  return (
+    <section className="card space-y-2">
+      <h3 className="font-label font-bold uppercase text-gold">Produtos prontos pra vender</h3>
+      <p className="text-xs text-cream/60">Todo início de fim de semana, atualiza quanto tem pra vender — o pedido desconta sozinho e some de Novo pedido quando zerar.</p>
+      {!controlados.length && <Vazio>Nenhum produto com estoque controlado ainda. Liga em Cardápio → editar produto → "Controlar estoque pra venda".</Vazio>}
+      {controlados.length > 0 && (
+        <div className="overflow-x-auto"><table className="w-full min-w-[480px]"><thead><tr>
+          <th className="th">Produto</th><th className="th text-right">Temos no geral</th><th className="th text-right">Liberado pra vender</th>
+        </tr></thead><tbody>
+          {controlados.map((p) => (
+            <tr key={p.id}>
+              <td className="td">{p.nome}</td>
+              <td className="td text-right">
+                <input className="!w-20 text-right" inputMode="decimal" value={edit[p.id]?.total ?? p.estoqueTotal}
+                  onChange={(ev) => setEdit({ ...edit, [p.id]: { ...edit[p.id], total: ev.target.value } })}
+                  onBlur={(ev) => { const v = Number(ev.target.value.replace(',', '.')); if (!Number.isNaN(v) && v !== Number(p.estoqueTotal)) salvar.mutate({ id: p.id, body: { estoqueTotal: v } }); }} />
+              </td>
+              <td className="td text-right">
+                <input className="!w-20 text-right font-bold text-gold" inputMode="decimal" value={edit[p.id]?.venda ?? p.estoqueVenda}
+                  onChange={(ev) => setEdit({ ...edit, [p.id]: { ...edit[p.id], venda: ev.target.value } })}
+                  onBlur={(ev) => { const v = Number(ev.target.value.replace(',', '.')); if (!Number.isNaN(v) && v !== Number(p.estoqueVenda)) salvar.mutate({ id: p.id, body: { estoqueVenda: v } }); }} />
+              </td>
+            </tr>
+          ))}
+        </tbody></table></div>
+      )}
+      {salvar.isError && <Erro e={salvar.error} />}
+    </section>
+  );
+}
+
 export default function Estoque() {
   const qc = useQueryClient();
   const [periodo, setPeriodo] = useState(proximoFimDeSemana());
@@ -58,6 +104,8 @@ export default function Estoque() {
   return (
     <div className="space-y-4">
       <Titulo>Estoque</Titulo>
+
+      <ProdutosProntos />
 
       <section className="card space-y-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
