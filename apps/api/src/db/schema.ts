@@ -211,5 +211,8 @@ export const lancamentos = pgTable('lancamentos', {
 export const pagamentos = pgTable('pagamentos', {
   id: id(), pedidoId: uuid('pedido_id').notNull().references(() => pedidos.id), forma: formaPagamentoEnum('forma').notNull(), valor: money('valor').notNull(),
   taxa: money('taxa').notNull().default('0'), recebidoEm: timestamp('recebido_em', { withTimezone: true }).notNull().defaultNow(),
-  contaId: uuid('conta_id').references(() => contasFinanceiras.id), lancamentoId: uuid('lancamento_id').references(() => lancamentos.id), ...audit,
+  contaId: uuid('conta_id').references(() => contasFinanceiras.id), lancamentoId: uuid('lancamento_id').references(() => lancamentos.id),
+  // Id da order/pagamento no gateway (ex.: Mercado Pago) — só pra idempotência do webhook (não
+  // credita duas vezes se ele reenviar a notificação); null pra pagamento registrado manualmente.
+  referenciaExterna: text('referencia_externa'), ...audit,
 });

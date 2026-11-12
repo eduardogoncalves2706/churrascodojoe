@@ -25,5 +25,21 @@ Novo usuário: `aws cognito-idp admin-create-user` + `admin-add-user-to-group --
 - Backup do RDS com 1 dia (`-c backupDays=7` após o upgrade da conta).
 - Custos fixos aproximados: RDS t4g.micro + 20 GB, endpoint privado do Secrets Manager (~US$7/mês), Secrets Manager. Sem NAT.
 
+## Gateway de pagamento (Mercado Pago)
+Código pronto (`services/mercadoPago.ts`, `POST /pedidos/:id/pagamento-pix`, webhook em
+`POST /v1/public/webhooks/mercadopago`) mas **não ativo em produção** — a Lambda roda numa subnet
+isolada sem saída pra internet (`natGateways: 0` em `data-stack.ts`), então não consegue chamar a
+API do Mercado Pago de lá. Pra ativar quando precisar:
+1. Resolver a saída de internet da Lambda (NAT Gateway ou NAT instance — ver conversa/decisão, isso
+   muda a topologia de subnet; cuidado se já tiver RDS de produção na mesma VPC, risco de
+   substituição do banco se feito sem planejar).
+2. Credenciais de produção no painel do Mercado Pago (Access Token + segredo do webhook).
+3. Passar `MERCADOPAGO_ACCESS_TOKEN`/`MERCADOPAGO_WEBHOOK_SECRET` como variável de ambiente da
+   Lambda em `api-stack.ts` (hoje só existem no `.env` local, ver `.env.example`).
+4. Configurar a URL do webhook no painel: `https://<api>/v1/public/webhooks/mercadopago`.
+
+Em deploy novo (cliente sem RDS existente), o passo 1 é bem mais simples — dá pra desenhar a VPC
+com NAT desde o início, sem risco de substituir banco nenhum.
+
 ## GitHub Actions
 Workflows em `.github/workflows`. Para habilitar: `cdk deploy Joe-prod-GithubOidc -c githubRepo=usuario/repo`, e definir as variáveis `AWS_ACCOUNT_ID` e `AWS_DEPLOY_ROLE_ARN` no repositório.

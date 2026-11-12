@@ -5,7 +5,8 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { getDb, schema as s } from '../db/client';
 import { custosProdutos } from '../services/custos';
-import { criarPedido, ErroNegocio, resumoWhatsappCliente } from '../services/pedidos';
+import { buscarOrder, verificarAssinaturaWebhook } from '../services/mercadoPago';
+import { criarPedido, ErroNegocio, registrarPagamento, resumoWhatsappCliente } from '../services/pedidos';
 
 export const publicRoutes = new Hono();
 const db = () => getDb();
@@ -131,4 +132,26 @@ publicRoutes.post('/pedidos', zValidator('json', pedidoPublicoSchema), async (c)
     numero: pedido.numeroDia, dataOperacao: pedido.dataOperacao, totalCents: toCents(pedido.total), totalFormatado: formatBRL(toCents(pedido.total)),
     textoWhatsapp: texto, whatsappUrl: whatsappLoja ? `https://wa.me/55${whatsappLoja.replace(/\D/g, '').replace(/^55/, '')}?text=${encodeURIComponent(texto)}` : null,
   }, 201);
+});
+
+/**
+ * Notificação do Mercado Pago (Orders API) quando o status de um pagamento muda. Assinatura
+ * inválida ou tipo que não interessa: responde 200 e ignora (reenviar não mudaria o resultado,
+ * então não vale deixar eles martelando retry). Falha de verdade (ex.: buscarOrder fora do ar)
+ * propaga pro onError do router e vira 500 de propósito — aí sim queremos que o Mercado Pago retente.
+ */
+publicRoutes.post('/webhooks/mercadopago', async (c) => {
+  const dataId = c.req.query('data.id');
+  const tipo = c.req.query('type');
+  if (tipo !== 'order' || !dataId) return c.body(null, 200);
+
+  const valido = verificarAssinaturaWebhook(c.req.header('x-signature'), c.req.header('x-request-id'), dataId);
+  if (!valido) { console.error('Webhook Mercado Pago com assinatura inválida, ignorado'); return c.body(null, 200); }
+
+  const order = await buscarOrder(dataId);
+  const pago = order.status === 'processed' || order.status_detail === 'accredited';
+  if (pago && order.external_reference) {
+    await registrarPagamento(db(), order.external_reference, 'pix', Number(order.total_amount), order.id);
+  }
+  return c.body(null, 200);
 });

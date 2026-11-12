@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { app } from './app';
 import { parseOfx } from './db/import-extrato';
+import { getDb } from './db/client';
+import { registrarPagamento } from './services/pedidos';
 
 const call = (path: string, init?: RequestInit & { role?: string }) =>
   app.request(`/v1${path}`, { ...init, headers: { 'content-type': 'application/json', 'x-mock-role': init?.role ?? 'admin', ...(init?.headers ?? {}) } });
@@ -134,6 +136,19 @@ describe('fluxo de novo pedido', () => {
 
     const bloqueado = await call(`/pedidos/${p.id}/itens`, { method: 'PUT', body: JSON.stringify([{ produtoId: coca.id, quantidade: 1 }]) });
     expect(bloqueado.status).toBe(400);
+  });
+
+  it('registrarPagamento com referenciaExterna é idempotente (webhook do gateway reenviado não credita 2x)', async () => {
+    const coca = (await json(await call('/produtos'))).find((p: any) => p.nome === 'Coca');
+    const p = await json(await call('/pedidos', { method: 'POST', body: JSON.stringify({ nomeCliente: 'Idempotência Pix', canal: 'balcao', tipo: 'retirada', itens: [{ produtoId: coca.id, quantidade: 1 }] }) }));
+
+    const db = getDb();
+    const primeiro = await registrarPagamento(db, p.id, 'pix', Number(p.total), 'ORD-mesma-order');
+    const segundo = await registrarPagamento(db, p.id, 'pix', Number(p.total), 'ORD-mesma-order'); // mesma referência = webhook duplicado
+    expect(primeiro).toBe('pago'); expect(segundo).toBe('pago');
+
+    const detalhe = await json(await call(`/pedidos/${p.id}`));
+    expect(detalhe.pagamentos).toHaveLength(1); // não duplicou a linha de pagamento
   });
 
   it('estoque de produto pronto pra vender: desconta na venda, devolve ao cancelar/editar', async () => {

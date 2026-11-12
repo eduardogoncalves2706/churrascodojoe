@@ -198,12 +198,20 @@ export async function atualizarItens(db: Db, pedidoId: string, itens: ItemInput[
   });
 }
 
-export async function registrarPagamento(db: Db, pedidoId: string, forma: 'pix' | 'dinheiro' | 'credito' | 'debito' | 'outro', valor: number) {
+/**
+ * `referenciaExterna` (id da order no gateway, ex.: Mercado Pago) torna isso idempotente — webhook
+ * reenviado pela mesma cobrança não credita duas vezes, só devolve o status atual sem inserir de novo.
+ */
+export async function registrarPagamento(db: Db, pedidoId: string, forma: 'pix' | 'dinheiro' | 'credito' | 'debito' | 'outro', valor: number, referenciaExterna?: string) {
   return db.transaction(async (tx: Tx) => {
     const [p] = await tx.select().from(s.pedidos).where(eq(s.pedidos.id, pedidoId));
     if (!p) throw new ErroNegocio('nao_encontrado', 'Pedido não encontrado', 404);
     if (p.status === 'cancelado') throw new ErroNegocio('cancelado', 'Pedido cancelado');
-    await tx.insert(s.pagamentos).values({ pedidoId, forma, valor: fromCents(toCents(valor)) });
+    if (referenciaExterna) {
+      const [ja] = await tx.select().from(s.pagamentos).where(and(eq(s.pagamentos.pedidoId, pedidoId), eq(s.pagamentos.referenciaExterna, referenciaExterna)));
+      if (ja) return p.statusPagamento;
+    }
+    await tx.insert(s.pagamentos).values({ pedidoId, forma, valor: fromCents(toCents(valor)), referenciaExterna });
     const pagos = await tx.select({ v: sql<string>`coalesce(sum(valor),0)` }).from(s.pagamentos).where(eq(s.pagamentos.pedidoId, pedidoId));
     const sp = statusPagamentoDe(toCents(p.total), toCents(pagos[0].v));
     await tx.update(s.pedidos).set({ statusPagamento: sp, updatedAt: new Date() }).where(eq(s.pedidos.id, pedidoId));

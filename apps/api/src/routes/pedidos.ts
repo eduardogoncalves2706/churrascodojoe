@@ -7,6 +7,7 @@ import { isAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
 import { atualizarItens, cancelarPedido, confirmarPedidoSite, criarPedido, ErroNegocio, mudarStatus, recusarPedidoSite, registrarPagamento, resumoWhatsapp, STATUS_EDICAO_BLOQUEADA } from '../services/pedidos';
 import { necessidadeInsumos, produtosPedidos } from '../services/estoque';
+import { criarCobrancaPix } from '../services/mercadoPago';
 
 export const pedidos = new Hono<Env>();
 const db = () => getDb();
@@ -136,6 +137,17 @@ pedidos.post('/pedidos/:id/recusar-site', zValidator('json', z.object({ motivo: 
 pedidos.post('/pedidos/:id/pagamentos', zValidator('json', z.object({ forma: z.enum(FORMAS_PAGAMENTO), valor: z.number().positive() })), async (c) => {
   const { forma, valor } = c.req.valid('json');
   return c.json({ statusPagamento: await registrarPagamento(db(), c.req.param('id'), forma, valor) }, 201);
+});
+
+/** Gera a cobrança Pix (QR + copia-e-cola) pro pedido — pra mandar pro cliente pelo WhatsApp. Idempotente
+ * por pedido (ver x-idempotency-key em services/mercadoPago.ts): clicar de novo não duplica a cobrança. */
+pedidos.post('/pedidos/:id/pagamento-pix', async (c) => {
+  const id = c.req.param('id');
+  const [p] = await db().select().from(s.pedidos).where(eq(s.pedidos.id, id));
+  if (!p) throw new ErroNegocio('nao_encontrado', 'Pedido não encontrado', 404);
+  if (p.status === 'cancelado') throw new ErroNegocio('cancelado', 'Pedido cancelado');
+  const cobranca = await criarCobrancaPix(id, Number(p.total));
+  return c.json(cobranca, 201);
 });
 
 pedidos.get('/pedidos/:id/comanda', async (c) => c.json(stripCustos(await carregar(c.req.param('id')))));

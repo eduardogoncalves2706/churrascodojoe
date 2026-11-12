@@ -37,6 +37,9 @@ export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; o
   const confirmarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/confirmar-site`, { method: 'POST' }), onSuccess: refresh });
   const recusarSite = useMutation({ mutationFn: () => api(`/pedidos/${id}/recusar-site`, { method: 'POST', body: { motivo: motivoRecusa } }), onSuccess: refresh });
   const motoboy = useMutation({ mutationFn: (motoboyId: string) => api(`/pedidos/${id}`, { method: 'PATCH', body: { motoboyId: motoboyId || null } }), onSuccess: refresh });
+  const [copiadoPix, setCopiadoPix] = useState(false);
+  const gerarPix = useMutation({ mutationFn: () => api<{ qrCode: string; qrCodeBase64: string; ticketUrl: string | null }>(`/pedidos/${id}/pagamento-pix`, { method: 'POST' }) });
+  const copiarPix = async () => { if (!gerarPix.data) return; await navigator.clipboard.writeText(gerarPix.data.qrCode); setCopiadoPix(true); setTimeout(() => setCopiadoPix(false), 2000); };
   const [buscaCliente, setBuscaCliente] = useState('');
   const [sugestoesCliente, setSugestoesCliente] = useState<Row[]>([]);
   const buscarClienteParaLigar = async (nome: string) => { setBuscaCliente(nome); setSugestoesCliente(nome.trim().length >= 2 ? (await api<Row[]>(`/clientes?busca=${encodeURIComponent(nome.trim())}`)).slice(0, 5) : []); };
@@ -171,7 +174,27 @@ export default function PedidoDetalhe({ id: idProp, onFechar }: { id?: string; o
       <div className="card space-y-2"><h3 className="font-label font-bold uppercase text-gold">Pagamento: {p.statusPagamento} · recebido {brl(pago)}</h3>
         {p.pagamentos.map((x: Row) => <p key={x.id} className="text-sm">+ {brl(x.valor)} {x.forma} · {hora(x.recebidoEm)}</p>)}
         {p.status !== 'cancelado' && pago < Number(p.total) && <div className="flex gap-2 flex-wrap"><select className="!w-auto" value={forma} onChange={(e) => setForma(e.target.value)}>{['pix', 'dinheiro', 'credito', 'debito'].map((f) => <option key={f}>{f}</option>)}</select>
-          <input className="!w-32" inputMode="decimal" placeholder={String(Number(p.total) - pago)} value={valor} onChange={(e) => setValor(e.target.value)} /><button className="btn" disabled={!valor} onClick={() => pagar.mutate()}>Registrar</button></div>}</div>
+          <input className="!w-32" inputMode="decimal" placeholder={String(Number(p.total) - pago)} value={valor} onChange={(e) => setValor(e.target.value)} /><button className="btn" disabled={!valor} onClick={() => pagar.mutate()}>Registrar</button></div>}
+
+        {/* Gera a cobrança no gateway (Mercado Pago) pra mandar o QR/código pro cliente — pagamento confirmado
+            chega sozinho pelo webhook, não precisa "Registrar" à mão depois (ver routes/public.ts). */}
+        {p.status !== 'cancelado' && pago < Number(p.total) && (
+          <div className="pt-2 border-t border-white/10 space-y-2">
+            <button className="btn-ghost" disabled={gerarPix.isPending} onClick={() => gerarPix.mutate()}>{gerarPix.isPending ? 'Gerando…' : 'Gerar cobrança Pix'}</button>
+            {gerarPix.isError && <Erro e={gerarPix.error} />}
+            {gerarPix.data && (
+              <div className="flex gap-3 items-start flex-wrap">
+                {gerarPix.data.qrCodeBase64 && <img src={`data:image/jpeg;base64,${gerarPix.data.qrCodeBase64}`} alt="QR code Pix" className="w-32 h-32 rounded-md border border-white/10" />}
+                <div className="flex-1 min-w-[180px] space-y-1">
+                  <label>Pix copia e cola</label>
+                  <div className="flex gap-2"><input readOnly value={gerarPix.data.qrCode} className="flex-1" /><button className="btn-ghost !px-3" onClick={copiarPix}>{copiadoPix ? 'Copiado!' : 'Copiar'}</button></div>
+                  {gerarPix.data.ticketUrl && <a href={gerarPix.data.ticketUrl} target="_blank" rel="noopener" className="text-gold underline text-sm">Abrir página do Pix</a>}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="card"><h3 className="font-label font-bold uppercase text-gold mb-1">Histórico</h3>{p.historico.map((h: Row) => <p key={h.id} className="text-sm text-cream/70">{hora(h.em)} — {h.de ? `${STATUS_LABEL[h.de] ?? h.de} → ` : ''}{STATUS_LABEL[h.para] ?? h.para}{h.nota && ` (${h.nota})`}</p>)}</div>
 
