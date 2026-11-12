@@ -313,3 +313,24 @@ describe('estoque', () => {
     expect((await call('/estoque', { role: 'operador' })).status).toBe(403);
   });
 });
+
+describe('configurações sensíveis (credenciais de gateway)', () => {
+  it('GET nunca devolve o valor salvo — só diz se está configurado, e só pra admin', async () => {
+    await call('/configuracoes/mercadopago_access_token', { method: 'PUT', body: JSON.stringify('APP_USR-segredo-de-verdade') });
+
+    const comoAdmin = await json(await call('/configuracoes/mercadopago_access_token'));
+    expect(comoAdmin).toEqual({ configurado: true });
+    expect(JSON.stringify(comoAdmin)).not.toContain('segredo-de-verdade');
+
+    expect((await call('/configuracoes/mercadopago_access_token', { role: 'operador' })).status).toBe(403);
+  });
+
+  it('chave sensível nunca cadastrada responde "não configurado", nunca 404 com o valor', async () => {
+    const r = await json(await call('/configuracoes/mercadopago_webhook_secret'));
+    expect(r).toEqual(expect.objectContaining({ configurado: expect.any(Boolean) }));
+  });
+
+  it('config não-sensível continua liberada pra qualquer papel autenticado, igual antes', async () => {
+    expect((await call('/configuracoes/negocio_nome', { role: 'operador' })).status).toBe(200);
+  });
+});

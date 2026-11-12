@@ -4,6 +4,7 @@ import { and, eq, gte, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getDb, schema as s } from '../db/client';
+import { lerConfig as config } from '../services/configuracoes';
 import { custosProdutos } from '../services/custos';
 import { buscarOrder, verificarAssinaturaWebhook } from '../services/mercadoPago';
 import { criarPedido, ErroNegocio, registrarPagamento, resumoWhatsappCliente } from '../services/pedidos';
@@ -16,11 +17,6 @@ publicRoutes.onError((e, c) => {
   console.error(e.message);
   return c.json({ error: { code: 'erro_interno', message: 'Erro interno' } }, 500);
 });
-
-async function config<T>(chave: string, padrao: T): Promise<T> {
-  const [r] = await db().select().from(s.configuracoes).where(eq(s.configuracoes.chave, chave));
-  return r ? (r.valor as T) : padrao;
-}
 
 /** Aberto agora = hoje é dia de operação e a hora local está dentro do horário configurado. */
 async function calcularStatus() {
@@ -145,10 +141,13 @@ publicRoutes.post('/webhooks/mercadopago', async (c) => {
   const tipo = c.req.query('type');
   if (tipo !== 'order' || !dataId) return c.body(null, 200);
 
-  const valido = verificarAssinaturaWebhook(c.req.header('x-signature'), c.req.header('x-request-id'), dataId);
+  const webhookSecret = await config('mercadopago_webhook_secret', '');
+  const valido = verificarAssinaturaWebhook(c.req.header('x-signature'), c.req.header('x-request-id'), dataId, webhookSecret);
   if (!valido) { console.error('Webhook Mercado Pago com assinatura inválida, ignorado'); return c.body(null, 200); }
 
-  const order = await buscarOrder(dataId);
+  const accessToken = await config('mercadopago_access_token', '');
+  if (!accessToken) { console.error('Webhook Mercado Pago recebido sem credencial configurada'); return c.body(null, 200); }
+  const order = await buscarOrder(accessToken, dataId);
   const pago = order.status === 'processed' || order.status_detail === 'accredited';
   if (pago && order.external_reference) {
     await registrarPagamento(db(), order.external_reference, 'pix', Number(order.total_amount), order.id);

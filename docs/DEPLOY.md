@@ -27,16 +27,20 @@ Novo usuário: `aws cognito-idp admin-create-user` + `admin-add-user-to-group --
 
 ## Gateway de pagamento (Mercado Pago)
 Código pronto (`services/mercadoPago.ts`, `POST /pedidos/:id/pagamento-pix`, webhook em
-`POST /v1/public/webhooks/mercadopago`) mas **não ativo em produção** — a Lambda roda numa subnet
-isolada sem saída pra internet (`natGateways: 0` em `data-stack.ts`), então não consegue chamar a
-API do Mercado Pago de lá. Pra ativar quando precisar:
-1. Resolver a saída de internet da Lambda (NAT Gateway ou NAT instance — ver conversa/decisão, isso
-   muda a topologia de subnet; cuidado se já tiver RDS de produção na mesma VPC, risco de
-   substituição do banco se feito sem planejar).
-2. Credenciais de produção no painel do Mercado Pago (Access Token + segredo do webhook).
-3. Passar `MERCADOPAGO_ACCESS_TOKEN`/`MERCADOPAGO_WEBHOOK_SECRET` como variável de ambiente da
-   Lambda em `api-stack.ts` (hoje só existem no `.env` local, ver `.env.example`).
-4. Configurar a URL do webhook no painel: `https://<api>/v1/public/webhooks/mercadopago`.
+`POST /v1/public/webhooks/mercadopago`) mas **não ativo em produção**. Credencial **não é variável
+de ambiente** — o próprio cliente cola o Access Token e o segredo do webhook em Configurações →
+Pagamento online (guardado em `configuracoes`, igual qualquer outra config; chave sensível, só
+admin lê o status, nunca o valor — ver `CHAVES_SENSIVEIS` em `routes/config.ts`). Isso significa
+trocar/cadastrar a credencial não precisa de redeploy nenhum.
+
+O que falta pra funcionar de verdade é só rede: a Lambda roda numa subnet isolada sem saída pra
+internet (`natGateways: 0` em `data-stack.ts`), então não alcança a API do Mercado Pago de lá.
+1. Resolver a saída de internet da Lambda (NAT Gateway ou NAT instance — muda a topologia de
+   subnet; cuidado se já tiver RDS de produção na mesma VPC, risco de substituição do banco se
+   feito sem planejar).
+2. O cliente cria a aplicação dele no painel do Mercado Pago, pega o Access Token e o segredo do
+   webhook, e cola em Configurações → Pagamento online no próprio sistema.
+3. Configurar a URL do webhook no painel do Mercado Pago: `https://<api>/v1/public/webhooks/mercadopago`.
 
 Em deploy novo (cliente sem RDS existente), o passo 1 é bem mais simples — dá pra desenhar a VPC
 com NAT desde o início, sem risco de substituir banco nenhum.

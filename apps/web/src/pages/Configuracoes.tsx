@@ -20,6 +20,19 @@ function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
   return <section className="card space-y-3"><h3 className="font-label font-bold uppercase text-gold">{titulo}</h3>{children}</section>;
 }
 
+/** Chave sensível (credencial) — GET nunca devolve o valor real, só {configurado: boolean} (ver
+ * CHAVES_SENSIVEIS em routes/config.ts). Por isso não reaproveita useConfig: o shape de leitura é
+ * diferente do de escrita (escreve a string crua, lê só um booleano). */
+function useCredencial(chave: string) {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ['config-sensivel', chave],
+    queryFn: async () => { try { return await api<{ configurado: boolean }>(`/configuracoes/${chave}`); } catch { return { configurado: false }; } },
+  });
+  const mut = useMutation({ mutationFn: (valor: string) => api(`/configuracoes/${chave}`, { method: 'PUT', body: valor }), onSuccess: () => qc.invalidateQueries({ queryKey: ['config-sensivel', chave] }) });
+  return { configurado: q.data?.configurado ?? false, isLoading: q.isLoading, mutateAsync: mut.mutateAsync };
+}
+
 const DIAS = [['dom', 'Dom'], ['seg', 'Seg'], ['ter', 'Ter'], ['qua', 'Qua'], ['qui', 'Qui'], ['sex', 'Sex'], ['sab', 'Sáb']] as const;
 
 /** White-label: nome do negócio usado no cabeçalho do sistema, aba do navegador e no site público
@@ -184,6 +197,42 @@ function SecaoSite() {
   );
 }
 
+/** Credenciais do gateway (Mercado Pago) pra cada cliente conectar a própria conta sem precisar de
+ * mim — nunca pede de volta o valor salvo (é escrito uma vez, só mostra se já está configurado).
+ * Pra funcionar de verdade também precisa de saída de internet na Lambda — ver docs/DEPLOY.md. */
+function SecaoGatewayPagamento() {
+  const token = useCredencial('mercadopago_access_token');
+  const secret = useCredencial('mercadopago_webhook_secret');
+  const [novoToken, setNovoToken] = useState('');
+  const [novoSecret, setNovoSecret] = useState('');
+  const carregando = token.isLoading || secret.isLoading;
+  const { salvar, ...estado } = useSalvarSecao(() => {
+    const acoes: Promise<unknown>[] = [];
+    if (novoToken.trim()) acoes.push(token.mutateAsync(novoToken.trim()));
+    if (novoSecret.trim()) acoes.push(secret.mutateAsync(novoSecret.trim()));
+    return acoes;
+  });
+  if (carregando) return <Carregando />;
+  const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+  const webhookUrl = `${base}/v1/public/webhooks/mercadopago`;
+
+  return (
+    <Secao titulo="Pagamento online (Mercado Pago)">
+      <p className="text-xs text-cream/60">Cole as credenciais da sua conta Mercado Pago (painel de desenvolvedores → sua aplicação). Deixe em branco pra manter o valor já salvo — por segurança, ele nunca aparece de volta aqui.</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Campo label={`Access Token${token.configurado ? ' · configurado ✓' : ' · não configurado'}`}>
+          <input type="password" autoComplete="off" placeholder={token.configurado ? '••••••••••••' : 'APP_USR-...'} value={novoToken} onChange={(e) => setNovoToken(e.target.value)} />
+        </Campo>
+        <Campo label={`Segredo do webhook${secret.configurado ? ' · configurado ✓' : ' · não configurado'}`}>
+          <input type="password" autoComplete="off" placeholder={secret.configurado ? '••••••••••••' : ''} value={novoSecret} onChange={(e) => setNovoSecret(e.target.value)} />
+        </Campo>
+      </div>
+      <Campo label="URL do webhook (cole no painel do Mercado Pago → Webhooks)"><input readOnly value={webhookUrl} onFocus={(e) => e.target.select()} /></Campo>
+      <BotaoSalvar onClick={salvar} {...estado} />
+    </Secao>
+  );
+}
+
 export default function Configuracoes() {
   return (
     <div className="space-y-4">
@@ -191,6 +240,7 @@ export default function Configuracoes() {
       <SecaoIdentidade />
       <SecaoOperacao />
       <SecaoPagamento />
+      <SecaoGatewayPagamento />
       <SecaoSite />
     </div>
   );

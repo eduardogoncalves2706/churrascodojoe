@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { isAdmin, stripCustos, type Env } from '../auth';
 import { getDb, schema as s } from '../db/client';
 import { atualizarItens, cancelarPedido, confirmarPedidoSite, criarPedido, ErroNegocio, mudarStatus, recusarPedidoSite, registrarPagamento, resumoWhatsapp, STATUS_EDICAO_BLOQUEADA } from '../services/pedidos';
+import { lerConfig } from '../services/configuracoes';
 import { necessidadeInsumos, produtosPedidos } from '../services/estoque';
 import { criarCobrancaPix } from '../services/mercadoPago';
 
@@ -146,7 +147,9 @@ pedidos.post('/pedidos/:id/pagamento-pix', async (c) => {
   const [p] = await db().select().from(s.pedidos).where(eq(s.pedidos.id, id));
   if (!p) throw new ErroNegocio('nao_encontrado', 'Pedido não encontrado', 404);
   if (p.status === 'cancelado') throw new ErroNegocio('cancelado', 'Pedido cancelado');
-  const cobranca = await criarCobrancaPix(id, Number(p.total));
+  const accessToken = await lerConfig('mercadopago_access_token', '');
+  if (!accessToken) throw new ErroNegocio('mercadopago_nao_configurado', 'Mercado Pago não configurado — configure em Configurações → Pagamento online', 501);
+  const cobranca = await criarCobrancaPix(accessToken, id, Number(p.total));
   return c.json(cobranca, 201);
 });
 
